@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	let { note, onSave }: { note?: string, onSave: (val: string) => void } = $props();
-	
+	let { note, onSave }: { note?: string; onSave: (val: string) => void } = $props();
+
 	let currentNote = $state(untrack(() => note ?? ''));
 	let isEditing = $state(false);
 
@@ -13,37 +13,53 @@
 	});
 
 	function save() {
-		onSave(currentNote);
+		onSave(currentNote.trim());
 		isEditing = false;
 	}
 </script>
 
-<div class="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-3xl p-6 border border-blue-100/60 shadow-sm relative overflow-hidden">
-	<div class="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-
-	<div class="flex justify-between items-center mb-4 relative">
-		<h3 class="font-bold text-blue-950 text-lg flex items-center gap-2">
-			<span class="text-xl">📝</span> Personal Note
+<div class="bg-gray-800/50 rounded-xl border border-gray-700 p-5 relative">
+	<div class="flex justify-between items-center mb-3">
+		<h3 class="font-bold text-white text-base flex items-center gap-2">
+			<span>📝</span> Personal Note
 		</h3>
 		{#if !isEditing}
-			<button onclick={() => isEditing = true} class="text-xs font-bold uppercase tracking-wider text-blue-600 hover:text-blue-800 hover:bg-white px-4 py-1.5 bg-white/60 rounded-full shadow-sm border border-blue-200/60 transition-all active:scale-95">Edit</button>
+			<button 
+				type="button"
+				onclick={() => isEditing = true} 
+				class="text-xs font-semibold uppercase tracking-wider text-brand-accent hover:text-white px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors cursor-pointer"
+			>
+				{currentNote ? 'Edit' : '+ Add Note'}
+			</button>
 		{/if}
 	</div>
 	
 	{#if isEditing}
 		<textarea 
 			bind:value={currentNote} 
-			class="w-full h-36 p-4 border border-blue-200/80 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-inner text-gray-700 transition-all resize-none relative z-10"
-			placeholder="Write your personal thoughts, critique, or memories here..."></textarea>
-		<div class="flex justify-end gap-3 mt-4 relative z-10">
-			<button onclick={() => { currentNote = note ?? ''; isEditing = false; }} class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100/80 rounded-xl transition-colors">Cancel</button>
-			<button onclick={save} class="px-5 py-2.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-600/20 transition-all active:scale-95">Save Note</button>
+			class="w-full h-32 p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-brand-accent text-white placeholder-gray-500 text-sm resize-none transition-colors"
+			placeholder="Write your personal thoughts, review notes, or memories here..."></textarea>
+		<div class="flex justify-end gap-2 mt-3">
+			<button 
+				type="button"
+				onclick={() => { currentNote = note ?? ''; isEditing = false; }} 
+				class="px-4 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700/60 rounded-lg transition-colors cursor-pointer"
+			>
+				Cancel
+			</button>
+			<button 
+				type="button"
+				onclick={save} 
+				class="px-4 py-1.5 text-sm bg-brand-accent hover:bg-brand-accent/90 text-white font-medium rounded-lg shadow transition-colors cursor-pointer"
+			>
+				Save Note
+			</button>
 		</div>
 	{:else}
 		{#if currentNote}
-			<div class="prose prose-sm text-gray-700 whitespace-pre-wrap leading-relaxed relative z-10">{currentNote}</div>
+			<div class="prose prose-sm text-gray-300 whitespace-pre-wrap leading-relaxed bg-gray-900/40 p-3.5 rounded-lg border border-gray-700/40">{currentNote}</div>
 		{:else}
-			<p class="text-gray-400 italic text-sm text-center py-6 bg-white/40 rounded-2xl border border-dashed border-blue-200">No personal note added yet.</p>
+			<p class="text-gray-500 italic text-sm text-center py-4 bg-gray-900/20 rounded-lg border border-dashed border-gray-700">No personal note added yet.</p>
 		{/if}
 	{/if}
 </div>

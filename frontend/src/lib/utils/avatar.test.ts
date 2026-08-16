@@ -25,9 +25,9 @@ describe('getAvatarUrl', () => {
 	});
 
 	it('falls back to ui-avatars with encoded name when picUrl is null', () => {
-		const out = getAvatarUrl('Аліса', null);
+		const out = getAvatarUrl('Alice', null);
 		expect(out).toMatch(/^https:\/\/ui-avatars\.com\/api\/\?/);
-		expect(out).toMatch(/name=%D0%90/);
+		expect(out).toMatch(/name=Alice/);
 		expect(out).toMatch(/size=64/);
 	});
 

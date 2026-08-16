@@ -40,7 +40,7 @@ export const STATUS_LABELS_BY_GROUP: Record<MediaTypeGroup, Record<string, strin
 
 /**
  * Returns the context-appropriate status label.
- * Use this everywhere a status label is displayed — never hardcode "Дивлюся".
+ * Use this everywhere a status label is displayed.
  */
 export function getStatusLabel(status: string, mediaType: MediaType): string {
 	return STATUS_LABELS_BY_GROUP[getMediaTypeGroup(mediaType)][status] ?? status;

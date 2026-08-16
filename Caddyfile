@@ -1,5 +1,5 @@
 {$SITE_ADDRESS::80} {
-    # Стиснення трафіку (gzip/zstd) для швидкості
+    # Traffic compression (gzip/zstd)
     encode gzip zstd
 
     header {
@@ -13,8 +13,7 @@
     }
 
     # ---------------------------------------------------------
-    # ФРОНТЕНД (SvelteKit)
+    # Frontend (SvelteKit)
     # ---------------------------------------------------------
-    # Всі запити йдуть на фронтенд
     reverse_proxy * web:3000
 }

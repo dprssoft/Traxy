@@ -41,28 +41,34 @@
 	}
 </script>
 
-<div class="max-w-3xl mx-auto py-8 px-4">
-	<div class="flex justify-between items-center mb-6">
-		<h1 class="text-3xl font-bold text-white">Activity feed</h1>
-		<a href="/search" class="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full transition-colors" aria-label="Search">
-			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+<div class="space-y-6 max-w-4xl mx-auto">
+	<div class="flex justify-between items-center">
+		<div>
+			<h1 class="text-3xl font-extrabold text-white tracking-tight">Activity Feed</h1>
+			<p class="text-xs text-slate-400 mt-0.5">Recent updates from your tracked media.</p>
+		</div>
+		<a href="/search" class="p-2.5 bg-[#121422] hover:bg-[#181b2e] border border-white/[0.08] text-slate-300 hover:text-white rounded-xl transition-all shadow-sm cursor-pointer" aria-label="Search">
+			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 		</a>
 	</div>
 
 	{#if items.length === 0}
-		<div class="bg-gray-800/50 rounded-xl border border-gray-700 p-8 text-center">
-			<span class="text-4xl mb-4 block">👋</span>
-			<h2 class="text-xl font-bold text-white mb-2">Welcome to Traxy!</h2>
-			<p class="text-gray-400 mb-6">
-				Your feed is empty. Start adding films, series, or games to your list.
-			</p>
-			<!-- Using href instead of interactive search bar for empty state to keep it simple -->
-			<a href="/search" class="px-6 py-2 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-lg font-medium transition-colors">
-				Search
+		<div class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-10 text-center shadow-xl space-y-4">
+			<div class="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 border border-indigo-500/30 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/20">
+				🎬
+			</div>
+			<div>
+				<h2 class="text-xl font-bold text-white mb-1">Welcome to Traxy!</h2>
+				<p class="text-xs text-slate-400 max-w-sm mx-auto">
+					Your activity feed is empty. Search for movies, TV series, anime, games, books, or comics to begin building your library.
+				</p>
+			</div>
+			<a href="/search" class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all cursor-pointer">
+				<span>🔍</span> Search & Track Media
 			</a>
 		</div>
 	{:else}
-		<div class="flex flex-col gap-4">
+		<div class="flex flex-col gap-3.5">
 			{#each items as item (item.id)}
 				<ActivityCard activity={item} />
 			{/each}

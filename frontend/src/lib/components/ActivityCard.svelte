@@ -25,7 +25,7 @@
 				if (p.episode) return `Watched episode ${p.episode}`;
 				return 'Watched episode';
 			case 'chapter_read':
-				if (p.volume && p.chapter) return `Прочитав розд. ${p.chapter} т. ${p.volume}`;
+				if (p.volume && p.chapter) return `Read ch. ${p.chapter} vol. ${p.volume}`;
 				if (p.chapter) return `Read chapter ${p.chapter}`;
 				return 'Read chapter';
 			case 'pages_updated':
@@ -69,14 +69,14 @@
 		const diffMins = Math.floor(diffMs / 60000);
 		
 		if (diffMins < 1) return 'Just now';
-		if (diffMins < 60) return `${diffMins} хв. тому`;
+		if (diffMins < 60) return `${diffMins}m ago`;
 		
 		const diffHours = Math.floor(diffMins / 60);
-		if (diffHours < 24) return `${diffHours} год. тому`;
+		if (diffHours < 24) return `${diffHours}h ago`;
 		
 		const diffDays = Math.floor(diffHours / 24);
 		if (diffDays === 1) return 'Yesterday';
-		if (diffDays < 30) return `${diffDays} дн. тому`;
+		if (diffDays < 30) return `${diffDays}d ago`;
 		
 		return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 	}
@@ -88,24 +88,24 @@
 
 <a 
 	href={`/media/${activity.mediaId}`}
-	class="block bg-gray-800/50 hover:bg-gray-800/80 border border-gray-700 rounded-xl p-4 transition-colors group"
+	class="block bg-[#121422]/70 hover:bg-[#171a2e] border border-white/[0.06] hover:border-indigo-500/30 rounded-2xl p-4 transition-all duration-200 group shadow-sm hover:shadow-indigo-500/5"
 >
-	<div class="flex gap-4">
+	<div class="flex gap-4 items-center">
 		{#if activity.mediaPosterUrl}
-			<img src={activity.mediaPosterUrl} alt={activity.mediaTitle} class="w-12 h-16 sm:w-16 sm:h-24 object-cover rounded shadow-md shrink-0" />
+			<img src={activity.mediaPosterUrl} alt={activity.mediaTitle} class="w-12 h-16 sm:w-16 sm:h-20 object-cover rounded-xl shadow-md bg-slate-900 border border-white/[0.06] shrink-0 group-hover:scale-105 transition-transform" />
 		{:else}
-			<div class="w-12 h-16 sm:w-16 sm:h-24 bg-gray-700 rounded border border-gray-600 flex items-center justify-center shrink-0">
-				<span class="text-gray-500 font-bold text-xs">{activity.mediaTitle.substring(0, 2)}</span>
+			<div class="w-12 h-16 sm:w-16 sm:h-20 bg-[#181b2e] rounded-xl border border-white/[0.06] flex items-center justify-center shrink-0">
+				<span class="text-slate-500 font-bold text-xs">{activity.mediaTitle.substring(0, 2)}</span>
 			</div>
 		{/if}
 
 		<div class="flex-1 min-w-0 flex flex-col justify-center">
-			<div class="flex items-center gap-2 mb-1">
-				<span class="text-sm bg-gray-700 w-6 h-6 flex items-center justify-center rounded-full shrink-0">{icon}</span>
-				<span class="text-gray-400 text-xs">{time}</span>
+			<div class="flex items-center gap-2 mb-1.5">
+				<span class="text-xs p-1 bg-white/[0.04] border border-white/[0.06] rounded-lg shrink-0">{icon}</span>
+				<span class="text-slate-400 text-xs font-medium">{time}</span>
 			</div>
-			<p class="text-white font-medium text-sm sm:text-base leading-snug group-hover:text-brand-accent transition-colors">
-				{description} <span class="text-gray-400">· {activity.mediaTitle}</span>
+			<p class="text-white font-semibold text-sm sm:text-base leading-snug group-hover:text-indigo-400 transition-colors">
+				{description} <span class="text-slate-400 font-normal">· {activity.mediaTitle}</span>
 			</p>
 		</div>
 	</div>

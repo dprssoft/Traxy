@@ -2,12 +2,11 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 
+	import Sidebar from '$lib/components/Sidebar.svelte';
+	import Topbar from '$lib/components/Topbar.svelte';
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
-	import { onMount } from 'svelte';
-	import { initDb } from '$lib/db';
-	import { Capacitor } from '@capacitor/core';
 
 	let { children } = $props();
 
@@ -20,20 +19,28 @@
 		const p = from.url.pathname.replace(/\/$/, '') || '/';
 		previousPath.set(p);
 	});
-
-
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Track List Personal</title>
+	<title>Traxy · Personal Media Tracker</title>
 </svelte:head>
 
-<div class="min-h-screen flex flex-col font-sans text-[var(--color-text-main)] pb-20 bg-[var(--color-bkg-main)]">
+<div class="min-h-screen flex text-[var(--color-text-main)] bg-[var(--color-bkg-main)] selection:bg-indigo-500/30 selection:text-indigo-200">
+	<!-- Desktop Sidebar -->
+	<Sidebar />
 
-	<main class="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6">
-		{@render children()}
-	</main>
+	<!-- Main App Shell -->
+	<div class="flex-1 flex flex-col min-w-0 pb-20 md:pb-12">
+		<!-- Desktop / Mobile Topbar -->
+		<Topbar />
 
+		<!-- Page Content -->
+		<main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+			{@render children()}
+		</main>
+	</div>
+
+	<!-- Mobile Bottom Navigation -->
 	<BottomNav />
 </div>

@@ -41,7 +41,7 @@
 
 <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
 	<div class="flex items-center justify-between mb-6">
-		<h3 class="text-white font-bold">Goals for {currentYear} year</h3>
+		<h3 class="text-white font-bold">Goals for {currentYear}</h3>
 		<a href="/settings" class="text-sm text-gray-400 hover:text-white transition-colors">Configure ⚙️</a>
 	</div>
 
@@ -49,7 +49,7 @@
 		<!-- Watch Goal -->
 		<div>
 			<div class="flex items-center justify-between text-sm mb-2">
-				<span class="text-gray-300">Rewatch (Фільми, Серіали, Аніме)</span>
+				<span class="text-gray-300">Watching (Films, TV Series, Anime)</span>
 				<span class="font-medium {completions.watch >= goals.watchCount ? 'text-green-400' : 'text-white'}">
 					{completions.watch} / {goals.watchCount}
 				</span>
@@ -81,7 +81,7 @@
 		<!-- Read Goal -->
 		<div>
 			<div class="flex items-center justify-between text-sm mb-2">
-				<span class="text-gray-300">Читання (Книги, Манга, Комікси)</span>
+				<span class="text-gray-300">Reading (Books, Manga, Comics)</span>
 				<span class="font-medium {completions.read >= goals.readCount ? 'text-green-400' : 'text-white'}">
 					{completions.read} / {goals.readCount}
 				</span>

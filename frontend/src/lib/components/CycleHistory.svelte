@@ -36,39 +36,41 @@
 	}
 </script>
 
-<div class="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
-	<h3 class="text-lg font-bold text-white mb-4">Playthrough history</h3>
+<div class="bg-[#121422]/80 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 shadow-xl">
+	<h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+		<span>🔄</span> Playthrough History
+	</h3>
 	
 	{#if cycles.length === 0}
-		<p class="text-sm text-gray-400">Ще немає записів про проходження.</p>
+		<p class="text-xs text-slate-400 bg-[#16192b] p-4 rounded-xl border border-white/[0.06]">No playthrough records yet.</p>
 	{:else}
 		<div class="overflow-x-auto">
-			<table class="w-full text-sm text-left">
-				<thead class="text-xs text-gray-400 uppercase bg-gray-800/50">
+			<table class="w-full text-xs text-left">
+				<thead class="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-[#16192b]/60">
 					<tr>
-						<th class="px-3 py-2 font-medium">#</th>
-						<th class="px-3 py-2 font-medium">Start</th>
-						<th class="px-3 py-2 font-medium">End</th>
+						<th class="px-3.5 py-2.5 rounded-l-xl font-semibold">#</th>
+						<th class="px-3.5 py-2.5 font-semibold">Start Date</th>
+						<th class="px-3.5 py-2.5 rounded-r-xl font-semibold">Finish Date</th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-gray-700">
+				<tbody class="divide-y divide-white/[0.04]">
 					{#each [...cycles].reverse() as cycle}
-						<tr class="hover:bg-gray-800/30">
-							<td class="px-3 py-2 text-white font-medium">
+						<tr class="hover:bg-white/[0.02] transition-colors">
+							<td class="px-3.5 py-3 text-white font-bold">
 								{media.type === 'game' ? 'Playthrough' : media.type === 'film' || media.type === 'tv' || media.type === 'anime' ? 'Rewatch' : 'Reread'} {cycle.cycleNumber}
 							</td>
-							<td class="px-3 py-2">
+							<td class="px-3.5 py-3">
 								<input 
 									type="date" 
-									class="bg-transparent text-gray-300 border-b border-transparent hover:border-gray-600 focus:border-brand-accent focus:outline-none cursor-pointer"
+									class="bg-[#16192b] text-slate-300 px-2.5 py-1 rounded-lg border border-white/[0.08] hover:border-indigo-500/50 focus:border-indigo-500 focus:outline-none cursor-pointer text-xs"
 									value={cycle.startedAt ? cycle.startedAt.split('T')[0] : ''}
 									onchange={(e) => saveDate(cycle.id, 'startedAt', e.currentTarget.value)}
 								/>
 							</td>
-							<td class="px-3 py-2">
+							<td class="px-3.5 py-3">
 								<input 
 									type="date" 
-									class="bg-transparent text-gray-300 border-b border-transparent hover:border-gray-600 focus:border-brand-accent focus:outline-none cursor-pointer"
+									class="bg-[#16192b] text-slate-300 px-2.5 py-1 rounded-lg border border-white/[0.08] hover:border-indigo-500/50 focus:border-indigo-500 focus:outline-none cursor-pointer text-xs"
 									value={cycle.finishedAt ? cycle.finishedAt.split('T')[0] : ''}
 									onchange={(e) => saveDate(cycle.id, 'finishedAt', e.currentTarget.value)}
 								/>
@@ -80,3 +82,4 @@
 		</div>
 	{/if}
 </div>
+

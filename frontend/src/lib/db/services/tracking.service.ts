@@ -220,40 +220,73 @@ export async function updateProgress(
 }
 
 /** Update the user's score for a media item. */
-export async function updateScore(mediaId: string, score: number): Promise<void> {
+export async function updateScore(mediaId: string, score: number | null): Promise<LocalTrackingStatus> {
 	const db = getDb();
 	const prev = await getTracking(mediaId);
 	const media = await getMediaById(mediaId);
 	const now = new Date().toISOString();
 
-	await db.run('UPDATE TrackingStatus SET score = ?, updatedAt = ? WHERE mediaId = ?', [score, now, mediaId]);
+	if (prev) {
+		await db.run('UPDATE TrackingStatus SET score = ?, updatedAt = ? WHERE mediaId = ?', [
+			score ?? null,
+			now,
+			mediaId,
+		]);
 
-	await logActivity({
-		mediaId,
-		mediaTitle: media?.title ?? mediaId,
-		mediaPosterUrl: media?.posterUrl,
-		mediaType: media?.type ?? 'film',
-		eventType: prev?.score != null ? 'score_changed' : 'score_set',
-		payload: { from: prev?.score?.toString(), score },
-	});
+		await logActivity({
+			mediaId,
+			mediaTitle: media?.title ?? mediaId,
+			mediaPosterUrl: media?.posterUrl,
+			mediaType: media?.type ?? 'film',
+			eventType: prev.score != null ? 'score_changed' : 'score_set',
+			payload: { from: prev.score?.toString(), score: score ?? undefined },
+		});
+
+		return {
+			...prev,
+			score: score ?? undefined,
+			updatedAt: now,
+		};
+	} else {
+		return upsertTracking({
+			mediaId,
+			score: score ?? undefined,
+			status: 'completed',
+		});
+	}
 }
 
 /** Update the user's personal note for a media item. */
-export async function updateNote(mediaId: string, note: string): Promise<void> {
+export async function updateNote(mediaId: string, note: string): Promise<LocalTrackingStatus> {
 	const db = getDb();
+	const prev = await getTracking(mediaId);
 	const media = await getMediaById(mediaId);
 	const now = new Date().toISOString();
 
-	await db.run('UPDATE TrackingStatus SET note = ?, updatedAt = ? WHERE mediaId = ?', [note, now, mediaId]);
+	if (prev) {
+		await db.run('UPDATE TrackingStatus SET note = ?, updatedAt = ? WHERE mediaId = ?', [note || null, now, mediaId]);
 
-	await logActivity({
-		mediaId,
-		mediaTitle: media?.title ?? mediaId,
-		mediaPosterUrl: media?.posterUrl,
-		mediaType: media?.type ?? 'film',
-		eventType: 'note_updated',
-		payload: {},
-	});
+		await logActivity({
+			mediaId,
+			mediaTitle: media?.title ?? mediaId,
+			mediaPosterUrl: media?.posterUrl,
+			mediaType: media?.type ?? 'film',
+			eventType: 'note_updated',
+			payload: {},
+		});
+
+		return {
+			...prev,
+			note: note || undefined,
+			updatedAt: now,
+		};
+	} else {
+		return upsertTracking({
+			mediaId,
+			note: note || undefined,
+			status: 'planned',
+		});
+	}
 }
 
 /** Remove all tracking data (status, progress) for a media item. Does not delete cycles. */

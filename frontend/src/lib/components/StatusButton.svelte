@@ -83,13 +83,15 @@
 	<button
 		onclick={() => isOpen = !isOpen}
 		disabled={isUpdating}
-		class="flex items-center justify-between w-full sm:w-auto min-w-[160px] px-4 py-2 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+		class="flex items-center justify-between w-full sm:w-auto min-w-[160px] px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer text-sm active:scale-95"
 	>
 		{#if isUpdating}
-			<span class="w-5 h-5 animate-pulse mx-auto opacity-50">...</span>
+			<span class="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto"></span>
 		{:else}
 			<span>{currentLabel}</span>
-			<span class="ml-2 text-xs opacity-80">▼</span>
+			<svg class="ml-2 w-4 h-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+			</svg>
 		{/if}
 	</button>
 
@@ -97,10 +99,10 @@
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="fixed inset-0 z-40" onclick={() => isOpen = false}></div>
-		<div class="absolute top-full left-0 mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+		<div class="absolute top-full left-0 mt-1.5 w-52 bg-[#141727]/95 backdrop-blur-xl border border-white/[0.1] rounded-2xl shadow-2xl z-50 overflow-hidden py-1.5 space-y-0.5">
 			{#each options as opt}
 				<button
-					class="w-full text-left px-4 py-2 text-sm transition-colors {tracking?.status === opt.value ? 'bg-brand-accent/20 text-brand-accent' : 'text-gray-200 hover:bg-gray-700'}"
+					class="w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer {tracking?.status === opt.value ? 'bg-indigo-600/20 text-indigo-400 font-bold' : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'}"
 					onclick={() => updateStatus(opt.value as any)}
 				>
 					{opt.label}
@@ -108,22 +110,22 @@
 			{/each}
 
 			{#if tracking?.status === 'completed'}
-				<div class="border-t border-gray-700 my-1"></div>
+				<div class="border-t border-white/[0.06] my-1"></div>
 				<button
-					class="w-full text-left px-4 py-2 text-sm text-green-400 hover:bg-gray-700 transition-colors"
+					class="w-full text-left px-4 py-2.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer flex items-center gap-2"
 					onclick={doRewatch}
 				>
-					{REWATCH_LABELS[media.type] ?? 'Пройти знову'}
+					<span>🔄</span> {REWATCH_LABELS[media.type] ?? 'Play again'}
 				</button>
 			{/if}
 
 			{#if tracking}
-				<div class="border-t border-gray-700 my-1"></div>
+				<div class="border-t border-white/[0.06] my-1"></div>
 				<button
-					class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors"
+					class="w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center gap-2"
 					onclick={doRemove}
 				>
-					Remove from list
+					<span>🗑️</span> Remove from list
 				</button>
 			{/if}
 		</div>

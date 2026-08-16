@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	// Stub — will be implemented during collections phase (post-4B).
 	// Collections are loaded from local SQLite via collection.service.ts.
 	let showCreateModal = $state(false);
@@ -15,6 +15,6 @@
 		>+ New collection</button>
 	</div>
 	<div class="py-16 text-center text-text-muted border border-dashed border-gray-700 rounded-lg">
-		<p class="text-sm">Collections завантажуються...</p>
+		<p class="text-sm">Loading collections...</p>
 	</div>
 </div>

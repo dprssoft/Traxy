@@ -1,5 +1,5 @@
 # ===================================================
-# ЕТАП 1: Збірка (Builder)
+# STAGE 1: Build (Builder)
 # ===================================================
 FROM node:22-alpine AS builder
 
@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare pnpm@11.3.0 --activate && pnpm install -
 
 COPY . .
 
-# SvelteKit вбудовує PUBLIC_ змінні в бандл на етапі build
+# SvelteKit embeds PUBLIC_ variables into the bundle at build time
 ARG PUBLIC_API_URL
 ENV PUBLIC_API_URL=${PUBLIC_API_URL}
 
@@ -20,7 +20,7 @@ RUN pnpm run build
 RUN pnpm prune --prod
 
 # ===================================================
-# ЕТАП 2: Запуск (Runner)
+# STAGE 2: Run (Runner)
 # ===================================================
 FROM node:22-alpine AS runner
 
@@ -28,16 +28,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# ВАЖЛИВО для аватарок!
-# За замовчуванням adapter-node обмежує тіло запиту (512kb).
-# Збільшуємо ліміт до 10МБ (або скільки тобі треба)
+# Increase request body size limit for avatars (default adapter-node is 512kb)
 ENV BODY_SIZE_LIMIT=10M
 
-# Відключаємо телеметрію (трохи прискорює запуск)
+# Disable telemetry
 ENV MY_CLI_NO_UPDATE_NOTIFIER=true
 
-# Створюємо користувача 'node' (вже є в Alpine) для безпеки
-# Не запускай додатки під root!
+# Use unprivileged 'node' user for security
 USER node
 
 COPY --from=builder --chown=node:node /app/build build/
