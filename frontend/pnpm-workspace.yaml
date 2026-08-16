@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: true
+  # Transitive dep of svelte-breadcrumbs. Not the real SvelteKit — its
+  # postinstall only prints "you probably wanted @sveltejs/kit", so skip it.
+  svelte-kit: false

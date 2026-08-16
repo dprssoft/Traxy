@@ -1,0 +1,59 @@
+# ── .NET ───────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+.idea/
+/backend/track-list-api/logs/
+
+# Reqnroll code-behind generated next to the shared feature files
+features/*.feature.cs
+
+# ── Node / SvelteKit ───────────────────────────────────
+node_modules/
+package-lock.json
+.svelte-kit/
+.output/
+.vercel/
+.netlify/
+.wrangler/
+build/
+coverage/
+
+# Vite temporary files
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ── Environment ────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.test
+
+# ── Runtime data ───────────────────────────────────────
+# SQLite database + backups
+/data/
+*.db
+*.db-shm
+*.db-wal
+
+# User uploads (the directory itself is a compose mount point)
+/uploads/*
+!/uploads/.gitkeep
+
+# ── Seeder ─────────────────────────────────────────────
+/seeder/data/
+/seeder/scraped/
+/seeder/*.log
+/seeder/__pycache__/
+/seeder/*.pyc
+/seeder/.venv/
+
+# ── Python ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+
+# ── OS ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
