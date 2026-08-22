@@ -2,8 +2,12 @@
 	import { apiKeyStore, saveApiKeys } from '$lib/stores/apiKeys.svelte';
 	import { exportDatabaseJson, importDatabaseJson } from '$lib/db/services/backup.service';
 	import MalImport from '$lib/components/MalImport.svelte';
+	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
+	import { onMount } from 'svelte';
 
-	type SettingsTab = 'general' | 'api' | 'data' | 'about';
+	onMount(() => { searchPrefsStore.load(); });
+
+	type SettingsTab = 'general' | 'search' | 'api' | 'data' | 'about';
 	let activeTab = $state<SettingsTab>('api');
 
 	const inputClass =
@@ -77,6 +81,12 @@
 			label: 'API Integrations', 
 			icon: '🔑',
 			desc: 'Configure TMDB, IGDB & ComicVine source keys'
+		},
+		{ 
+			id: 'search', 
+			label: 'Search & Deduplication', 
+			icon: '🔍',
+			desc: 'Deduplication rules, source priority & filtering'
 		},
 		{ 
 			id: 'data', 
@@ -308,6 +318,64 @@
 							</div>
 							<MalImport />
 						</div>
+					</div>
+				</div>
+
+			{:else if activeTab === 'search'}
+				<!-- Search & Deduplication Section -->
+				<div class="space-y-6">
+					<div class="border-b border-white/[0.06] pb-4">
+						<h2 class="text-xl font-bold text-white flex items-center gap-2">
+							<span>🔍</span> Search & Deduplication
+						</h2>
+						<p class="text-xs text-slate-400 mt-1">
+							Configure cross-source priority rules and duplicate entry suppression.
+						</p>
+					</div>
+
+					<div class="space-y-3">
+						{#snippet toggle(id: string, label: string, hint: string, value: boolean, onChange: (v: boolean) => void)}
+							<div class="flex items-start justify-between gap-4 p-4 rounded-xl bg-[#16192b]/60 border border-white/[0.06]">
+								<div class="min-w-0">
+									<label for={id} class="text-sm font-semibold text-white cursor-pointer">{label}</label>
+									<p class="text-xs text-slate-400 mt-0.5 leading-relaxed">{hint}</p>
+								</div>
+								<button
+									{id}
+									role="switch"
+									aria-checked={value}
+									aria-label={label}
+									onclick={() => onChange(!value)}
+									class="relative shrink-0 w-11 h-6 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 {value ? 'bg-indigo-600' : 'bg-slate-700'}"
+								>
+									<span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform {value ? 'translate-x-5' : 'translate-x-0'}"></span>
+								</button>
+							</div>
+						{/snippet}
+
+						{@render toggle(
+							'pref-anime',
+							'AniList wins for Anime vs TV',
+							'If AniList has a title as anime (e.g. Jujutsu Kaisen), the same title from TMDB TV Series is hidden — even when filtering by TV.',
+							searchPrefsStore.current.anilistWinsAnime,
+							(v) => searchPrefsStore.save({ ...searchPrefsStore.current, anilistWinsAnime: v })
+						)}
+
+						{@render toggle(
+							'pref-manga',
+							'AniList wins for Manga vs Books',
+							'If AniList has a title as manga/manhwa/manhua, the exact same title from OpenLibrary (as a book) or ComicVine is hidden.',
+							searchPrefsStore.current.anilistWinsManga,
+							(v) => searchPrefsStore.save({ ...searchPrefsStore.current, anilistWinsManga: v })
+						)}
+
+						{@render toggle(
+							'pref-volumes',
+							'Suppress manga volume entries from OpenLibrary',
+							'Hides "Gantz Volume 1", "Berserk Vol 38" etc. from OpenLibrary when AniList has the series. Disable if you track a non-manga book series that shares a name.',
+							searchPrefsStore.current.suppressMangaVolumes,
+							(v) => searchPrefsStore.save({ ...searchPrefsStore.current, suppressMangaVolumes: v })
+						)}
 					</div>
 				</div>
 
