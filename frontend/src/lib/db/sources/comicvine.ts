@@ -1,13 +1,20 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { fetchJson, parseYear, withCache } from '../fetchUtils';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
+import { Capacitor } from '@capacitor/core';
 
 // Note: Comic Vine blocks standard CORS browser fetch.
-// Capacitor bypasses this natively. For web dev, a proxy is needed.
+// Capacitor bypasses this natively. For web dev, a proxy is configured in vite.config.ts.
 
 const ENV_COMICVINE_API_KEY = import.meta.env.VITE_COMICVINE_API_KEY;
-const BASE_URL = 'https://comicvine.gamespot.com/api';
 const HTML_TAG_RE = /<[^>]*>?/gm;
+
+function getComicVineBaseUrl(): string {
+	if (typeof window !== 'undefined' && Capacitor.getPlatform() === 'web') {
+		return '/api-proxy/comicvine';
+	}
+	return 'https://comicvine.gamespot.com/api';
+}
 
 interface ComicVineImage {
 	medium_url?: string;
@@ -52,16 +59,18 @@ export async function searchComicVine(query: string): Promise<SearchResult[]> {
 	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
 	if (!apiKey) return [];
 
+	const baseUrl = getComicVineBaseUrl();
 	try {
 		return await withCache(`comicvine:search:${query}`, async () => {
 			const data = await fetchJson<ComicVineSearchResponse>(
-				`${BASE_URL}/search/?api_key=${apiKey}&format=json&resources=volume&query=${encodeURIComponent(query)}`,
+				`${baseUrl}/search/?api_key=${apiKey}&format=json&resources=volume&query=${encodeURIComponent(query)}`,
 				6000,
 				CV_HEADERS,
 			);
 			return data.results.map(mapVolume);
 		});
-	} catch {
+	} catch (err) {
+		console.error('ComicVine search failed:', err);
 		return [];
 	}
 }
@@ -70,10 +79,11 @@ export async function getComicVineDetails(id: string): Promise<SearchResult | nu
 	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
 	if (!apiKey) return null;
 
+	const baseUrl = getComicVineBaseUrl();
 	try {
 		return await withCache(`comicvine:detail:${id}`, async () => {
 			const data = await fetchJson<ComicVineDetailResponse>(
-				`${BASE_URL}/volume/4050-${id}/?api_key=${apiKey}&format=json`,
+				`${baseUrl}/volume/4050-${id}/?api_key=${apiKey}&format=json`,
 				6000,
 				CV_HEADERS,
 			);

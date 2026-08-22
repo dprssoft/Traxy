@@ -21,6 +21,48 @@ export default defineConfig({
 			'Cross-Origin-Opener-Policy': 'same-origin',
 			'Cross-Origin-Embedder-Policy': 'require-corp',
 		},
+		proxy: {
+			'/api-proxy/twitch': {
+				target: 'https://id.twitch.tv',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/twitch/, ''),
+			},
+			'/api-proxy/igdb': {
+				target: 'https://api.igdb.com',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/igdb/, ''),
+			},
+			'/api-proxy/comicvine': {
+				target: 'https://comicvine.gamespot.com/api',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/comicvine/, ''),
+				headers: {
+					'User-Agent': 'TraxyApp/1.0',
+				},
+			},
+		},
+	},
+	preview: {
+		proxy: {
+			'/api-proxy/twitch': {
+				target: 'https://id.twitch.tv',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/twitch/, ''),
+			},
+			'/api-proxy/igdb': {
+				target: 'https://api.igdb.com',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/igdb/, ''),
+			},
+			'/api-proxy/comicvine': {
+				target: 'https://comicvine.gamespot.com/api',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/comicvine/, ''),
+				headers: {
+					'User-Agent': 'TraxyApp/1.0',
+				},
+			},
+		},
 	},
 	optimizeDeps: {
 		exclude: ['jeep-sqlite', '@capacitor-community/sqlite', 'sql.js']

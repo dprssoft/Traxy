@@ -6,14 +6,27 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { withCache } from '../fetchUtils';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
+import { Capacitor } from '@capacitor/core';
 
 const ENV_CLIENT_ID = import.meta.env.VITE_IGDB_CLIENT_ID;
 const ENV_CLIENT_SECRET = import.meta.env.VITE_IGDB_CLIENT_SECRET;
 
 const TOKEN_CACHE_KEY = 'traxy:igdb_token';
-const IGDB_API = 'https://api.igdb.com/v4';
-const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 const IMAGE_BASE = 'https://images.igdb.com/igdb/image/upload';
+
+function getTwitchTokenUrl(): string {
+	if (typeof window !== 'undefined' && Capacitor.getPlatform() === 'web') {
+		return '/api-proxy/twitch/oauth2/token';
+	}
+	return 'https://id.twitch.tv/oauth2/token';
+}
+
+function getIgdbApiUrl(): string {
+	if (typeof window !== 'undefined' && Capacitor.getPlatform() === 'web') {
+		return '/api-proxy/igdb/v4';
+	}
+	return 'https://api.igdb.com/v4';
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,11 +65,15 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 		}
 	}
 
+	const url = getTwitchTokenUrl();
 	const res = await fetch(
-		`${TWITCH_TOKEN_URL}?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`,
+		`${url}?client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}&grant_type=client_credentials`,
 		{ method: 'POST' },
 	);
-	if (!res.ok) throw new Error(`Twitch token error: HTTP ${res.status}`);
+	if (!res.ok) {
+		const text = await res.text().catch(() => '');
+		throw new Error(`Twitch token error: HTTP ${res.status} ${text}`);
+	}
 	const data = await res.json();
 
 	const cached: CachedToken = {
@@ -94,7 +111,8 @@ async function igdbFetch(
 	endpoint: string,
 	body: string,
 ): Promise<IgdbGame[]> {
-	const res = await fetch(`${IGDB_API}/${endpoint}`, {
+	const url = `${getIgdbApiUrl()}/${endpoint}`;
+	const res = await fetch(url, {
 		method: 'POST',
 		headers: {
 			'Client-ID': clientId,
@@ -103,7 +121,10 @@ async function igdbFetch(
 		},
 		body,
 	});
-	if (!res.ok) throw new Error(`IGDB error: HTTP ${res.status}`);
+	if (!res.ok) {
+		const text = await res.text().catch(() => '');
+		throw new Error(`IGDB error: HTTP ${res.status} ${text}`);
+	}
 	return res.json();
 }
 
