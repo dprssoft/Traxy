@@ -23,7 +23,7 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		exclude: ['jeep-sqlite', '@capacitor-community/sqlite']
+		exclude: ['jeep-sqlite', '@capacitor-community/sqlite', 'sql.js']
 	}
 });
 
