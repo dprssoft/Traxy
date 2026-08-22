@@ -8,6 +8,8 @@
 	import { searchComicVine, getComicVineDetails } from '$lib/db/sources/comicvine';
 	import { searchOpenLibrary, getOpenLibraryDetails } from '$lib/db/sources/openlibrary';
 	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
+	import { deduplicateResults } from '$lib/utils/search-dedup';
+	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import type { SearchResult } from '$lib/types/mediaTypes';
 	import type { MediaType } from '$lib/db/schema';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
@@ -23,6 +25,7 @@
 
 	onMount(() => {
 		loadRecentSearches();
+		searchPrefsStore.load();
 	});
 
 	async function performSearch(q: string) {
@@ -39,23 +42,37 @@
 		try {
 			const promises: Promise<SearchResult[]>[] = [];
 
+			// Always include AniList when the filter could include anime or manga,
+			// so the deduplicator has enough context to suppress TMDB/OL duplicates.
 			if (t === 'all' || t === 'film' || t === 'tv') promises.push(searchTmdb(q));
 			if (t === 'all' || t === 'game') promises.push(searchRawg(q));
-			if (t === 'all' || t === 'anime') promises.push(searchAnilist(q, 'ANIME'));
-			if (t === 'all' || t === 'comic') {
+			if (t === 'all' || t === 'anime' || t === 'tv') promises.push(searchAnilist(q, 'ANIME'));
+			if (t === 'all' || t === 'comic' || t === 'book') {
 				promises.push(searchAnilist(q, 'MANGA'));
-				promises.push(searchComicVine(q));
 			}
+			if (t === 'all' || t === 'comic') promises.push(searchComicVine(q));
 			if (t === 'all' || t === 'book') promises.push(searchOpenLibrary(q));
 
+			// Collect all raw results first, then deduplicate once everything has settled.
+			const raw: SearchResult[] = [];
 			await Promise.all(
 				promises.map(p => p.then(res => {
 					if (searchId !== currentSearchId) return;
-					const filtered = t === 'all' ? res : 
-						(t === 'comic' ? res.filter(r => ['manga', 'manhwa', 'manhua', 'comic'].includes(r.type)) : res.filter(r => r.type === t));
-					results = [...results, ...filtered];
+					raw.push(...res);
 				}).catch(e => console.error(e)))
 			);
+
+			if (searchId !== currentSearchId) return;
+
+			// Deduplicate first on the full raw set so AniList anime/manga entries are
+			// present to suppress TMDB/OL/CV duplicates — even when the active filter
+			// would later hide the AniList result itself (e.g. user filters by 'tv').
+			const deduped = deduplicateResults(raw, searchPrefsStore.current);
+
+			// Now apply the type filter on the already-clean set.
+			results = t === 'all' ? deduped
+				: t === 'comic' ? deduped.filter(r => ['manga', 'manhwa', 'manhua', 'comic'].includes(r.type))
+				: deduped.filter(r => r.type === t);
 		} catch (err) {
 			console.error('Search failed', err);
 		} finally {
@@ -122,7 +139,7 @@
 </script>
 
 <div class="relative w-full max-w-xl">
-	<div class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400">
+	<div class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 z-50">
 		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 	</div>
 	
@@ -131,7 +148,7 @@
 		oninput={onInput}
 		onfocus={() => { isFocused = true; searchState.isOpen = true; }}
 		placeholder="Search movies, anime, games, comics..."
-		class="w-full bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-10 pr-4 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
+		class="relative z-50 w-full bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-10 pr-4 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
 	/>
 
 	{#if searchState.isOpen && (isFocused || query.length > 0)}
