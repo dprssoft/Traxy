@@ -21,6 +21,12 @@ export type ActivityEventType =
   | 'anilist_import'
   | 'tmdb_import';
 
+export interface MediaSeasonData {
+  seasonNumber: number;
+  episodeCount?: number;
+  linkedMediaId?: string;
+}
+
 export interface Media {
   id: string; // UUID
   source: MediaSource;
@@ -34,6 +40,7 @@ export interface Media {
   totalSeasons?: number; // TV/Anime specific
   platforms?: string; // JSON array (Game specific)
   totalPages?: number; // Book specific
+  seasonData?: string; // JSON array of MediaSeasonData
 }
 
 export interface TrackingStatus {

@@ -1,6 +1,6 @@
-import type { MediaType, MediaSource } from '$lib/db/schema';
+import type { MediaType, MediaSource, MediaSeasonData } from '$lib/db/schema';
 
-export type { MediaType, MediaSource };
+export type { MediaType, MediaSource, MediaSeasonData };
 
 /** A media record stored in the local SQLite database. */
 export interface LocalMedia {
@@ -19,6 +19,7 @@ export interface LocalMedia {
 	platforms?: string[]; // parsed from JSON
 	// Book
 	totalPages?: number;
+	seasonData?: MediaSeasonData[];
 }
 
 /**
@@ -38,4 +39,5 @@ export interface SearchResult {
 	totalSeasons?: number;
 	totalPages?: number;
 	platforms?: string[];
+	seasonData?: MediaSeasonData[];
 }

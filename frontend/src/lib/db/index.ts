@@ -50,7 +50,8 @@ export const initDb = async () => {
         totalEpisodes INTEGER,
         totalSeasons INTEGER,
         platforms TEXT,
-        totalPages INTEGER
+        totalPages INTEGER,
+        seasonData TEXT
     );
     CREATE TABLE IF NOT EXISTS TrackingStatus (
         id TEXT PRIMARY KEY,
@@ -122,6 +123,12 @@ export const initDb = async () => {
     `;
 
     await db.execute(schema);
+
+    try {
+        await db.execute('ALTER TABLE Media ADD COLUMN seasonData TEXT;');
+    } catch (e) {
+        // Ignore if column already exists
+    }
 };
 
 export const getDb = () => {
