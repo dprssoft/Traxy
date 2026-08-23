@@ -31,6 +31,7 @@ interface TmdbItemDetails {
 	overview?: string;
 	number_of_episodes?: number;
 	number_of_seasons?: number;
+	seasons?: { season_number: number; episode_count: number }[];
 }
 
 function posterUrl(path?: string | null): string | undefined {
@@ -90,6 +91,14 @@ export async function getTmdbDetails(
 				description: data.overview || undefined,
 				totalEpisodes: data.number_of_episodes,
 				totalSeasons: data.number_of_seasons,
+				seasonData: data.seasons
+					? data.seasons
+							.filter((s) => s.season_number > 0)
+							.map((s) => ({
+								seasonNumber: s.season_number,
+								episodeCount: s.episode_count,
+							}))
+					: undefined,
 			};
 		});
 	} catch {
