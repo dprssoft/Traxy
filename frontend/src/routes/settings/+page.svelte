@@ -2,12 +2,14 @@
 	import { apiKeyStore, saveApiKeys } from '$lib/stores/apiKeys.svelte';
 	import { exportDatabaseJson, importDatabaseJson } from '$lib/db/services/backup.service';
 	import MalImport from '$lib/components/MalImport.svelte';
+	import AnilistImport from '$lib/components/AnilistImport.svelte';
+	import TmdbImport from '$lib/components/TmdbImport.svelte';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { onMount } from 'svelte';
 
 	onMount(() => { searchPrefsStore.load(); });
 
-	type SettingsTab = 'general' | 'search' | 'api' | 'data' | 'about';
+	type SettingsTab = 'general' | 'search' | 'api' | 'data' | 'import' | 'about';
 	let activeTab = $state<SettingsTab>('api');
 
 	const inputClass =
@@ -92,7 +94,13 @@
 			id: 'data', 
 			label: 'Data & Backup', 
 			icon: '💾',
-			desc: 'Export JSON backups, restore & import lists'
+			desc: 'Export JSON backups & restore from file'
+		},
+		{ 
+			id: 'import', 
+			label: 'Import', 
+			icon: '📥',
+			desc: 'Import lists from external trackers'
 		},
 		{ 
 			id: 'general', 
@@ -306,19 +314,6 @@
 						</div>
 					{/if}
 
-					<!-- Importers Section -->
-					<div class="pt-4 border-t border-white/[0.06] space-y-4">
-						<h3 class="font-bold text-white text-sm flex items-center gap-2">
-							<span>📥</span> External Importers
-						</h3>
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex items-center justify-between gap-4">
-							<div>
-								<h4 class="font-bold text-white text-sm">MyAnimeList XML Import</h4>
-								<p class="text-xs text-slate-400 mt-0.5">Import your anime tracking list exported from MyAnimeList.</p>
-							</div>
-							<MalImport />
-						</div>
-					</div>
 				</div>
 
 			{:else if activeTab === 'search'}
@@ -376,6 +371,45 @@
 							searchPrefsStore.current.suppressMangaVolumes,
 							(v) => searchPrefsStore.save({ ...searchPrefsStore.current, suppressMangaVolumes: v })
 						)}
+					</div>
+				</div>
+
+			{:else if activeTab === 'import'}
+				<!-- Import Section -->
+				<div class="space-y-6">
+					<div class="border-b border-white/[0.06] pb-4">
+						<h2 class="text-xl font-bold text-white flex items-center gap-2">
+							<span>📥</span> Import
+						</h2>
+						<p class="text-xs text-slate-400 mt-1">
+							Import your existing tracking lists from external services.
+						</p>
+					</div>
+
+					<div class="space-y-4">
+						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+							<div>
+								<h4 class="font-bold text-white text-sm">MyAnimeList XML Import</h4>
+								<p class="text-xs text-slate-400 mt-0.5">Import your anime tracking list exported from MyAnimeList.</p>
+							</div>
+							<MalImport />
+						</div>
+
+						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+							<div>
+								<h4 class="font-bold text-white text-sm">AniList Import</h4>
+								<p class="text-xs text-slate-400 mt-0.5">Import directly using your AniList username (public profiles only).</p>
+							</div>
+							<AnilistImport />
+						</div>
+
+						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+							<div>
+								<h4 class="font-bold text-white text-sm">TMDB Import</h4>
+								<p class="text-xs text-slate-400 mt-0.5">Import your watchlist and rated media from TMDB.</p>
+							</div>
+							<TmdbImport />
+						</div>
 					</div>
 				</div>
 

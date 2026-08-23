@@ -17,7 +17,9 @@ export type ActivityEventType =
   | 'rewatch_completed'
   | 'added_to_collection'
   | 'removed_from_collection'
-  | 'mal_import';
+  | 'mal_import'
+  | 'anilist_import'
+  | 'tmdb_import';
 
 export interface Media {
   id: string; // UUID
