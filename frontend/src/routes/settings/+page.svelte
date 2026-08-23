@@ -7,7 +7,9 @@
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { onMount } from 'svelte';
 
-	onMount(() => { searchPrefsStore.load(); });
+	onMount(() => {
+		searchPrefsStore.load();
+	});
 
 	type SettingsTab = 'general' | 'search' | 'api' | 'data' | 'import' | 'about';
 	let activeTab = $state<SettingsTab>('api');
@@ -58,7 +60,11 @@
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 
-		if (!confirm('Warning: this will overwrite all current local data with the backup file. Continue?')) {
+		if (
+			!confirm(
+				'Warning: this will overwrite all current local data with the backup file. Continue?',
+			)
+		) {
 			if (fileInput) fileInput.value = '';
 			return;
 		}
@@ -78,42 +84,42 @@
 	}
 
 	const tabs: { id: SettingsTab; label: string; icon: string; desc: string }[] = [
-		{ 
-			id: 'api', 
-			label: 'API Integrations', 
+		{
+			id: 'api',
+			label: 'API Integrations',
 			icon: '🔑',
-			desc: 'Configure TMDB, IGDB & ComicVine source keys'
+			desc: 'Configure TMDB, IGDB & ComicVine source keys',
 		},
-		{ 
-			id: 'search', 
-			label: 'Search & Deduplication', 
+		{
+			id: 'search',
+			label: 'Search & Deduplication',
 			icon: '🔍',
-			desc: 'Deduplication rules, source priority & filtering'
+			desc: 'Deduplication rules, source priority & filtering',
 		},
-		{ 
-			id: 'data', 
-			label: 'Data & Backup', 
+		{
+			id: 'data',
+			label: 'Data & Backup',
 			icon: '💾',
-			desc: 'Export JSON backups & restore from file'
+			desc: 'Export JSON backups & restore from file',
 		},
-		{ 
-			id: 'import', 
-			label: 'Import', 
+		{
+			id: 'import',
+			label: 'Import',
 			icon: '📥',
-			desc: 'Import lists from external trackers'
+			desc: 'Import lists from external trackers',
 		},
-		{ 
-			id: 'general', 
-			label: 'Appearance & UI', 
+		{
+			id: 'general',
+			label: 'Appearance & UI',
 			icon: '🎨',
-			desc: 'Theme, layout & display preferences'
+			desc: 'Theme, layout & display preferences',
 		},
-		{ 
-			id: 'about', 
-			label: 'About Traxy', 
+		{
+			id: 'about',
+			label: 'About Traxy',
 			icon: 'ℹ️',
-			desc: 'App info, local storage policy & license'
-		}
+			desc: 'App info, local storage policy & license',
+		},
 	];
 </script>
 
@@ -121,34 +127,48 @@
 	<!-- Page Header -->
 	<div>
 		<h1 class="text-3xl font-extrabold text-white tracking-tight">Settings</h1>
-		<p class="text-sm text-slate-400 mt-1">Manage your local storage, API keys, and app preferences.</p>
+		<p class="text-sm text-slate-400 mt-1">
+			Manage your local storage, API keys, and app preferences.
+		</p>
 	</div>
 
 	<!-- Clusterized Settings Layout -->
 	<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 		<!-- Sidebar Navigation Tabs -->
-		<nav class="lg:col-span-4 flex lg:flex-col gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+		<nav
+			class="lg:col-span-4 flex lg:flex-col gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide"
+		>
 			{#each tabs as tab}
 				{@const active = activeTab === tab.id}
 				<button
 					type="button"
-					onclick={() => activeTab = tab.id}
+					onclick={() => (activeTab = tab.id)}
 					class="flex items-center gap-3.5 p-3.5 rounded-2xl text-left transition-all cursor-pointer whitespace-nowrap lg:whitespace-normal w-full
-						{active 
-							? 'bg-[#181b2e] border border-indigo-500/40 text-white shadow-lg shadow-indigo-500/10' 
-							: 'bg-[#121422]/60 hover:bg-[#181b2e]/60 border border-white/[0.04] text-slate-400 hover:text-slate-200'}"
+						{active
+						? 'bg-[#181b2e] border border-indigo-500/40 text-white shadow-lg shadow-indigo-500/10'
+						: 'bg-[#121422]/60 hover:bg-[#181b2e]/60 border border-white/[0.04] text-slate-400 hover:text-slate-200'}"
 				>
 					<span class="text-xl p-2 rounded-xl bg-white/[0.04] shrink-0">{tab.icon}</span>
 					<div class="min-w-0">
-						<h4 class="text-sm font-bold {active ? 'text-indigo-400' : 'text-slate-200'}">{tab.label}</h4>
-						<p class="hidden lg:block text-xs text-slate-500 truncate mt-0.5">{tab.desc}</p>
+						<h4
+							class="text-sm font-bold {active
+								? 'text-indigo-400'
+								: 'text-slate-200'}"
+						>
+							{tab.label}
+						</h4>
+						<p class="hidden lg:block text-xs text-slate-500 truncate mt-0.5">
+							{tab.desc}
+						</p>
 					</div>
 				</button>
 			{/each}
 		</nav>
 
 		<!-- Content Panel -->
-		<div class="lg:col-span-8 bg-[#121422]/80 backdrop-blur-xl border border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+		<div
+			class="lg:col-span-8 bg-[#121422]/80 backdrop-blur-xl border border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl"
+		>
 			{#if activeTab === 'api'}
 				<!-- API Keys Section -->
 				<div class="space-y-6">
@@ -157,23 +177,38 @@
 							<span>🔑</span> External Source Integrations
 						</h2>
 						<p class="text-xs text-slate-400 mt-1">
-							Traxy directly searches external public APIs from your device. You can provide your personal API keys below or leave blank to use the build defaults.
+							Traxy directly searches external public APIs from your device. You can
+							provide your personal API keys below or leave blank to use the build
+							defaults.
 						</p>
 					</div>
 
 					<!-- TMDB Card -->
-					<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3">
+					<div
+						class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3"
+					>
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-2.5">
-								<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Movies & TV</span>
-								<h3 class="font-bold text-white text-sm">The Movie Database (TMDB)</h3>
+								<span
+									class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+									>Movies & TV</span
+								>
+								<h3 class="font-bold text-white text-sm">
+									The Movie Database (TMDB)
+								</h3>
 							</div>
-							<span class="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+							<span
+								class="text-xs font-semibold text-emerald-400 flex items-center gap-1"
+							>
 								<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ready
 							</span>
 						</div>
 						<div>
-							<label for="tmdbKey" class="block text-xs font-medium text-slate-400 mb-1.5">TMDB API Key (v3 auth)</label>
+							<label
+								for="tmdbKey"
+								class="block text-xs font-medium text-slate-400 mb-1.5"
+								>TMDB API Key (v3 auth)</label
+							>
 							<input
 								type="password"
 								id="tmdbKey"
@@ -185,19 +220,32 @@
 					</div>
 
 					<!-- IGDB Card -->
-					<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3">
+					<div
+						class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3"
+					>
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-2.5">
-								<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Video Games</span>
-								<h3 class="font-bold text-white text-sm">IGDB (Twitch Developer)</h3>
+								<span
+									class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+									>Video Games</span
+								>
+								<h3 class="font-bold text-white text-sm">
+									IGDB (Twitch Developer)
+								</h3>
 							</div>
-							<span class="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+							<span
+								class="text-xs font-semibold text-emerald-400 flex items-center gap-1"
+							>
 								<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ready
 							</span>
 						</div>
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							<div>
-								<label for="igdbClientId" class="block text-xs font-medium text-slate-400 mb-1.5">Client ID</label>
+								<label
+									for="igdbClientId"
+									class="block text-xs font-medium text-slate-400 mb-1.5"
+									>Client ID</label
+								>
 								<input
 									type="text"
 									id="igdbClientId"
@@ -207,7 +255,11 @@
 								/>
 							</div>
 							<div>
-								<label for="igdbClientSecret" class="block text-xs font-medium text-slate-400 mb-1.5">Client Secret</label>
+								<label
+									for="igdbClientSecret"
+									class="block text-xs font-medium text-slate-400 mb-1.5"
+									>Client Secret</label
+								>
 								<input
 									type="password"
 									id="igdbClientSecret"
@@ -218,23 +270,38 @@
 							</div>
 						</div>
 						<p class="text-[11px] text-slate-500">
-							Obtain free credentials at <a href="https://dev.twitch.tv/console" target="_blank" class="text-indigo-400 hover:underline">dev.twitch.tv/console</a> → Applications.
+							Obtain free credentials at <a
+								href="https://dev.twitch.tv/console"
+								target="_blank"
+								class="text-indigo-400 hover:underline">dev.twitch.tv/console</a
+							> → Applications.
 						</p>
 					</div>
 
 					<!-- ComicVine Card -->
-					<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3">
+					<div
+						class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3"
+					>
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-2.5">
-								<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">Comics</span>
+								<span
+									class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30"
+									>Comics</span
+								>
 								<h3 class="font-bold text-white text-sm">ComicVine API</h3>
 							</div>
-							<span class="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+							<span
+								class="text-xs font-semibold text-emerald-400 flex items-center gap-1"
+							>
 								<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ready
 							</span>
 						</div>
 						<div>
-							<label for="comicvineKey" class="block text-xs font-medium text-slate-400 mb-1.5">ComicVine API Key</label>
+							<label
+								for="comicvineKey"
+								class="block text-xs font-medium text-slate-400 mb-1.5"
+								>ComicVine API Key</label
+							>
 							<input
 								type="password"
 								id="comicvineKey"
@@ -255,13 +322,14 @@
 							Save API Keys
 						</button>
 						{#if keysSaved}
-							<span class="text-emerald-400 text-sm font-semibold animate-pulse flex items-center gap-1.5">
+							<span
+								class="text-emerald-400 text-sm font-semibold animate-pulse flex items-center gap-1.5"
+							>
 								<span>✓</span> Keys saved successfully!
 							</span>
 						{/if}
 					</div>
 				</div>
-
 			{:else if activeTab === 'data'}
 				<!-- Data & Storage Section -->
 				<div class="space-y-6">
@@ -270,17 +338,26 @@
 							<span>💾</span> Data Backup & Migration
 						</h2>
 						<p class="text-xs text-slate-400 mt-1">
-							All your data is stored locally in your device's SQLite database. You can export backups, import from other trackers, or restore from a JSON file.
+							All your data is stored locally in your device's SQLite database. You
+							can export backups, import from other trackers, or restore from a JSON
+							file.
 						</p>
 					</div>
 
 					<!-- Backup / Restore Grid -->
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<!-- Export Card -->
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between space-y-4">
+						<div
+							class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between space-y-4"
+						>
 							<div>
-								<h3 class="font-bold text-white text-sm mb-1">Export Local Backup</h3>
-								<p class="text-xs text-slate-400">Download a full snapshot of your lists, history, and notes as a portable JSON file.</p>
+								<h3 class="font-bold text-white text-sm mb-1">
+									Export Local Backup
+								</h3>
+								<p class="text-xs text-slate-400">
+									Download a full snapshot of your lists, history, and notes as a
+									portable JSON file.
+								</p>
 							</div>
 							<button
 								type="button"
@@ -292,12 +369,25 @@
 						</div>
 
 						<!-- Restore Card -->
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between space-y-4">
+						<div
+							class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between space-y-4"
+						>
 							<div>
-								<h3 class="font-bold text-white text-sm mb-1">Restore from Backup</h3>
-								<p class="text-xs text-slate-400">Restore your library from a previously exported JSON backup file.</p>
+								<h3 class="font-bold text-white text-sm mb-1">
+									Restore from Backup
+								</h3>
+								<p class="text-xs text-slate-400">
+									Restore your library from a previously exported JSON backup
+									file.
+								</p>
 							</div>
-							<input type="file" accept=".json" class="hidden" bind:this={fileInput} onchange={handleImport} />
+							<input
+								type="file"
+								accept=".json"
+								class="hidden"
+								bind:this={fileInput}
+								onchange={handleImport}
+							/>
 							<button
 								type="button"
 								onclick={() => fileInput?.click()}
@@ -309,13 +399,17 @@
 					</div>
 
 					{#if backupStatus}
-						<div class="p-4 rounded-xl text-xs font-semibold {backupStatus.includes('failed') ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+						<div
+							class="p-4 rounded-xl text-xs font-semibold {backupStatus.includes(
+								'failed',
+							)
+								? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+								: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}"
+						>
 							{backupStatus}
 						</div>
 					{/if}
-
 				</div>
-
 			{:else if activeTab === 'search'}
 				<!-- Search & Deduplication Section -->
 				<div class="space-y-6">
@@ -329,11 +423,25 @@
 					</div>
 
 					<div class="space-y-3">
-						{#snippet toggle(id: string, label: string, hint: string, value: boolean, onChange: (v: boolean) => void)}
-							<div class="flex items-start justify-between gap-4 p-4 rounded-xl bg-[#16192b]/60 border border-white/[0.06]">
+						{#snippet toggle(
+							id: string,
+							label: string,
+							hint: string,
+							value: boolean,
+							onChange: (v: boolean) => void,
+						)}
+							<div
+								class="flex items-start justify-between gap-4 p-4 rounded-xl bg-[#16192b]/60 border border-white/[0.06]"
+							>
 								<div class="min-w-0">
-									<label for={id} class="text-sm font-semibold text-white cursor-pointer">{label}</label>
-									<p class="text-xs text-slate-400 mt-0.5 leading-relaxed">{hint}</p>
+									<label
+										for={id}
+										class="text-sm font-semibold text-white cursor-pointer"
+										>{label}</label
+									>
+									<p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
+										{hint}
+									</p>
 								</div>
 								<button
 									{id}
@@ -341,9 +449,15 @@
 									aria-checked={value}
 									aria-label={label}
 									onclick={() => onChange(!value)}
-									class="relative shrink-0 w-11 h-6 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 {value ? 'bg-indigo-600' : 'bg-slate-700'}"
+									class="relative shrink-0 w-11 h-6 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 {value
+										? 'bg-indigo-600'
+										: 'bg-slate-700'}"
 								>
-									<span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform {value ? 'translate-x-5' : 'translate-x-0'}"></span>
+									<span
+										class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform {value
+											? 'translate-x-5'
+											: 'translate-x-0'}"
+									></span>
 								</button>
 							</div>
 						{/snippet}
@@ -353,7 +467,11 @@
 							'AniList wins for Anime vs TV',
 							'If AniList has a title as anime (e.g. Jujutsu Kaisen), the same title from TMDB TV Series is hidden — even when filtering by TV.',
 							searchPrefsStore.current.anilistWinsAnime,
-							(v) => searchPrefsStore.save({ ...searchPrefsStore.current, anilistWinsAnime: v })
+							(v) =>
+								searchPrefsStore.save({
+									...searchPrefsStore.current,
+									anilistWinsAnime: v,
+								}),
 						)}
 
 						{@render toggle(
@@ -361,7 +479,11 @@
 							'AniList wins for Manga vs Books',
 							'If AniList has a title as manga/manhwa/manhua, the exact same title from OpenLibrary (as a book) or ComicVine is hidden.',
 							searchPrefsStore.current.anilistWinsManga,
-							(v) => searchPrefsStore.save({ ...searchPrefsStore.current, anilistWinsManga: v })
+							(v) =>
+								searchPrefsStore.save({
+									...searchPrefsStore.current,
+									anilistWinsManga: v,
+								}),
 						)}
 
 						{@render toggle(
@@ -369,11 +491,14 @@
 							'Suppress manga volume entries from OpenLibrary',
 							'Hides "Gantz Volume 1", "Berserk Vol 38" etc. from OpenLibrary when AniList has the series. Disable if you track a non-manga book series that shares a name.',
 							searchPrefsStore.current.suppressMangaVolumes,
-							(v) => searchPrefsStore.save({ ...searchPrefsStore.current, suppressMangaVolumes: v })
+							(v) =>
+								searchPrefsStore.save({
+									...searchPrefsStore.current,
+									suppressMangaVolumes: v,
+								}),
 						)}
 					</div>
 				</div>
-
 			{:else if activeTab === 'import'}
 				<!-- Import Section -->
 				<div class="space-y-6">
@@ -387,32 +512,44 @@
 					</div>
 
 					<div class="space-y-4">
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+						<div
+							class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+						>
 							<div>
 								<h4 class="font-bold text-white text-sm">MyAnimeList XML Import</h4>
-								<p class="text-xs text-slate-400 mt-0.5">Import your anime tracking list exported from MyAnimeList.</p>
+								<p class="text-xs text-slate-400 mt-0.5">
+									Import your anime tracking list exported from MyAnimeList.
+								</p>
 							</div>
 							<MalImport />
 						</div>
 
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+						<div
+							class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+						>
 							<div>
 								<h4 class="font-bold text-white text-sm">AniList Import</h4>
-								<p class="text-xs text-slate-400 mt-0.5">Import directly using your AniList username (public profiles only).</p>
+								<p class="text-xs text-slate-400 mt-0.5">
+									Import directly using your AniList username (public profiles
+									only).
+								</p>
 							</div>
 							<AnilistImport />
 						</div>
 
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+						<div
+							class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+						>
 							<div>
 								<h4 class="font-bold text-white text-sm">TMDB Import</h4>
-								<p class="text-xs text-slate-400 mt-0.5">Import your watchlist and rated media from TMDB.</p>
+								<p class="text-xs text-slate-400 mt-0.5">
+									Import your watchlist and rated media from TMDB.
+								</p>
 							</div>
 							<TmdbImport />
 						</div>
 					</div>
 				</div>
-
 			{:else if activeTab === 'general'}
 				<!-- General & Appearance Section -->
 				<div class="space-y-6">
@@ -427,28 +564,36 @@
 
 					<div class="space-y-4">
 						<!-- Theme Palette Indicator -->
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3">
+						<div
+							class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-3"
+						>
 							<div class="flex items-center justify-between">
 								<div>
 									<h3 class="font-bold text-white text-sm">Theme Mode</h3>
-									<p class="text-xs text-slate-400 mt-0.5">Deep Obsidian Dark with Electric Indigo accents</p>
+									<p class="text-xs text-slate-400 mt-0.5">
+										Deep Obsidian Dark with Electric Indigo accents
+									</p>
 								</div>
-								<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+								<span
+									class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+								>
 									Active
 								</span>
 							</div>
 						</div>
 
 						<!-- Storage Status -->
-						<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-2">
+						<div
+							class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] space-y-2"
+						>
 							<h3 class="font-bold text-white text-sm">Storage Engine</h3>
 							<p class="text-xs text-slate-400">
-								Using Capacitor SQLite persistent storage on mobile devices and browser IndexedDB/LocalStorage for local development.
+								Using Capacitor SQLite persistent storage on mobile devices and
+								browser IndexedDB/LocalStorage for local development.
 							</p>
 						</div>
 					</div>
 				</div>
-
 			{:else if activeTab === 'about'}
 				<!-- About Section -->
 				<div class="space-y-6">
@@ -461,18 +606,26 @@
 						</p>
 					</div>
 
-					<div class="p-6 rounded-2xl bg-gradient-to-br from-[#16192b] to-[#121422] border border-white/[0.08] space-y-4">
+					<div
+						class="p-6 rounded-2xl bg-gradient-to-br from-[#16192b] to-[#121422] border border-white/[0.08] space-y-4"
+					>
 						<div class="flex items-center gap-3">
-							<div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/20">
+							<div
+								class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/20"
+							>
 								T
 							</div>
 							<div>
 								<h3 class="text-lg font-black text-white">Traxy</h3>
-								<p class="text-xs text-indigo-400 font-semibold">Standalone Local-First Edition</p>
+								<p class="text-xs text-indigo-400 font-semibold">
+									Standalone Local-First Edition
+								</p>
 							</div>
 						</div>
 						<p class="text-xs text-slate-300 leading-relaxed">
-							Traxy is designed to be completely independent: no centralized server, no user tracking, no accounts required. All your data stays private and safe directly on your device.
+							Traxy is designed to be completely independent: no centralized server,
+							no user tracking, no accounts required. All your data stays private and
+							safe directly on your device.
 						</p>
 						<div class="pt-2 flex flex-wrap gap-3">
 							<a
