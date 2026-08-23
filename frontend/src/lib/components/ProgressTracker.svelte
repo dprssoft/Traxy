@@ -194,11 +194,19 @@
 			if (seasonChanged) writes.push(updateProgress(media.id, 'currentSeason', calculatedSeason));
 			await Promise.all(writes);
 
-			onUpdate({
+			const newTracking: LocalTrackingStatus = {
 				...tracking,
 				currentEpisode: newAbsoluteEp,
 				...(seasonChanged ? { currentSeason: calculatedSeason } : {})
-			});
+			};
+
+			// Auto-complete when max episodes reached
+			if (media.totalEpisodes && newAbsoluteEp >= media.totalEpisodes && tracking.status !== 'completed') {
+				const completed = await upsertTracking({ mediaId: media.id, status: 'completed' });
+				onUpdate({ ...newTracking, ...completed });
+			} else {
+				onUpdate(newTracking);
+			}
 		} catch (err) {
 			console.error(err);
 		} finally {

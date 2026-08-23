@@ -2,13 +2,15 @@
 	import type { LocalMedia } from '$lib/types/mediaTypes';
 	import type { LocalWatchCycle } from '$lib/types/trackingTypes';
 	import { updateCycleDates } from '$lib/db/services/cycle.service';
+	import { upsertTracking } from '$lib/db/services/tracking.service';
 
 	interface Props {
 		media: LocalMedia;
 		cycles: LocalWatchCycle[];
+		onComplete?: () => void;
 	}
 
-	let { media, cycles }: Props = $props();
+	let { media, cycles, onComplete }: Props = $props();
 
 	function formatDate(dateString?: string) {
 		if (!dateString) return '—';
@@ -34,6 +36,11 @@
 			} else {
 				await updateCycleDates(cycleId, cycle.startedAt, iso);
 				cycle.finishedAt = iso;
+				// Auto-complete when a finish date is set
+				if (iso) {
+					await upsertTracking({ mediaId: media.id, status: 'completed' });
+					onComplete?.();
+				}
 			}
 		} catch (err) {
 			console.error('Failed to update cycle date', err);

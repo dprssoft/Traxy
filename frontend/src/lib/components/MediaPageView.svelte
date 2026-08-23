@@ -7,7 +7,7 @@
 	import ProgressTracker from './ProgressTracker.svelte';
 	import CycleHistory from './CycleHistory.svelte';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
-	import { updateScore, updateNote } from '$lib/db/services/tracking.service';
+	import { updateScore, updateNote, getTracking } from '$lib/db/services/tracking.service';
 	import { getCycles } from '$lib/db/services/cycle.service';
 
 	interface Props {
@@ -132,7 +132,10 @@
 		{#if tracking}
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				<ProgressTracker {media} {tracking} onUpdate={handleTrackingChanged} />
-				<CycleHistory {media} {cycles} />
+				<CycleHistory {media} {cycles} onComplete={async () => {
+					const updated = await getTracking(media.id);
+					if (updated) tracking = updated;
+				}} />
 			</div>
 		{/if}
 
