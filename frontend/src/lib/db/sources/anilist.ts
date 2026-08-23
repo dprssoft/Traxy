@@ -138,14 +138,15 @@ async function getAnilistSeasonChain(startId: number): Promise<import('$lib/db/s
 	let seasonNumber = 1;
 
 	while (currentId && chain.has(currentId)) {
-		const node = chain.get(currentId)!;
+		const node: { episodes: number; prequel?: number; sequel?: number } = chain.get(currentId)!;
 		seasonData.push({
 			seasonNumber,
 			episodeCount: node.episodes,
 			linkedMediaId: currentId.toString(),
 		});
 		seasonNumber++;
-		currentId = node.sequel;
+		const nextId: number | undefined = node.sequel;
+		currentId = nextId;
 	}
 
 	return seasonData.length > 1 ? seasonData : undefined;
