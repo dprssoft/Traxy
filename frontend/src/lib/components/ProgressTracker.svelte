@@ -98,39 +98,74 @@
 		}
 	}
 
-	function getAbsoluteEpisodeStartForSeason(seasonNum: number): number {
-		if (!media.seasonData) return 0;
+	/**
+	 * Returns per-season episode counts, falling back to uniform distribution
+	 * of totalEpisodes across totalSeasons when seasonData lacks episodeCount.
+	 */
+	function resolvedSeasonCounts(): { seasonNumber: number; episodeCount: number }[] {
+		const seasons = media.seasonData ?? [];
+		const sorted = [...seasons].sort((a, b) => a.seasonNumber - b.seasonNumber);
+		const hasGranular = sorted.some((s) => (s.episodeCount ?? 0) > 0);
+		if (hasGranular) {
+			return sorted.map((s) => ({ seasonNumber: s.seasonNumber, episodeCount: s.episodeCount ?? 0 }));
+		}
+		// Fall back: distribute totalEpisodes evenly across totalSeasons
+		const total = media.totalEpisodes ?? 0;
+		const count = media.totalSeasons ?? sorted.length;
+		if (count === 0) return [];
+		const base = Math.floor(total / count);
+		const remainder = total % count;
+		return sorted.length > 0
+			? sorted.map((s, i) => ({
+					seasonNumber: s.seasonNumber,
+					episodeCount: base + (i < remainder ? 1 : 0)
+				}))
+			: Array.from({ length: count }, (_, i) => ({
+					seasonNumber: i + 1,
+					episodeCount: base + (i < remainder ? 1 : 0)
+				}));
+	}
+
+	function firstEpisodeOfSeason(seasonNum: number): number {
+		if (seasonNum <= 1) return 1;
+		const counts = resolvedSeasonCounts();
 		let sum = 0;
-		const sorted = [...media.seasonData].sort((a, b) => a.seasonNumber - b.seasonNumber);
-		for (const s of sorted) {
+		for (const s of counts) {
 			if (s.seasonNumber < seasonNum) {
-				sum += s.episodeCount || 0;
+				sum += s.episodeCount;
 			}
 		}
-		return sum;
+		return sum + 1;
 	}
 
 	function getTvSeasonForAbsoluteEpisode(absoluteEp: number): number {
-		if (!media.seasonData) return 1;
+		if (absoluteEp <= 0) return 1;
+		const counts = resolvedSeasonCounts();
+		if (counts.length === 0) return 1;
 		let sum = 0;
-		const sorted = [...media.seasonData].sort((a, b) => a.seasonNumber - b.seasonNumber);
-		for (const s of sorted) {
-			sum += s.episodeCount || 0;
-			if (absoluteEp <= sum && absoluteEp > 0) {
+		
+		for (const s of counts) {
+			sum += s.episodeCount;
+			if (absoluteEp <= sum) {
 				return s.seasonNumber;
 			}
 		}
-		return sorted.length > 0 ? sorted[sorted.length - 1].seasonNumber : 1;
+		
+		return counts[counts.length - 1].seasonNumber;
 	}
 
 	async function handleTvSeasonChange(step: number) {
 		if (isUpdating) return;
 		const current = tracking.currentSeason || 1;
-		const max = media.totalSeasons;
-		const next = Math.max(1, max ? Math.min(current + step, max) : current + step);
+		const max = media.totalSeasons || 1;
+		const next = Math.max(1, Math.min(current + step, max));
 		if (next === current) return;
 
-		const targetEp = getAbsoluteEpisodeStartForSeason(next);
+		// Jump to the first episode of the target season (1-indexed absolute).
+		// Previously this used getAbsoluteEpisodeStartForSeason which returned the
+		// cumulative boundary (= last ep of the previous season), causing the
+		// reverse-mapper to snap the season display back to season N-1.
+		const targetEp = firstEpisodeOfSeason(next);
 
 		isUpdating = true;
 		try {
@@ -145,19 +180,25 @@
 	}
 
 	async function handleTvEpisodeChange(newAbsoluteEp: number) {
+		if (media.totalEpisodes) newAbsoluteEp = Math.min(newAbsoluteEp, media.totalEpisodes);
+		newAbsoluteEp = Math.max(0, newAbsoluteEp);
+		
 		if (isUpdating || tracking.currentEpisode === newAbsoluteEp) return;
 		isUpdating = true;
 		try {
-			await updateProgress(media.id, 'currentEpisode', newAbsoluteEp);
-			let updatedTracking = { ...tracking, currentEpisode: newAbsoluteEp };
-			
 			const calculatedSeason = getTvSeasonForAbsoluteEpisode(newAbsoluteEp);
-			if (calculatedSeason !== updatedTracking.currentSeason && newAbsoluteEp > 0) {
-				await updateProgress(media.id, 'currentSeason', calculatedSeason);
-				updatedTracking.currentSeason = calculatedSeason;
-			}
-			
-			onUpdate(updatedTracking);
+			const seasonChanged = calculatedSeason !== (tracking.currentSeason || 1);
+
+			// Write both fields in parallel then update state once
+			const writes: Promise<void>[] = [updateProgress(media.id, 'currentEpisode', newAbsoluteEp)];
+			if (seasonChanged) writes.push(updateProgress(media.id, 'currentSeason', calculatedSeason));
+			await Promise.all(writes);
+
+			onUpdate({
+				...tracking,
+				currentEpisode: newAbsoluteEp,
+				...(seasonChanged ? { currentSeason: calculatedSeason } : {})
+			});
 		} catch (err) {
 			console.error(err);
 		} finally {
@@ -166,7 +207,7 @@
 	}
 </script>
 
-<div class="bg-[#121422]/80 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 shadow-xl">
+<div class="bg-[#121422]/80 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-4 sm:p-6 shadow-xl">
 	<h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
 		<span>📊</span> Progress Tracking
 	</h3>
@@ -182,9 +223,9 @@
 				<div class="flex items-center justify-between p-3 rounded-2xl bg-[#16192b]/60 border border-white/[0.04]">
 					<span class="text-slate-300 text-xs font-semibold">Season {media.totalSeasons ? `/ ${media.totalSeasons}` : ''}</span>
 					<div class="flex items-center gap-2.5">
-						<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06]" onclick={() => handleTvSeasonChange(-1)}>-</button>
-						<span class="w-8 text-center font-extrabold text-white text-sm">{tracking.currentSeason || 1}</span>
-						<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06]" onclick={() => handleTvSeasonChange(1)}>+</button>
+						<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed" disabled={(tracking.currentSeason || 1) <= 1} onclick={() => handleTvSeasonChange(-1)}>-</button>
+						<input type="text" inputmode="numeric" pattern="[0-9]*" class="w-10 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none text-center font-extrabold text-white text-sm" value={tracking.currentSeason || 1} onchange={(e) => { const val = parseInt(e.currentTarget.value) || 1; handleTvSeasonChange(val - (tracking.currentSeason || 1)); }} />
+						<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed" disabled={!!media.totalSeasons && (tracking.currentSeason || 1) >= media.totalSeasons} onclick={() => handleTvSeasonChange(1)}>+</button>
 					</div>
 				</div>
 			{:else if media.type === 'anime' && media.seasonData && media.totalSeasons && media.totalSeasons > 1}
@@ -192,7 +233,7 @@
 					<span class="text-slate-300 text-xs font-semibold">Season / Part {media.totalSeasons ? `/ ${media.totalSeasons}` : ''}</span>
 					<div class="flex items-center gap-2.5">
 						<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06] disabled:opacity-50" disabled={currentAnimeSeason <= 1} onclick={() => changeAnimeSeason(-1)}>-</button>
-						<span class="w-8 text-center font-extrabold text-white text-sm">{currentAnimeSeason}</span>
+						<input type="text" inputmode="numeric" pattern="[0-9]*" class="w-10 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none text-center font-extrabold text-white text-sm" value={currentAnimeSeason} onchange={(e) => { const val = parseInt(e.currentTarget.value) || 1; changeAnimeSeason(val - currentAnimeSeason); }} />
 						<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06] disabled:opacity-50" disabled={currentAnimeSeason >= media.totalSeasons} onclick={() => changeAnimeSeason(1)}>+</button>
 					</div>
 				</div>
@@ -200,9 +241,9 @@
 			<div class="flex items-center justify-between p-3 rounded-2xl bg-[#16192b]/60 border border-white/[0.04]">
 				<span class="text-slate-300 text-xs font-semibold">Episode {media.totalEpisodes ? `/ ${media.totalEpisodes}` : ''}</span>
 				<div class="flex items-center gap-2.5">
-					<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06]" onclick={media.type === 'tv' ? () => handleTvEpisodeChange(Math.max(0, (tracking.currentEpisode || 0) - 1)) : () => decrement('currentEpisode')}>-</button>
-					<span class="w-8 text-center font-extrabold text-white text-sm">{tracking.currentEpisode || 0}</span>
-					<button class="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer" onclick={media.type === 'tv' ? () => handleTvEpisodeChange(media.totalEpisodes ? Math.min((tracking.currentEpisode || 0) + 1, media.totalEpisodes) : (tracking.currentEpisode || 0) + 1) : () => increment('currentEpisode', 1, media.totalEpisodes)}>+</button>
+					<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed" disabled={(tracking.currentEpisode || 0) <= 0} onclick={() => handleTvEpisodeChange((tracking.currentEpisode || 0) - 1)}>-</button>
+					<input type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none text-center font-extrabold text-white text-sm" value={tracking.currentEpisode || 0} onchange={(e) => handleTvEpisodeChange(parseInt(e.currentTarget.value) || 0)} />
+					<button class="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={!!media.totalEpisodes && (tracking.currentEpisode || 0) >= media.totalEpisodes} onclick={() => handleTvEpisodeChange((tracking.currentEpisode || 0) + 1)}>+</button>
 				</div>
 			</div>
 
@@ -228,9 +269,9 @@
 			<div class="flex items-center justify-between p-3 rounded-2xl bg-[#16192b]/60 border border-white/[0.04]">
 				<span class="text-slate-300 text-xs font-semibold">Issue {media.totalEpisodes ? `/ ${media.totalEpisodes}` : ''}</span>
 				<div class="flex items-center gap-2.5">
-					<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06]" onclick={() => decrement('currentIssue')}>-</button>
+					<button class="w-8 h-8 rounded-xl bg-[#1e2238] hover:bg-[#282e4c] text-white font-bold transition-all active:scale-95 cursor-pointer border border-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed" disabled={(tracking.currentIssue || 0) <= 0} onclick={() => decrement('currentIssue')}>-</button>
 					<span class="w-8 text-center font-extrabold text-white text-sm">{tracking.currentIssue || 0}</span>
-					<button class="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer" onclick={() => increment('currentIssue', 1, media.totalEpisodes)}>+</button>
+					<button class="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={!!media.totalEpisodes && (tracking.currentIssue || 0) >= media.totalEpisodes} onclick={() => increment('currentIssue', 1, media.totalEpisodes)}>+</button>
 				</div>
 			</div>
 
@@ -242,7 +283,12 @@
 						type="number" 
 						class="w-24 bg-[#0a0b12] border border-white/[0.1] rounded-xl p-1.5 text-center text-white font-bold text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" 
 						value={tracking.currentPage || 0}
-						onchange={(e) => updateField('currentPage', parseInt(e.currentTarget.value) || 0)}
+						onchange={(e) => {
+							let val = parseInt(e.currentTarget.value) || 0;
+							if (media.totalPages) val = Math.min(val, media.totalPages);
+							val = Math.max(0, val);
+							updateField('currentPage', val);
+						}}
 					/>
 				</div>
 			</div>
