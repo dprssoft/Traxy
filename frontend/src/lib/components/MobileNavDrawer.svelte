@@ -52,7 +52,7 @@
 </script>
 
 {#if isOpen}
-	<div class="fixed inset-0 z-50 md:hidden flex" role="dialog" aria-modal="true" aria-label="Navigation Drawer">
+	<div class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Navigation Drawer">
 		<!-- Backdrop overlay -->
 		<button
 			type="button"

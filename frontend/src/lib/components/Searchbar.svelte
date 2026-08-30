@@ -21,11 +21,56 @@
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	let currentSearchId = 0;
 
+	let containerEl: HTMLElement | null = null;
+	let inputEl: HTMLInputElement | null = null;
+
 	const filterTypes: (MediaType | 'all')[] = ['all', 'film', 'tv', 'game', 'anime', 'book', 'comic'];
+
+	function openSearch() {
+		isFocused = true;
+		searchState.isOpen = true;
+	}
+
+	function closeSearch() {
+		isFocused = false;
+		searchState.isOpen = false;
+		inputEl?.blur();
+	}
+
+	function toggleSearch() {
+		if (searchState.isOpen) {
+			closeSearch();
+		} else {
+			openSearch();
+			inputEl?.focus();
+		}
+	}
 
 	onMount(() => {
 		loadRecentSearches();
 		searchPrefsStore.load();
+
+		function handlePointerDownOutside(e: PointerEvent | MouseEvent) {
+			if (!searchState.isOpen) return;
+			const target = e.target as Node | null;
+			if (containerEl && !containerEl.contains(target)) {
+				closeSearch();
+			}
+		}
+
+		function handleKeyDown(e: KeyboardEvent) {
+			if (e.key === 'Escape' && searchState.isOpen) {
+				closeSearch();
+			}
+		}
+
+		document.addEventListener('pointerdown', handlePointerDownOutside, true);
+		document.addEventListener('keydown', handleKeyDown);
+
+		return () => {
+			document.removeEventListener('pointerdown', handlePointerDownOutside, true);
+			document.removeEventListener('keydown', handleKeyDown);
+		};
 	});
 
 	async function performSearch(q: string) {
@@ -96,8 +141,7 @@
 
 	async function onResultClick(item: SearchResult) {
 		addRecentSearch(item.title);
-		searchState.isOpen = false;
-		isFocused = false;
+		closeSearch();
 		query = '';
 		
 		// 1. Check if already in local DB
@@ -138,23 +182,62 @@
 	}
 </script>
 
-<div class="relative w-full max-w-xl">
-	<div class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 z-50">
-		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-	</div>
+<div class="relative w-full max-w-xl" bind:this={containerEl}>
+	<!-- Search icon (clickable to toggle search) -->
+	<button
+		type="button"
+		onclick={toggleSearch}
+		class="absolute inset-y-0 left-3 flex items-center text-slate-400 hover:text-white transition-colors z-50 p-1 cursor-pointer"
+		aria-label="Toggle search"
+		title="Toggle search"
+	>
+		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<circle cx="11" cy="11" r="8"></circle>
+			<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+		</svg>
+	</button>
 	
 	<input
+		bind:this={inputEl}
 		bind:value={query}
 		oninput={onInput}
-		onfocus={() => { isFocused = true; searchState.isOpen = true; }}
+		onclick={() => {
+			if (searchState.isOpen && query.trim().length === 0) {
+				closeSearch();
+			} else {
+				openSearch();
+			}
+		}}
+		onfocus={openSearch}
 		placeholder="Search movies, anime, games, comics..."
-		class="relative z-50 w-full bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-10 pr-4 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
+		class="relative z-50 w-full bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-10 pr-9 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
 	/>
 
+	<!-- Close / Clear (X) button -->
+	{#if searchState.isOpen || query.length > 0}
+		<button
+			type="button"
+			onclick={(e) => {
+				e.stopPropagation();
+				query = '';
+				closeSearch();
+			}}
+			class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-white transition-colors z-50 p-1 cursor-pointer"
+			aria-label="Clear and close search"
+			title="Close search"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="18" y1="6" x2="6" y2="18"></line>
+				<line x1="6" y1="6" x2="18" y2="18"></line>
+			</svg>
+		</button>
+	{/if}
+
 	{#if searchState.isOpen && (isFocused || query.length > 0)}
+		<!-- Fallback click backdrop -->
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="fixed inset-0 z-40" onclick={() => { searchState.isOpen = false; isFocused = false; }}></div>
+		<div class="fixed inset-0 z-40" onclick={closeSearch}></div>
 		
 		<div class="absolute top-12 left-0 w-full bg-[#121422]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden max-h-[80vh]">
 			

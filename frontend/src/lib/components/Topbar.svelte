@@ -33,71 +33,52 @@
 	let holdTimer: ReturnType<typeof setTimeout> | null = null;
 	let startPointerX = 0;
 	let startPointerY = 0;
-	let currentDragX = $state(0);
 	let dragOffsetX = $state(0);
+	let didDrag = false;
 
 	function handlePointerDown(e: PointerEvent) {
-		// Only primary button
 		if (e.button !== 0) return;
 
 		isPressing = true;
+		didDrag = false;
 		isOverDropZone = false;
 		startPointerX = e.clientX;
 		startPointerY = e.clientY;
-		currentDragX = e.clientX;
 		dragOffsetX = 0;
 
-		// 400ms long-press threshold
+		// 400ms threshold for long-press drag
 		holdTimer = setTimeout(() => {
 			isDragging = true;
+			didDrag = true;
 			isPressing = false;
 			try {
 				if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
 					navigator.vibrate([35, 30, 35]);
 				}
 			} catch {}
-		}, 400);
 
-		// Capture pointer to track outside button boundary
-		const target = e.currentTarget as HTMLElement;
-		if (target?.setPointerCapture) {
-			try {
-				target.setPointerCapture(e.pointerId);
-			} catch {}
-		}
+			// Capture pointer only once dragging actually begins
+			const target = e.currentTarget as HTMLElement;
+			if (target?.setPointerCapture) {
+				try {
+					target.setPointerCapture(e.pointerId);
+				} catch {}
+			}
+		}, 400);
 	}
 
 	function handlePointerMove(e: PointerEvent) {
-		if (!isPressing && !isDragging) return;
+		if (!isDragging) return;
 
-		const deltaX = e.clientX - startPointerX;
-		const deltaY = e.clientY - startPointerY;
+		dragOffsetX = e.clientX - startPointerX;
 
-		// If user moves noticeably before long press completes, cancel hold
-		if (isPressing && !isDragging) {
-			if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-				if (holdTimer) {
-					clearTimeout(holdTimer);
-					holdTimer = null;
-				}
-				isPressing = false;
-			}
-			return;
-		}
-
-		if (isDragging && topbarEl) {
-			currentDragX = e.clientX;
-			dragOffsetX = deltaX;
-
+		if (topbarEl) {
 			const rect = topbarEl.getBoundingClientRect();
 			const midX = rect.left + rect.width / 2;
 
-			// Check if pointer has crossed into the opposite half
 			if (!isMirrored) {
-				// Originally on left side, target is right side (past midX)
 				isOverDropZone = e.clientX > midX;
 			} else {
-				// Originally on right side, target is left side (before midX)
 				isOverDropZone = e.clientX < midX;
 			}
 		}
@@ -110,7 +91,6 @@
 		}
 
 		if (isDragging) {
-			// Dropped while dragging
 			if (isOverDropZone || Math.abs(dragOffsetX) > 90) {
 				layoutStore.toggleTopbarMirror();
 				try {
@@ -121,16 +101,14 @@
 			}
 			isDragging = false;
 			isOverDropZone = false;
-			isPressing = false;
 			dragOffsetX = 0;
-			return;
+			// Keep didDrag true briefly so onclick is ignored
+			setTimeout(() => {
+				didDrag = false;
+			}, 200);
 		}
 
-		if (isPressing) {
-			// Short tap (<400ms): open/close mobile drawer
-			isPressing = false;
-			layoutStore.toggleMobileMenu();
-		}
+		isPressing = false;
 	}
 
 	function handlePointerCancel() {
@@ -142,6 +120,12 @@
 		isDragging = false;
 		isOverDropZone = false;
 		dragOffsetX = 0;
+	}
+
+	function handleClick(e: MouseEvent) {
+		// If user completed a drag, don't open drawer
+		if (didDrag || isDragging) return;
+		layoutStore.toggleMobileMenu();
 	}
 
 	function directMirrorDrop() {
@@ -169,6 +153,7 @@
 			onpointermove={handlePointerMove}
 			onpointerup={handlePointerUp}
 			onpointercancel={handlePointerCancel}
+			onclick={handleClick}
 			class="relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 touch-none select-none
 				{isDragging 
 					? 'scale-115 ring-2 ring-indigo-400 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-xl shadow-indigo-500/50 z-50 cursor-grab active:cursor-grabbing' 
