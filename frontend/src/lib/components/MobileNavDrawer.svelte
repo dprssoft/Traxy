@@ -22,7 +22,18 @@
 
 	onMount(() => {
 		window.addEventListener('keydown', handleKeydown);
-		return () => window.removeEventListener('keydown', handleKeydown);
+		const mq = window.matchMedia('(min-width: 768px)');
+		const handleMediaChange = (e: MediaQueryListEvent) => {
+			if (e.matches && layoutStore.mobileMenuOpen) {
+				layoutStore.closeMobileMenu();
+			}
+		};
+		mq.addEventListener('change', handleMediaChange);
+
+		return () => {
+			window.removeEventListener('keydown', handleKeydown);
+			mq.removeEventListener('change', handleMediaChange);
+		};
 	});
 
 	// Close drawer on route change only
@@ -55,7 +66,7 @@
 </script>
 
 {#if isOpen}
-	<div class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Navigation Drawer">
+	<div class="fixed inset-0 z-50 flex md:hidden" role="dialog" aria-modal="true" aria-label="Navigation Drawer">
 		<!-- Backdrop overlay -->
 		<button
 			type="button"
