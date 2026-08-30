@@ -77,16 +77,22 @@
 			const nums = run.map((r) => {
 				if (cur.eventType === 'episode_watched') return r.payload?.episode ?? 0;
 				return r.payload?.chapter ?? 0;
-			}).filter(Boolean);
+			});
 
-			const minNum = Math.min(...nums);
-			const maxNum = Math.max(...nums);
+			// Verify this is a genuine forward-progress run:
+			// Items are newest-first, so a real binge has strictly DECREASING numbers
+			// in this array (ep8 newest → ep5 oldest). Decrements produce INCREASING
+			// numbers (ep3 newest → ep5 oldest) and must NOT be grouped.
+			const allValid = nums.every((n) => n > 0);
+			const isForwardProgress = nums.every((n, idx) => idx === 0 || nums[idx - 1] > n);
 
-			// Only group if actual progressive number range makes sense
-			if (minNum === 0 || maxNum === 0) {
-				// Can't determine range — emit individually
+			if (!allValid || !isForwardProgress) {
+				// Can't determine range or it's a correction run — emit individually
 				for (const r of run) result.push(r);
 			} else {
+				const minNum = nums[nums.length - 1]; // oldest = lowest episode
+				const maxNum = nums[0];               // newest = highest episode
+
 				// Season: only set if all episodes share the same season
 				let season: number | undefined;
 				if (cur.eventType === 'episode_watched') {
