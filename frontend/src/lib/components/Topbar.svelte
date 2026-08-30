@@ -24,6 +24,21 @@
 
 	const isMirrored = $derived(layoutStore.topbarMirrored);
 
+	let isDesktop = $state(false);
+
+	onMount(() => {
+		const mq = window.matchMedia('(min-width: 768px)');
+		isDesktop = mq.matches;
+		const handleMediaChange = (e: MediaQueryListEvent) => {
+			isDesktop = e.matches;
+		};
+		mq.addEventListener('change', handleMediaChange);
+
+		return () => {
+			mq.removeEventListener('change', handleMediaChange);
+		};
+	});
+
 	// Gesture state for Long Hold & Drag to Mirror
 	let isPressing = $state(false);
 	let isDragging = $state(false);
@@ -37,7 +52,8 @@
 	let didDrag = false;
 
 	function handlePointerDown(e: PointerEvent) {
-		if (e.button !== 0) return;
+		// Ignore secondary/middle mouse buttons on desktop, but allow touch/primary (-1, 0)
+		if (e.button === 1 || e.button === 2) return;
 
 		isPressing = true;
 		didDrag = false;
@@ -129,9 +145,14 @@
 	function triggerMenuToggle() {
 		if (didDrag || isDragging) return;
 		const now = Date.now();
-		if (now - lastToggleTime < 300) return; // Prevent double-trigger from pointerup + click
+		if (now - lastToggleTime < 150) return; // Prevent double-trigger from pointerup + click
 		lastToggleTime = now;
-		layoutStore.toggleMobileMenu();
+
+		if (isDesktop) {
+			layoutStore.toggleSidebar();
+		} else {
+			layoutStore.toggleMobileMenu();
+		}
 	}
 
 	function handleClick(e: MouseEvent) {
