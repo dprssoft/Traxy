@@ -182,16 +182,16 @@
 	}
 </script>
 
-<div class="relative w-full max-w-xl" bind:this={containerEl}>
+<div class="relative w-full min-w-0" bind:this={containerEl}>
 	<!-- Search icon (clickable to toggle search) -->
 	<button
 		type="button"
 		onclick={toggleSearch}
-		class="absolute inset-y-0 left-3 flex items-center text-slate-400 hover:text-white transition-colors z-50 p-1 cursor-pointer"
+		class="absolute inset-y-0 left-2.5 sm:left-3 flex items-center text-slate-400 hover:text-white transition-colors z-30 p-1 cursor-pointer"
 		aria-label="Toggle search"
 		title="Toggle search"
 	>
-		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 			<circle cx="11" cy="11" r="8"></circle>
 			<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 		</svg>
@@ -209,8 +209,8 @@
 			}
 		}}
 		onfocus={openSearch}
-		placeholder="Search movies, anime, games, comics..."
-		class="relative z-50 w-full bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-10 pr-9 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
+		placeholder="Search movies, anime, games..."
+		class="relative z-20 w-full min-w-0 bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 text-xs sm:text-sm text-white placeholder:text-slate-500 placeholder:truncate focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
 	/>
 
 	<!-- Close / Clear (X) button -->

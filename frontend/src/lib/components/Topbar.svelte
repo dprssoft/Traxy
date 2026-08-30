@@ -141,11 +141,11 @@
 
 <header
 	bind:this={topbarEl}
-	class="sticky top-0 z-30 flex items-center justify-between px-3.5 sm:px-8 py-3 bg-[#0a0b12]/85 backdrop-blur-xl border-b border-white/[0.06] transition-all duration-300 select-none
+	class="sticky top-0 z-30 flex items-center justify-between gap-2.5 sm:gap-4 px-3.5 sm:px-8 py-2.5 sm:py-3 bg-[#0a0b12]/90 backdrop-blur-xl border-b border-white/[0.06] transition-all duration-300 select-none
 		{isMirrored ? 'flex-row-reverse' : 'flex-row'}"
 >
 	<!-- Top Bar Action / Menu Icon (The Draggable Top-Left/Right Icon from wireframe) -->
-	<div class="relative flex items-center gap-2.5 shrink-0">
+	<div class="relative flex items-center gap-2.5 shrink-0 z-10">
 		<!-- The Icon Button from wireframe -->
 		<button
 			type="button"
@@ -194,12 +194,12 @@
 		<button
 			type="button"
 			onclick={directMirrorDrop}
-			class="flex items-center justify-center gap-2 px-4 h-10 rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer animate-pulse
+			class="flex items-center justify-center gap-2 px-3 sm:px-4 h-10 rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer animate-pulse shrink-0
 				{isOverDropZone 
 					? 'bg-indigo-500/25 border-indigo-400 text-indigo-200 scale-105 shadow-xl shadow-indigo-500/20' 
 					: 'bg-white/[0.04] border-white/20 text-slate-400 hover:border-indigo-400/50'}"
 		>
-			<svg class="w-4 h-4 animate-spin-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+			<svg class="w-4 h-4 animate-spin-slow shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
 			</svg>
 			<span class="text-xs font-bold whitespace-nowrap">
@@ -209,7 +209,7 @@
 	{/if}
 
 	<!-- Right / Left: Integrated Searchbar (Wide bar from wireframe) -->
-	<div class="w-full {isDragging ? 'max-w-[170px] sm:max-w-xs' : 'max-w-xs sm:max-w-md'} {isMirrored ? 'mr-auto ml-2 sm:ml-4' : 'ml-auto mr-2 sm:mr-4'} transition-all">
+	<div class="flex-1 min-w-0 {isDragging ? 'max-w-[150px] sm:max-w-xs' : 'max-w-md'} {isMirrored ? 'mr-auto' : 'ml-auto'} transition-all">
 		<Searchbar />
 	</div>
 </header>
