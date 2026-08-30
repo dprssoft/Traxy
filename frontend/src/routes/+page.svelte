@@ -15,122 +15,7 @@
 	let filterMediaUpdates = $state(true);
 	let filterContainerEl: HTMLElement | null = null;
 
-	// Wireframe initial / companion feed data demonstrating all 3 categories
-	const wireframeFeedItems: ActivityItem[] = [
-		{
-			id: 'wf-1',
-			category: 'user_action',
-			actionText: 'Action',
-			subtitle: 'Title',
-			mediaTitle: 'Title',
-			icon: '🎬',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 8).toISOString()
-		},
-		{
-			id: 'wf-2',
-			category: 'user_action',
-			actionText: 'Read chapter 24',
-			subtitle: 'Chainsaw Man',
-			mediaTitle: 'Chainsaw Man',
-			icon: '📖',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 25).toISOString()
-		},
-		{
-			id: 'wf-3',
-			category: 'user_action',
-			actionText: 'Read chapters 10-20',
-			subtitle: 'Berserk Deluxe Edition 2',
-			mediaTitle: 'Berserk',
-			icon: '📖',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 65).toISOString()
-		},
-		{
-			id: 'wf-4',
-			category: 'user_action',
-			actionText: 'Marked as "Completed"',
-			subtitle: 'Cyberpunk 2077',
-			mediaTitle: 'Cyberpunk 2077',
-			icon: '🎮',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 180).toISOString()
-		},
-		{
-			id: 'wf-5',
-			category: 'user_action',
-			actionText: 'Marked as "Dropped"',
-			subtitle: 'The Idol (Season 1)',
-			mediaTitle: 'The Idol',
-			icon: '📺',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 320).toISOString()
-		},
-		{
-			id: 'wf-6',
-			category: 'user_action',
-			actionText: 'Marked as "Planned"',
-			subtitle: 'Dune: Part Two (Novel)',
-			mediaTitle: 'Dune',
-			icon: '📚',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 480).toISOString()
-		},
-		{
-			id: 'wf-7',
-			category: 'user_action',
-			actionText: 'Created new mono list',
-			subtitle: 'Top Sci-Fi Films, Movies',
-			mediaTitle: 'Top Sci-Fi Films',
-			href: '/collections',
-			icon: '📑',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 720).toISOString()
-		},
-		{
-			id: 'wf-8',
-			category: 'user_action',
-			actionText: 'Created new list',
-			subtitle: 'Favorite Cozy Games',
-			mediaTitle: 'Favorite Cozy Games',
-			href: '/collections',
-			icon: '📑',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 1440).toISOString()
-		},
-		{
-			id: 'wf-9',
-			category: 'user_action',
-			actionText: 'Updated profile',
-			subtitle: 'Changed pfp',
-			mediaTitle: 'Profile',
-			href: '/profile',
-			icon: '👤',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 1800).toISOString()
-		},
-		{
-			id: 'wf-10',
-			category: 'system',
-			actionText: 'Autosave completed',
-			subtitle: 'Local SQLite database synchronized',
-			mediaTitle: 'System Backup',
-			icon: '💾',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 2880).toISOString()
-		},
-		{
-			id: 'wf-11',
-			category: 'media_update',
-			actionText: 'New Arcane episode!',
-			subtitle: 'Season 2 Episode 4 is now available',
-			mediaTitle: 'Arcane',
-			icon: '🔔',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 4320).toISOString()
-		},
-		{
-			id: 'wf-12',
-			category: 'media_update',
-			actionText: 'Hunter x Hunter now on hiatus!',
-			subtitle: 'Weekly Shonen Jump editorial notice',
-			mediaTitle: 'Hunter x Hunter',
-			icon: '📢',
-			occurredAt: new Date(Date.now() - 1000 * 60 * 5760).toISOString()
-		}
-	];
-
-	// Combine DB activities with wireframe activities (ensuring DB items default to user_action category)
+	// Real database activities only
 	let rawDbItems = $state<ActivityItem[]>(untrack(() => data.activities));
 	let isLoading = $state(false);
 	let hasMore = $state(untrack(() => data.activities.length === 20));
@@ -142,31 +27,24 @@
 		offset = 20;
 	});
 
-	// Merged items list
-	const allItems = $derived.by(() => {
-		const mappedDbItems: ActivityItem[] = rawDbItems.map((item) => ({
+	// Items with category mapping (defaults to user_action for tracking events)
+	const allItems = $derived(
+		rawDbItems.map((item) => ({
 			...item,
 			category: item.category ?? 'user_action'
-		}));
-
-		if (mappedDbItems.length === 0) {
-			return wireframeFeedItems;
-		}
-
-		// When DB items exist, prepend DB items and append wireframe items for system/media updates
-		return [...mappedDbItems, ...wireframeFeedItems];
-	});
+		}))
+	);
 
 	// Filtered list based on wireframe checkboxes
-	const filteredItems = $derived.by(() => {
-		return allItems.filter((item) => {
+	const filteredItems = $derived(
+		allItems.filter((item) => {
 			const cat = item.category ?? 'user_action';
 			if (cat === 'user_action' && !filterUserActions) return false;
 			if (cat === 'system' && !filterSystemMessages) return false;
 			if (cat === 'media_update' && !filterMediaUpdates) return false;
 			return true;
-		});
-	});
+		})
+	);
 
 	async function loadMore() {
 		if (isLoading || !hasMore) return;
@@ -283,8 +161,25 @@
 		</div>
 	</div>
 
-	<!-- Activity Cards List from Wireframe Image 2 -->
-	{#if filteredItems.length === 0}
+	<!-- Activity Cards List -->
+	{#if rawDbItems.length === 0}
+		<!-- Clean empty state when no activities exist yet in DB -->
+		<div class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-10 text-center shadow-xl space-y-4">
+			<div class="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 border border-indigo-500/30 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/20">
+				🎬
+			</div>
+			<div>
+				<h2 class="text-xl font-bold text-white mb-1">Welcome to Traxy!</h2>
+				<p class="text-xs text-slate-400 max-w-sm mx-auto">
+					Your activity feed is empty. Search for movies, TV series, anime, games, books, or comics to begin building your library.
+				</p>
+			</div>
+			<a href="/search" class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all cursor-pointer">
+				<span>🔍</span> Search & Track Media
+			</a>
+		</div>
+	{:else if filteredItems.length === 0}
+		<!-- Empty state when all items are filtered out by checkboxes -->
 		<div class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-8 text-center shadow-xl space-y-3">
 			<div class="w-12 h-12 mx-auto rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xl text-slate-400">
 				🔍
@@ -311,9 +206,7 @@
 				<ActivityCard activity={item} />
 			{/each}
 
-			{#if rawDbItems.length > 0}
-				<InfiniteScrollSentinel onLoadMore={loadMore} loading={isLoading} {hasMore} />
-			{/if}
+			<InfiniteScrollSentinel onLoadMore={loadMore} loading={isLoading} {hasMore} />
 		</div>
 	{/if}
 </div>
