@@ -28,7 +28,6 @@
 	let isPressing = $state(false);
 	let isDragging = $state(false);
 	let isOverDropZone = $state(false);
-	let toastMessage = $state('');
 
 	let topbarEl: HTMLElement | null = null;
 	let holdTimer: ReturnType<typeof setTimeout> | null = null;
@@ -36,13 +35,6 @@
 	let startPointerY = 0;
 	let currentDragX = $state(0);
 	let dragOffsetX = $state(0);
-
-	function showToast(msg: string) {
-		toastMessage = msg;
-		setTimeout(() => {
-			if (toastMessage === msg) toastMessage = '';
-		}, 2500);
-	}
 
 	function handlePointerDown(e: PointerEvent) {
 		// Only primary button
@@ -126,7 +118,6 @@
 						navigator.vibrate(50);
 					}
 				} catch {}
-				showToast(`✨ Top bar mirrored to ${!isMirrored ? 'right' : 'left'} side!`);
 			}
 			isDragging = false;
 			isOverDropZone = false;
@@ -156,7 +147,6 @@
 	function directMirrorDrop() {
 		if (isDragging) {
 			layoutStore.toggleTopbarMirror();
-			showToast(`✨ Top bar mirrored to ${!isMirrored ? 'right' : 'left'} side!`);
 			isDragging = false;
 			isOverDropZone = false;
 			isPressing = false;
@@ -172,15 +162,6 @@
 >
 	<!-- Top Bar Action / Menu Icon (The Draggable Top-Left/Right Icon from wireframe) -->
 	<div class="relative flex items-center gap-2.5 shrink-0">
-		<!-- Drag ghost line indicator -->
-		{#if isDragging}
-			<div class="absolute -top-1.5 left-0 right-0 flex items-center justify-center pointer-events-none">
-				<span class="text-[10px] font-bold text-indigo-400 bg-indigo-950/90 border border-indigo-500/40 px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap animate-bounce">
-					{isOverDropZone ? 'Drop to flip!' : 'Drag across screen ↔'}
-				</span>
-			</div>
-		{/if}
-
 		<!-- The Icon Button from wireframe -->
 		<button
 			type="button"
@@ -246,11 +227,4 @@
 	<div class="w-full {isDragging ? 'max-w-[170px] sm:max-w-xs' : 'max-w-xs sm:max-w-md'} {isMirrored ? 'mr-auto ml-2 sm:ml-4' : 'ml-auto mr-2 sm:mr-4'} transition-all">
 		<Searchbar />
 	</div>
-
-	<!-- Floating Confirmation Toast on Mirror -->
-	{#if toastMessage}
-		<div class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-[#121422]/95 border border-indigo-500/40 text-white text-xs font-bold shadow-2xl shadow-indigo-500/20 flex items-center gap-2 animate-bounce">
-			{toastMessage}
-		</div>
-	{/if}
 </header>
