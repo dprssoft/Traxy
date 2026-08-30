@@ -58,6 +58,8 @@ export interface GroupedActivityItem {
 	to: number;
 	/** Season (only for episode_watched, if all in same season) */
 	season?: number;
+	/** Volume (only for chapter_read, if all in same volume) */
+	volume?: number;
 	/** Number of items grouped */
 	count: number;
 	/** Timestamp of the newest item in the group */

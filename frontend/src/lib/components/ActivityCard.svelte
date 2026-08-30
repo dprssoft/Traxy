@@ -31,6 +31,7 @@
 			case 'chapter_read':
 				if (p.volume && p.chapter) return `Read ch. ${p.chapter} vol. ${p.volume}`;
 				if (p.chapter) return `Read chapter ${p.chapter}`;
+				if (p.volume) return `Read volume ${p.volume}`;
 				return 'Read chapter';
 			case 'pages_updated':
 				return `Read to page ${p.page}`;
@@ -100,6 +101,9 @@
 				return `Watched episodes ${activity.from}–${activity.to}`;
 			}
 			// chapter_read
+			if (activity.volume) {
+				return `Read chapters ${activity.from}–${activity.to} (Vol. ${activity.volume})`;
+			}
 			return `Read chapters ${activity.from}–${activity.to}`;
 		}
 		return getEventDescription(activity as ActivityItem);

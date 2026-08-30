@@ -75,8 +75,8 @@
 
 			// Build grouped item from the run
 			const nums = run.map((r) => {
-				if (cur.eventType === 'episode_watched') return r.payload?.episode ?? 0;
-				return r.payload?.chapter ?? 0;
+				if (cur.eventType === 'episode_watched') return Number(r.payload?.episode ?? 0);
+				return Number(r.payload?.chapter ?? 0);
 			});
 
 			// Verify this is a genuine forward-progress run:
@@ -100,6 +100,12 @@
 					if (seasons.length === 1) season = seasons[0] as number;
 				}
 
+				let volume: number | undefined;
+				if (cur.eventType === 'chapter_read') {
+					const volumes = [...new Set(run.map((r) => r.payload?.volume).filter(Boolean))];
+					if (volumes.length === 1) volume = volumes[0] as number;
+				}
+
 				const grouped: GroupedActivityItem = {
 					isGroup: true,
 					id: run.map((r) => r.id).join('-'),
@@ -112,6 +118,7 @@
 					from: minNum,
 					to: maxNum,
 					season,
+					volume,
 					count: run.length,
 					occurredAt: run[0].occurredAt, // newest
 				};
