@@ -39,7 +39,7 @@
 		};
 	});
 
-	// Gesture state for Long Hold & Drag to Mirror
+	// Gesture state for Long Hold & Drag to Mirror (Desktop mouse only)
 	let isPressing = $state(false);
 	let isDragging = $state(false);
 	let isOverDropZone = $state(false);
@@ -47,33 +47,25 @@
 	let topbarEl: HTMLElement | null = null;
 	let holdTimer: ReturnType<typeof setTimeout> | null = null;
 	let startPointerX = 0;
-	let startPointerY = 0;
 	let dragOffsetX = $state(0);
 	let didDrag = false;
 
 	function handlePointerDown(e: PointerEvent) {
-		// Ignore secondary/middle mouse buttons on desktop, but allow touch/primary (-1, 0)
-		if (e.button === 1 || e.button === 2) return;
+		// Only enable drag gesture on desktop with primary mouse button (touch devices use direct tap)
+		if (!isDesktop || e.pointerType === 'touch' || e.button !== 0) return;
 
 		isPressing = true;
 		didDrag = false;
 		isOverDropZone = false;
 		startPointerX = e.clientX;
-		startPointerY = e.clientY;
 		dragOffsetX = 0;
 
-		// 400ms threshold for long-press drag
+		// 400ms threshold for desktop mouse drag
 		holdTimer = setTimeout(() => {
 			isDragging = true;
 			didDrag = true;
 			isPressing = false;
-			try {
-				if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-					navigator.vibrate([35, 30, 35]);
-				}
-			} catch {}
 
-			// Capture pointer only once dragging actually begins
 			const target = e.currentTarget as HTMLElement;
 			if (target?.setPointerCapture) {
 				try {
@@ -118,13 +110,10 @@
 			isDragging = false;
 			isOverDropZone = false;
 			dragOffsetX = 0;
-			// Keep didDrag true briefly so click doesn't trigger immediately
+			// Keep didDrag true briefly so click isn't triggered after dragging
 			setTimeout(() => {
 				didDrag = false;
-			}, 250);
-		} else {
-			// Normal tap on touch screens
-			triggerMenuToggle();
+			}, 200);
 		}
 
 		isPressing = false;
@@ -141,22 +130,14 @@
 		dragOffsetX = 0;
 	}
 
-	let lastToggleTime = 0;
-	function triggerMenuToggle() {
+	function handleClick(e: MouseEvent) {
 		if (didDrag || isDragging) return;
-		const now = Date.now();
-		if (now - lastToggleTime < 150) return; // Prevent double-trigger from pointerup + click
-		lastToggleTime = now;
 
 		if (isDesktop) {
 			layoutStore.toggleSidebar();
 		} else {
 			layoutStore.toggleMobileMenu();
 		}
-	}
-
-	function handleClick(e: MouseEvent) {
-		triggerMenuToggle();
 	}
 
 	function directMirrorDrop() {
@@ -177,7 +158,7 @@
 >
 	<!-- Top Bar Action / Menu Icon (The Draggable Top-Left/Right Icon from wireframe) -->
 	<div class="relative flex items-center gap-2.5 shrink-0 z-10">
-		<!-- The Icon Button from wireframe -->
+		<!-- The Icon Button from wireframe: instant touch tap on mobile, hold+drag on desktop -->
 		<button
 			type="button"
 			onpointerdown={handlePointerDown}
@@ -185,15 +166,15 @@
 			onpointerup={handlePointerUp}
 			onpointercancel={handlePointerCancel}
 			onclick={handleClick}
-			class="relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 touch-none select-none
+			class="relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 touch-manipulation select-none active:scale-95
 				{isDragging 
 					? 'scale-115 ring-2 ring-indigo-400 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-xl shadow-indigo-500/50 z-50 cursor-grab active:cursor-grabbing' 
 					: isPressing 
 						? 'scale-95 bg-indigo-700/60 ring-2 ring-indigo-500/50' 
 						: 'bg-[#141727] hover:bg-[#1c2138] border border-white/[0.08] text-white shadow-md shadow-black/30'}"
 			style={isDragging ? `transform: translateX(${dragOffsetX * 0.4}px) scale(1.15);` : ''}
-			aria-label="Navigation menu and layout mirror handle"
-			title="Hold and drag to mirror top bar, or tap to open menu"
+			aria-label="Navigation menu"
+			title={isDesktop ? 'Toggle sidebar' : 'Open navigation menu'}
 		>
 			<!-- Icon visuals: 4-square grid / launcher icon matching wireframe square icon -->
 			<div class="w-5 h-5 flex flex-col justify-center gap-1">
