@@ -8,8 +8,11 @@
 	import MobileNavDrawer from '$lib/components/MobileNavDrawer.svelte';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
+	import { layoutStore } from '$lib/stores/layout';
 
 	let { children } = $props();
+
+	const isMirrored = $derived(layoutStore.topbarMirrored);
 
 	beforeNavigate(({ from }) => {
 		const p = from?.url?.pathname ?? null;
@@ -27,8 +30,9 @@
 	<title>Traxy · Personal Media Tracker</title>
 </svelte:head>
 
-<div class="min-h-screen flex text-[var(--color-text-main)] bg-[var(--color-bkg-main)] selection:bg-indigo-500/30 selection:text-indigo-200">
-	<!-- Desktop Sidebar -->
+<div class="min-h-screen flex text-[var(--color-text-main)] bg-[var(--color-bkg-main)] selection:bg-indigo-500/30 selection:text-indigo-200 transition-all duration-300
+	{isMirrored ? 'flex-row-reverse' : 'flex-row'}">
+	<!-- Desktop Sidebar (Moves together with top-left button) -->
 	<Sidebar />
 
 	<!-- Main App Shell -->

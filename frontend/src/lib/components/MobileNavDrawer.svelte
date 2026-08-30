@@ -69,19 +69,19 @@
 					: 'mr-auto border-r animate-slide-in-left'}"
 		>
 			<!-- Top: User profile block (from wireframe) -->
-			<div class="p-5 pb-4 border-b border-white/[0.08] flex items-center justify-between gap-3">
-				<div class="flex items-center gap-3 min-w-0">
+			<div class="p-4 pb-4 border-b border-white/[0.08] flex items-center justify-between gap-3">
+				<a href="/profile" onclick={close} class="flex items-center gap-3 min-w-0 group cursor-pointer" title="View Profile">
 					<!-- Avatar square from wireframe -->
-					<div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/25 shrink-0 border border-white/[0.1]">
+					<div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/25 shrink-0 border border-white/[0.1] group-hover:scale-105 transition-transform">
 						{profileInitial}
 					</div>
 					<div class="min-w-0">
-						<h3 class="font-bold text-white text-base truncate tracking-tight">{username}</h3>
+						<h3 class="font-bold text-white text-base truncate tracking-tight group-hover:text-indigo-300 transition-colors">{username}</h3>
 						<p class="text-[11px] text-indigo-400 font-medium flex items-center gap-1">
-							<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> Local Profile
+							<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> Profile & Stats
 						</p>
 					</div>
-				</div>
+				</a>
 
 				<!-- Close button -->
 				<button

@@ -71,11 +71,11 @@ export const drawerNavItems: NavItem[] = [
 		match: (p) => p.startsWith('/stats')
 	},
 	{
-		href: '/stats#achievements',
+		href: '/achievements',
 		label: 'Achievements',
 		icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
 		badge: 'New',
-		match: (p) => p.includes('achievements')
+		match: (p) => p.startsWith('/achievements')
 	},
 	{
 		href: '/settings',
