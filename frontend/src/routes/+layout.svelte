@@ -5,6 +5,7 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import Topbar from '$lib/components/Topbar.svelte';
 	import BottomNav from '$lib/components/BottomNav.svelte';
+	import MobileNavDrawer from '$lib/components/MobileNavDrawer.svelte';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
 
@@ -40,6 +41,9 @@
 			{@render children()}
 		</main>
 	</div>
+
+	<!-- Mobile Navigation Drawer (from wireframe) -->
+	<MobileNavDrawer />
 
 	<!-- Mobile Bottom Navigation -->
 	<BottomNav />
