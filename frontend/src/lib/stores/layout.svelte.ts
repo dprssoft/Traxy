@@ -93,18 +93,23 @@ export const drawerNavItems: NavItem[] = [
 
 class LayoutState {
 	topbarMirrored = $state(false);
+	sidebarCollapsed = $state(false);
 	mobileMenuOpen = $state(false);
 	bottomNavItems = $state<NavItem[]>(defaultBottomNavItems);
 
 	constructor() {
 		if (typeof window !== 'undefined') {
 			try {
-				const saved = localStorage.getItem('traxy_topbar_mirrored');
-				if (saved !== null) {
-					this.topbarMirrored = saved === 'true';
+				const savedMirror = localStorage.getItem('traxy_topbar_mirrored');
+				if (savedMirror !== null) {
+					this.topbarMirrored = savedMirror === 'true';
+				}
+				const savedCollapsed = localStorage.getItem('traxy_sidebar_collapsed');
+				if (savedCollapsed !== null) {
+					this.sidebarCollapsed = savedCollapsed === 'true';
 				}
 			} catch (e) {
-				console.error('Failed to read topbar mirror preference', e);
+				console.error('Failed to read layout preferences', e);
 			}
 		}
 	}
@@ -127,6 +132,28 @@ class LayoutState {
 				localStorage.setItem('traxy_topbar_mirrored', String(this.topbarMirrored));
 			} catch (e) {
 				console.error('Failed to persist topbar mirror preference', e);
+			}
+		}
+	};
+
+	toggleSidebar = () => {
+		this.sidebarCollapsed = !this.sidebarCollapsed;
+		if (typeof window !== 'undefined') {
+			try {
+				localStorage.setItem('traxy_sidebar_collapsed', String(this.sidebarCollapsed));
+			} catch (e) {
+				console.error('Failed to persist sidebar collapsed preference', e);
+			}
+		}
+	};
+
+	setSidebarCollapsed = (collapsed: boolean) => {
+		this.sidebarCollapsed = collapsed;
+		if (typeof window !== 'undefined') {
+			try {
+				localStorage.setItem('traxy_sidebar_collapsed', String(this.sidebarCollapsed));
+			} catch (e) {
+				console.error('Failed to persist sidebar collapsed preference', e);
 			}
 		}
 	};

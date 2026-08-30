@@ -6,6 +6,7 @@
 	const username = $derived(userStore.value?.username ?? 'Traxy Explorer');
 	const profileInitial = $derived(username.charAt(0).toUpperCase());
 	const isMirrored = $derived(layoutStore.topbarMirrored);
+	const isCollapsed = $derived(layoutStore.sidebarCollapsed);
 
 	const navItems = drawerNavItems.filter((i) => i.href !== '/settings/about');
 	const aboutItem = drawerNavItems.find((i) => i.href === '/settings/about');
@@ -13,29 +14,33 @@
 
 <!-- Desktop Wireframe Side Panel (Moves together with top left/right button) -->
 <aside 
-	class="hidden md:flex flex-col w-64 h-screen sticky top-0 bg-[#0d0e18]/90 backdrop-blur-2xl transition-all duration-300 p-5 shrink-0 z-40 select-none
+	class="hidden md:flex flex-col h-screen sticky top-0 bg-[#0d0e18]/90 backdrop-blur-2xl transition-all duration-300 shrink-0 z-40 select-none
+		{isCollapsed ? 'w-20 p-3' : 'w-64 p-5'}
 		{isMirrored ? 'border-l border-white/[0.08]' : 'border-r border-white/[0.08]'}"
 >
 	<!-- Top Section from Wireframe: [Square Icon] Username with Divider -->
 	<a 
 		href="/profile" 
-		class="flex items-center gap-3.5 pb-4 mb-3 border-b border-white/[0.08] group transition-all"
-		title="Open user profile"
+		class="flex items-center gap-3.5 pb-4 mb-3 border-b border-white/[0.08] group transition-all
+			{isCollapsed ? 'justify-center' : ''}"
+		title="Open user profile ({username})"
 	>
 		<!-- Avatar square matching wireframe's top-left square -->
 		<div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/25 shrink-0 border border-white/[0.1] group-hover:scale-105 transition-transform">
 			{profileInitial}
 		</div>
-		<div class="min-w-0">
-			<div class="flex items-center gap-1.5">
-				<h2 class="font-bold text-white text-base truncate tracking-tight group-hover:text-indigo-300 transition-colors">
-					{username}
-				</h2>
+		{#if !isCollapsed}
+			<div class="min-w-0 flex-1">
+				<div class="flex items-center gap-1.5">
+					<h2 class="font-bold text-white text-base truncate tracking-tight group-hover:text-indigo-300 transition-colors">
+						{username}
+					</h2>
+				</div>
+				<p class="text-[11px] text-indigo-400 font-medium flex items-center gap-1">
+					<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> Profile & Stats
+				</p>
 			</div>
-			<p class="text-[11px] text-indigo-400 font-medium flex items-center gap-1">
-				<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> Profile & Stats
-			</p>
-		</div>
+		{/if}
 	</a>
 
 	<!-- Main Navigation Items from Wireframe Board 2 -->
@@ -44,12 +49,14 @@
 			{@const isActive = item.match($page.url.pathname)}
 			<a 
 				href={item.href}
-				class="flex items-center justify-between px-3 py-2.5 rounded-2xl font-semibold text-sm transition-all relative group
+				title={item.label}
+				class="flex items-center rounded-2xl font-semibold text-sm transition-all relative group
+					{isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2.5'}
 					{isActive 
 						? 'text-white bg-indigo-600/20 border border-indigo-500/35 shadow-sm shadow-indigo-500/10' 
 						: 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'}"
 			>
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-3 {isCollapsed ? 'justify-center' : ''}">
 					<!-- Rounded square icon wrapper from wireframe -->
 					<div class="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0
 						{isActive 
@@ -60,10 +67,12 @@
 							<path stroke-linecap="round" stroke-linejoin="round" d={item.icon} />
 						</svg>
 					</div>
-					<span class="tracking-tight">{item.label}</span>
+					{#if !isCollapsed}
+						<span class="tracking-tight">{item.label}</span>
+					{/if}
 				</div>
 
-				{#if item.badge}
+				{#if !isCollapsed && item.badge}
 					<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
 						{item.badge}
 					</span>
@@ -78,7 +87,9 @@
 			{@const isAboutActive = aboutItem.match($page.url.pathname)}
 			<a
 				href={aboutItem.href}
-				class="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-all group
+				title="About Traxy"
+				class="flex items-center rounded-2xl text-sm font-semibold transition-all group
+					{isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2.5'}
 					{isAboutActive 
 						? 'text-white bg-indigo-600/20 border border-indigo-500/35' 
 						: 'text-slate-400 hover:text-white hover:bg-white/[0.04]'}"
@@ -88,14 +99,18 @@
 						<path stroke-linecap="round" stroke-linejoin="round" d={aboutItem.icon} />
 					</svg>
 				</div>
-				<span>About Traxy</span>
+				{#if !isCollapsed}
+					<span>About Traxy</span>
+				{/if}
 			</a>
 		{/if}
 
 		<!-- Mirror toggle indicator -->
-		<div class="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500 rounded-xl bg-white/[0.02]">
-			<span>Panel Position</span>
-			<span class="font-bold text-slate-400 uppercase tracking-wider">{isMirrored ? 'Right' : 'Left'}</span>
-		</div>
+		{#if !isCollapsed}
+			<div class="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500 rounded-xl bg-white/[0.02]">
+				<span>Panel Position</span>
+				<span class="font-bold text-slate-400 uppercase tracking-wider">{isMirrored ? 'Right' : 'Left'}</span>
+			</div>
+		{/if}
 	</div>
 </aside>
