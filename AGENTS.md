@@ -142,3 +142,25 @@ and the `TRACKLIST_ENABLE_*` integration flags.
   `pnpm lint` before committing frontend changes.
 - **C# analysis**: SonarAnalyzer is active; fix new warnings it raises.
 - **Logging**: Serilog with structured logging. Inject `ILogger<T>`; avoid `Console.Write`.
+
+## Component & Architecture Rules
+
+### Reuse before building
+Before creating any UI element, check `src/lib/components/` and `src/lib/components/ui/`.
+If a suitable component exists, reuse or extend it. Do NOT duplicate or build ad-hoc DIY solutions.
+- Never write inline custom button/badge/card styling (e.g., ad-hoc `bg-[#121422]` divs or custom button markups) when shared atoms exist. Use `Card`, `Button`, `Badge`, etc.
+- Use `MediaCard.svelte` for any list or grid displaying media items. Do NOT recreate poster + title + metadata cards from scratch.
+
+### Service layer is mandatory
+Pages and components MUST NOT import directly from `$lib/db/index` or call Dexie/database queries directly.
+All data access and mutations MUST go through a service in `$lib/db/services/`.
+
+### Thin stores
+Stores (`src/lib/stores/`) are strictly for reactive client state. Do not put business logic or direct persistence queries into stores; delegate to services.
+
+### Settings architecture
+Never dump all settings UI into a single monolithic page.
+Each settings section lives in its own sub-route under `routes/settings/<section>/+page.svelte`.
+
+### Feature flags for extensions
+New optional or upcoming features must be gated by a flag key in `AppSettings` (e.g. `feat_cloud_sync`, `feat_catalogue`, `feat_rewind`). Always check the flag before rendering associated UI or route segments.
