@@ -1,9 +1,11 @@
 <script lang="ts">
-	import type { ActivityItem } from '$lib/types/activityTypes';
+	import type { FeedItem } from '$lib/types/activityTypes';
+	import { isGrouped } from '$lib/types/activityTypes';
 	import { getMediaTypeGroup, STATUS_LABELS_BY_GROUP } from '$lib/constants';
+	import type { ActivityItem } from '$lib/types/activityTypes';
 
 	interface Props {
-		activity: ActivityItem;
+		activity: FeedItem;
 	}
 	let { activity }: Props = $props();
 
@@ -72,25 +74,52 @@
 		const now = new Date();
 		const diffMs = now.getTime() - date.getTime();
 		const diffMins = Math.floor(diffMs / 60000);
-		
+
 		if (isNaN(diffMins) || diffMins < 1) return 'Just now';
 		if (diffMins < 60) return `${diffMins}m ago`;
-		
+
 		const diffHours = Math.floor(diffMins / 60);
 		if (diffHours < 24) return `${diffHours}h ago`;
-		
+
 		const diffDays = Math.floor(diffHours / 24);
 		if (diffDays === 1) return 'Yesterday';
 		if (diffDays < 30) return `${diffDays}d ago`;
-		
+
 		return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 	}
 
-	const actionTitle = $derived(getEventDescription(activity));
-	const subtitleText = $derived(activity.subtitle ?? activity.mediaTitle);
-	const icon = $derived(getEventIcon(activity));
+	// Derived display values – handle both single and grouped
+	const grouped = $derived(isGrouped(activity));
+
+	const actionTitle = $derived(() => {
+		if (isGrouped(activity)) {
+			if (activity.eventType === 'episode_watched') {
+				if (activity.season) {
+					return `Watched S${String(activity.season).padStart(2, '0')}E${String(activity.from).padStart(2, '0')}–E${String(activity.to).padStart(2, '0')}`;
+				}
+				return `Watched episodes ${activity.from}–${activity.to}`;
+			}
+			// chapter_read
+			return `Read chapters ${activity.from}–${activity.to}`;
+		}
+		return getEventDescription(activity as ActivityItem);
+	});
+
+	const subtitleText = $derived(
+		(activity as ActivityItem).subtitle ?? activity.mediaTitle
+	);
+
+	const icon = $derived(
+		grouped
+			? (activity.eventType === 'episode_watched' ? '📺' : '📖')
+			: getEventIcon(activity as ActivityItem)
+	);
+
 	const time = $derived(timeAgo(activity.occurredAt));
-	const href = $derived(activity.href ?? (activity.mediaId ? `/media/${activity.mediaId}` : null));
+
+	const href = $derived(
+		(activity as ActivityItem).href ?? (activity.mediaId ? `/media/${activity.mediaId}` : null)
+	);
 </script>
 
 <svelte:element
@@ -99,20 +128,35 @@
 	class="block bg-[#131627]/85 hover:bg-[#191d33] border border-white/[0.08] hover:border-indigo-500/30 rounded-2xl p-3.5 sm:p-4 transition-all duration-200 group shadow-sm hover:shadow-indigo-500/5 select-none"
 >
 	<div class="flex gap-3.5 sm:gap-4 items-center">
-		<!-- Left: Square thumbnail/poster/icon from wireframe -->
+		<!-- Left: Square thumbnail/poster/icon -->
 		{#if activity.mediaPosterUrl}
-			<img 
-				src={activity.mediaPosterUrl} 
-				alt={subtitleText} 
-				class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl shadow-md bg-slate-900 border border-white/[0.08] shrink-0 group-hover:scale-105 transition-transform" 
-			/>
+			<div class="relative shrink-0">
+				<img
+					src={activity.mediaPosterUrl}
+					alt={subtitleText}
+					class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl shadow-md bg-slate-900 border border-white/[0.08] group-hover:scale-105 transition-transform"
+				/>
+				{#if grouped}
+					<!-- Count badge in corner for grouped items -->
+					<span class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none shadow-md shadow-indigo-900/50 border border-indigo-400/40">
+						×{(activity as import('$lib/types/activityTypes').GroupedActivityItem).count}
+					</span>
+				{/if}
+			</div>
 		{:else}
-			<div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#1a1d30] border border-white/[0.08] flex items-center justify-center shrink-0 shadow-inner group-hover:bg-[#20253d] transition-colors">
-				<span class="text-xl">{icon}</span>
+			<div class="relative shrink-0">
+				<div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#1a1d30] border border-white/[0.08] flex items-center justify-center shadow-inner group-hover:bg-[#20253d] transition-colors">
+					<span class="text-xl">{icon}</span>
+				</div>
+				{#if grouped}
+					<span class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none shadow-md shadow-indigo-900/50 border border-indigo-400/40">
+						×{(activity as import('$lib/types/activityTypes').GroupedActivityItem).count}
+					</span>
+				{/if}
 			</div>
 		{/if}
 
-		<!-- Right: Action details from wireframe -->
+		<!-- Right: Action details -->
 		<div class="flex-1 min-w-0 flex flex-col justify-center">
 			<!-- Top line: [icon] Time ago -->
 			<div class="flex items-center gap-1.5 mb-0.5">
@@ -120,14 +164,19 @@
 					<span class="text-[10px] opacity-75">{icon}</span>
 					<span>{time}</span>
 				</span>
+				{#if grouped}
+					<span class="ml-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/15 border border-indigo-500/25 rounded-full px-1.5 py-0.5 leading-none">
+						{(activity as import('$lib/types/activityTypes').GroupedActivityItem).count} in a row
+					</span>
+				{/if}
 			</div>
 
 			<!-- Middle line: Action (Bold) -->
 			<h3 class="text-white font-bold text-sm sm:text-base leading-snug group-hover:text-indigo-300 transition-colors truncate">
-				{actionTitle}
+				{actionTitle()}
 			</h3>
 
-			<!-- Bottom line: Subtitle / Title / Additional information -->
+			<!-- Bottom line: Media title -->
 			<p class="text-slate-400 text-xs sm:text-sm font-normal mt-0.5 truncate">
 				{subtitleText}
 			</p>

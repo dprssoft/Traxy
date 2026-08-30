@@ -3,8 +3,10 @@
 	import ActivityCard from '$lib/components/ActivityCard.svelte';
 	import InfiniteScrollSentinel from '$lib/components/InfiniteScrollSentinel.svelte';
 	import { getActivityFeed } from '$lib/db/services/activity.service';
-	import type { ActivityItem } from '$lib/types/activityTypes';
+	import type { ActivityItem, FeedItem, GroupedActivityItem } from '$lib/types/activityTypes';
+	import { isGrouped } from '$lib/types/activityTypes';
 	import { onMount, untrack } from 'svelte';
+
 
 	let { data }: { data: PageData } = $props();
 
@@ -27,7 +29,94 @@
 		offset = 20;
 	});
 
-	// Items with category mapping (defaults to user_action for tracking events)
+	/**
+	 * Merge consecutive episode_watched / chapter_read events for the same media
+	 * when the time gap between any two adjacent ones is <= MAX_GAP_MS and there
+	 * are no other event types in between.
+	 */
+	const MAX_GAP_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+	function groupConsecutiveProgress(items: ActivityItem[]): FeedItem[] {
+		const result: FeedItem[] = [];
+		let i = 0;
+		while (i < items.length) {
+			const cur = items[i];
+			const isProgress =
+				cur.eventType === 'episode_watched' || cur.eventType === 'chapter_read';
+
+			if (!isProgress) {
+				result.push(cur);
+				i++;
+				continue;
+			}
+
+			// Collect run of same media + same eventType within time window
+			const run: ActivityItem[] = [cur];
+			let j = i + 1;
+			while (j < items.length) {
+				const next = items[j];
+				if (
+					next.eventType !== cur.eventType ||
+					next.mediaId !== cur.mediaId
+				) break;
+				// Note: items are newest-first, so cur is MORE recent than next
+				const gap = new Date(run[run.length - 1].occurredAt).getTime() -
+					new Date(next.occurredAt).getTime();
+				if (gap > MAX_GAP_MS) break;
+				run.push(next);
+				j++;
+			}
+
+			if (run.length === 1) {
+				result.push(cur);
+				i++;
+				continue;
+			}
+
+			// Build grouped item from the run
+			const nums = run.map((r) => {
+				if (cur.eventType === 'episode_watched') return r.payload?.episode ?? 0;
+				return r.payload?.chapter ?? 0;
+			}).filter(Boolean);
+
+			const minNum = Math.min(...nums);
+			const maxNum = Math.max(...nums);
+
+			// Only group if actual progressive number range makes sense
+			if (minNum === 0 || maxNum === 0) {
+				// Can't determine range — emit individually
+				for (const r of run) result.push(r);
+			} else {
+				// Season: only set if all episodes share the same season
+				let season: number | undefined;
+				if (cur.eventType === 'episode_watched') {
+					const seasons = [...new Set(run.map((r) => r.payload?.season).filter(Boolean))];
+					if (seasons.length === 1) season = seasons[0] as number;
+				}
+
+				const grouped: GroupedActivityItem = {
+					isGroup: true,
+					id: run.map((r) => r.id).join('-'),
+					mediaId: cur.mediaId,
+					mediaTitle: cur.mediaTitle,
+					mediaPosterUrl: cur.mediaPosterUrl,
+					mediaType: cur.mediaType,
+					eventType: cur.eventType!,
+					category: cur.category ?? 'user_action',
+					from: minNum,
+					to: maxNum,
+					season,
+					count: run.length,
+					occurredAt: run[0].occurredAt, // newest
+				};
+				result.push(grouped);
+			}
+			i = j;
+		}
+		return result;
+	}
+
+	// Items with category mapping
 	const allItems = $derived(
 		rawDbItems.map((item) => ({
 			...item,
@@ -35,16 +124,18 @@
 		}))
 	);
 
-	// Filtered list based on wireframe checkboxes
-	const filteredItems = $derived(
-		allItems.filter((item) => {
+	// Apply grouping then category filters
+	const filteredItems = $derived(() => {
+		const preFiltered = allItems.filter((item) => {
 			const cat = item.category ?? 'user_action';
 			if (cat === 'user_action' && !filterUserActions) return false;
 			if (cat === 'system' && !filterSystemMessages) return false;
 			if (cat === 'media_update' && !filterMediaUpdates) return false;
 			return true;
-		})
-	);
+		});
+		return groupConsecutiveProgress(preFiltered);
+	});
+
 
 	async function loadMore() {
 		if (isLoading || !hasMore) return;
@@ -178,7 +269,7 @@
 				<span>🔍</span> Search & Track Media
 			</a>
 		</div>
-	{:else if filteredItems.length === 0}
+	{:else if filteredItems().length === 0}
 		<!-- Empty state when all items are filtered out by checkboxes -->
 		<div class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-8 text-center shadow-xl space-y-3">
 			<div class="w-12 h-12 mx-auto rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xl text-slate-400">
@@ -202,7 +293,7 @@
 		</div>
 	{:else}
 		<div class="flex flex-col gap-3">
-			{#each filteredItems as item (item.id)}
+			{#each filteredItems() as item (item.id)}
 				<ActivityCard activity={item} />
 			{/each}
 
