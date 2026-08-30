@@ -25,12 +25,15 @@
 		return () => window.removeEventListener('keydown', handleKeydown);
 	});
 
-	// Close drawer on route change
+	// Close drawer on route change only
+	let currentPath = $page.url.pathname;
 	$effect(() => {
-		// Reading pathname registers dependency
-		const _ = $page.url.pathname;
-		if (isOpen) {
-			close();
+		const newPath = $page.url.pathname;
+		if (newPath !== currentPath) {
+			currentPath = newPath;
+			if (layoutStore.mobileMenuOpen) {
+				layoutStore.closeMobileMenu();
+			}
 		}
 	});
 

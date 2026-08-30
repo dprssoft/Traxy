@@ -102,10 +102,13 @@
 			isDragging = false;
 			isOverDropZone = false;
 			dragOffsetX = 0;
-			// Keep didDrag true briefly so onclick is ignored
+			// Keep didDrag true briefly so click doesn't trigger immediately
 			setTimeout(() => {
 				didDrag = false;
-			}, 200);
+			}, 250);
+		} else {
+			// Normal tap on touch screens
+			triggerMenuToggle();
 		}
 
 		isPressing = false;
@@ -122,10 +125,17 @@
 		dragOffsetX = 0;
 	}
 
-	function handleClick(e: MouseEvent) {
-		// If user completed a drag, don't open drawer
+	let lastToggleTime = 0;
+	function triggerMenuToggle() {
 		if (didDrag || isDragging) return;
+		const now = Date.now();
+		if (now - lastToggleTime < 300) return; // Prevent double-trigger from pointerup + click
+		lastToggleTime = now;
 		layoutStore.toggleMobileMenu();
+	}
+
+	function handleClick(e: MouseEvent) {
+		triggerMenuToggle();
 	}
 
 	function directMirrorDrop() {
