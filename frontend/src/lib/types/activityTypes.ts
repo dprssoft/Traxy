@@ -1,4 +1,4 @@
-﻿import type { ActivityEventType, MediaType } from '$lib/db/schema';
+import type { ActivityEventType, MediaType } from '$lib/db/schema';
 
 export type { ActivityEventType };
 
@@ -18,14 +18,21 @@ export interface ActivityPayload {
 	count?: number; // for mal_import
 }
 
+export type ActivityCategory = 'user_action' | 'system' | 'media_update';
+
 /** Fully-typed ActivityLog row with payload already parsed from JSON. */
 export interface ActivityItem {
 	id: string;
-	mediaId: string;
+	mediaId?: string;
 	mediaTitle: string;
 	mediaPosterUrl?: string;
-	mediaType: MediaType;
-	eventType: ActivityEventType;
-	payload: ActivityPayload;
+	mediaType?: MediaType;
+	eventType?: ActivityEventType;
+	category?: ActivityCategory;
+	actionText?: string;
+	subtitle?: string;
+	href?: string;
+	icon?: string;
+	payload?: ActivityPayload;
 	occurredAt: string; // ISO
 }
