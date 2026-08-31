@@ -23,11 +23,12 @@
 		{ value: 'planned', label: statusLabels['planned'] },
 		{ value: 'in_progress', label: statusLabels['in_progress'] },
 		{ value: 'completed', label: statusLabels['completed'] },
+		...(group === 'game' ? [{ value: 'watched_letsplay', label: statusLabels['watched_letsplay'] }] : []),
 		{ value: 'paused', label: statusLabels['paused'] },
 		{ value: 'dropped', label: statusLabels['dropped'] },
 	]);
 
-	async function updateStatus(newStatus: 'planned' | 'in_progress' | 'completed' | 'paused' | 'dropped') {
+	async function updateStatus(newStatus: 'planned' | 'in_progress' | 'completed' | 'paused' | 'dropped' | 'watched_letsplay') {
 		isOpen = false;
 		if (tracking?.status === newStatus) return;
 

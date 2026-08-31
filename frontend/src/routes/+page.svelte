@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import ActivityCard from '$lib/components/ActivityCard.svelte';
+	import FeedEntry from '$lib/components/FeedEntry.svelte';
 	import InfiniteScrollSentinel from '$lib/components/InfiniteScrollSentinel.svelte';
 	import { getActivityFeed } from '$lib/db/services/activity.service';
 	import type { ActivityItem, FeedItem, GroupedActivityItem } from '$lib/types/activityTypes';
@@ -29,105 +29,8 @@
 		offset = 20;
 	});
 
-	/**
-	 * Merge consecutive episode_watched / chapter_read events for the same media
-	 * when the time gap between any two adjacent ones is <= MAX_GAP_MS and there
-	 * are no other event types in between.
-	 */
-	const MAX_GAP_MS = 2 * 60 * 60 * 1000; // 2 hours
+	import { groupConsecutiveProgress } from '$lib/utils/feed';
 
-	function groupConsecutiveProgress(items: ActivityItem[]): FeedItem[] {
-		const result: FeedItem[] = [];
-		let i = 0;
-		while (i < items.length) {
-			const cur = items[i];
-			const isProgress =
-				cur.eventType === 'episode_watched' || cur.eventType === 'chapter_read';
-
-			if (!isProgress) {
-				result.push(cur);
-				i++;
-				continue;
-			}
-
-			// Collect run of same media + same eventType within time window
-			const run: ActivityItem[] = [cur];
-			let j = i + 1;
-			while (j < items.length) {
-				const next = items[j];
-				if (
-					next.eventType !== cur.eventType ||
-					next.mediaId !== cur.mediaId
-				) break;
-				// Note: items are newest-first, so cur is MORE recent than next
-				const gap = new Date(run[run.length - 1].occurredAt).getTime() -
-					new Date(next.occurredAt).getTime();
-				if (gap > MAX_GAP_MS) break;
-				run.push(next);
-				j++;
-			}
-
-			if (run.length === 1) {
-				result.push(cur);
-				i++;
-				continue;
-			}
-
-			// Build grouped item from the run
-			const nums = run.map((r) => {
-				if (cur.eventType === 'episode_watched') return Number(r.payload?.episode ?? 0);
-				return Number(r.payload?.chapter ?? 0);
-			});
-
-			// Verify this is a genuine forward-progress run:
-			// Items are newest-first, so a real binge has strictly DECREASING numbers
-			// in this array (ep8 newest → ep5 oldest). Decrements produce INCREASING
-			// numbers (ep3 newest → ep5 oldest) and must NOT be grouped.
-			const allValid = nums.every((n) => n > 0);
-			const isForwardProgress = nums.every((n, idx) => idx === 0 || nums[idx - 1] > n);
-
-			if (!allValid || !isForwardProgress) {
-				// Can't determine range or it's a correction run — emit individually
-				for (const r of run) result.push(r);
-			} else {
-				const minNum = nums[nums.length - 1]; // oldest = lowest episode
-				const maxNum = nums[0];               // newest = highest episode
-
-				// Season: only set if all episodes share the same season
-				let season: number | undefined;
-				if (cur.eventType === 'episode_watched') {
-					const seasons = [...new Set(run.map((r) => r.payload?.season).filter(Boolean))];
-					if (seasons.length === 1) season = seasons[0] as number;
-				}
-
-				let volume: number | undefined;
-				if (cur.eventType === 'chapter_read') {
-					const volumes = [...new Set(run.map((r) => r.payload?.volume).filter(Boolean))];
-					if (volumes.length === 1) volume = volumes[0] as number;
-				}
-
-				const grouped: GroupedActivityItem = {
-					isGroup: true,
-					id: run.map((r) => r.id).join('-'),
-					mediaId: cur.mediaId,
-					mediaTitle: cur.mediaTitle,
-					mediaPosterUrl: cur.mediaPosterUrl,
-					mediaType: cur.mediaType,
-					eventType: cur.eventType!,
-					category: cur.category ?? 'user_action',
-					from: minNum,
-					to: maxNum,
-					season,
-					volume,
-					count: run.length,
-					occurredAt: run[0].occurredAt, // newest
-				};
-				result.push(grouped);
-			}
-			i = j;
-		}
-		return result;
-	}
 
 	// Items with category mapping
 	const allItems = $derived(
@@ -307,7 +210,7 @@
 	{:else}
 		<div class="flex flex-col gap-3">
 			{#each filteredItems() as item (item.id)}
-				<ActivityCard activity={item} />
+				<FeedEntry activity={item} />
 			{/each}
 
 			<InfiniteScrollSentinel onLoadMore={loadMore} loading={isLoading} {hasMore} />
