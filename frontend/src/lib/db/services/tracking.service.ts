@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { logActivity } from './activity.service';
 import { getMediaById } from './media.service';
 import { createCycle, closeCycle } from './cycle.service';
+import { handleProgressDecrement } from './activity.service';
+import type { ActivityPayload } from '$lib/types/activityTypes';
 
 // Progress field → ActivityLog event type mapping
 const PROGRESS_EVENT_MAP: Partial<Record<keyof LocalTrackingStatus, string>> = {
@@ -184,6 +186,11 @@ export async function upsertTracking(
 /**
  * Update a single progress field (episode, chapter, page, etc.) and write the
  * corresponding ActivityLog event.
+ *
+ * Rules:
+ * - currentSeason changes never emit their own event (they accompany an episode update).
+ * - Progress-type events (episode/chapter/page) are only logged when the value is > 0
+ *   AND greater than the previous stored value (forward progress only — no decrements).
  */
 export async function updateProgress(
 	mediaId: string,
@@ -191,6 +198,7 @@ export async function updateProgress(
 	value: number | string,
 ): Promise<void> {
 	const db = getDb();
+	const prev = await getTracking(mediaId);
 	const media = await getMediaById(mediaId);
 	const now = new Date().toISOString();
 
@@ -199,10 +207,41 @@ export async function updateProgress(
 		[value, now, mediaId],
 	);
 
+	// Season changes are side-effects of episode changes — never log separately.
+	if (field === 'currentSeason') return;
+
+	const numValue = typeof value === 'number' ? value : parseFloat(value as string);
+	const prevNumValue = prev ? ((prev[field] as number | undefined) ?? 0) : 0;
+
+	// Only log for numeric progress events when the value is > 0 and represents forward progress.
+	const isProgressField = field in PROGRESS_EVENT_MAP;
+	if (isProgressField) {
+		if (isNaN(numValue) || numValue <= 0) return;     // Bug 3: skip zero/falsy
+		if (numValue <= prevNumValue) {
+			// Bug 1: skip decrements, BUT ensure the feed is accurate by deleting higher logs
+			const payloadKey =
+				field === 'currentEpisode' ? 'episode' :
+				field === 'currentChapter' ? 'chapter' :
+				field === 'currentVolume' ? 'volume' :
+				field === 'currentPage' ? 'page' :
+				field === 'currentIssue' ? 'issue' :
+				field === 'hoursPlayed' ? 'hours' : null;
+
+			if (payloadKey) {
+				const evtType = (PROGRESS_EVENT_MAP[field] ?? 'status_changed') as import('$lib/db/schema').ActivityEventType;
+				const { highestRemaining } = await handleProgressDecrement(mediaId, evtType, payloadKey as keyof ActivityPayload, numValue);
+				if (highestRemaining >= numValue) {
+					return; // We already have a log for this value, no need to log a new one
+				}
+			} else {
+				return;
+			}
+		}
+	}
+
 	const eventType = (PROGRESS_EVENT_MAP[field] ?? 'status_changed') as import('$lib/db/schema').ActivityEventType;
 	const payload: Record<string, unknown> = {};
 	if (field === 'currentEpisode') payload.episode = value;
-	else if (field === 'currentSeason') payload.season = value;
 	else if (field === 'currentChapter') payload.chapter = value;
 	else if (field === 'currentVolume') payload.volume = value;
 	else if (field === 'currentPage') payload.page = value;

@@ -4,6 +4,33 @@ import type { ActivityItem, ActivityPayload } from '$lib/types/activityTypes';
 import type { HeatmapDay } from '$lib/types/statsTypes';
 import { v4 as uuidv4 } from 'uuid';
 
+function getCategoryForEventType(eventType: ActivityItem['eventType']): ActivityItem['category'] {
+	if (
+		eventType === 'backup_created' ||
+		eventType === 'backup_failed' ||
+		eventType === 'import_completed' ||
+		eventType === 'import_failed' ||
+		eventType === 'app_error' ||
+		eventType === 'app_warning' ||
+		eventType === 'mal_import' ||
+		eventType === 'anilist_import' ||
+		eventType === 'tmdb_import'
+	) {
+		return 'system';
+	}
+	if (
+		eventType === 'media_new_episode' ||
+		eventType === 'media_new_season' ||
+		eventType === 'media_new_chapter' ||
+		eventType === 'media_new_volume' ||
+		eventType === 'media_dropped' ||
+		eventType === 'media_hiatus'
+	) {
+		return 'media_update';
+	}
+	return 'user_action';
+}
+
 function rowToItem(row: any): ActivityItem {
 	let id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt;
 	if (Array.isArray(row)) {
@@ -11,21 +38,68 @@ function rowToItem(row: any): ActivityItem {
 	} else {
 		({ id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt } = row);
 	}
+	const parsedPayload = payload
+		? (typeof payload === 'string' ? JSON.parse(payload) : payload) as ActivityPayload
+		: {} as ActivityPayload;
+
+	const evt = eventType as ActivityItem['eventType'];
+	const category = getCategoryForEventType(evt);
+
 	return {
 		id,
-		mediaId,
-		mediaTitle,
+		mediaId: mediaId ?? undefined,
+		mediaTitle: mediaTitle ?? undefined,
 		mediaPosterUrl: mediaPosterUrl ?? undefined,
-		mediaType: mediaType as ActivityItem['mediaType'],
-		eventType: eventType as ActivityItem['eventType'],
-		payload: payload ? (typeof payload === 'string' ? JSON.parse(payload) : payload) as ActivityPayload : {} as ActivityPayload,
+		mediaType: mediaType ? (mediaType as ActivityItem['mediaType']) : undefined,
+		eventType: evt,
+		category,
+		body: parsedPayload.note || parsedPayload.message || undefined,
+		details: parsedPayload.details || undefined,
+		payload: parsedPayload,
 		occurredAt,
 	};
 }
 
 /**
+ * Handle a decrement in progress by removing logs above the new value,
+ * and ensuring there is a log for the new value if needed.
+ */
+export async function handleProgressDecrement(
+	mediaId: string,
+	eventType: ActivityItem['eventType'],
+	payloadKey: keyof ActivityPayload,
+	newValue: number
+): Promise<{ highestRemaining: number }> {
+	const db = getDb();
+	const logs = await getActivityForMedia(mediaId);
+	const targetLogs = logs.filter(l => l.eventType === eventType);
+
+	let highestRemaining = 0;
+	const toDelete: string[] = [];
+
+	for (const log of targetLogs) {
+		const val = log.payload?.[payloadKey] as number | undefined;
+		if (typeof val === 'number') {
+			if (val > newValue) {
+				toDelete.push(log.id);
+			} else if (val > highestRemaining) {
+				highestRemaining = val;
+			}
+		}
+	}
+
+	if (toDelete.length > 0) {
+		for (const id of toDelete) {
+			await db.run('DELETE FROM ActivityLog WHERE id = ?', [id]);
+		}
+	}
+
+	return { highestRemaining };
+}
+
+/**
  * Write a new event to the ActivityLog.
- * Called by tracking.service and cycle.service after every meaningful change.
+ * Called by tracking.service, cycle.service, and system events after every meaningful change.
  */
 export async function logActivity(
 	entry: Omit<ActivityLog, 'id' | 'occurredAt' | 'payload'> & { payload: ActivityPayload },
@@ -36,10 +110,10 @@ export async function logActivity(
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			uuidv4(),
-			entry.mediaId,
-			entry.mediaTitle,
+			entry.mediaId ?? null,
+			entry.mediaTitle ?? null,
 			entry.mediaPosterUrl ?? null,
-			entry.mediaType,
+			entry.mediaType ?? null,
 			entry.eventType,
 			JSON.stringify(entry.payload),
 			new Date().toISOString(),

@@ -2,35 +2,50 @@ import type { ActivityEventType, MediaType } from '$lib/db/schema';
 
 export type { ActivityEventType };
 
+export type ActivityCategory = 'user_action' | 'system' | 'media_update';
+
 /** Parsed payload attached to each ActivityLog entry. */
 export interface ActivityPayload {
-	from?: string;
-	to?: string;
+	from?: string | number;
+	to?: string | number;
 	season?: number;
 	episode?: number;
+	episodes?: number;
 	chapter?: number;
+	chapters?: number;
 	volume?: number;
 	issue?: number;
 	page?: number;
 	hours?: number;
 	score?: number;
 	cycleNumber?: number;
-	count?: number; // for mal_import
+	count?: number; // for imports
+	source?: string;
+	collectionName?: string;
+	collectionType?: 'mono' | 'mixed';
+	collectionMediaType?: MediaType;
+	username?: string;
+	message?: string;
+	note?: string;
+	details?: string;
+	error?: string;
 }
-
-export type ActivityCategory = 'user_action' | 'system' | 'media_update';
 
 /** Fully-typed ActivityLog row with payload already parsed from JSON. */
 export interface ActivityItem {
 	id: string;
 	mediaId?: string;
-	mediaTitle: string;
+	mediaTitle?: string;
 	mediaPosterUrl?: string;
 	mediaType?: MediaType;
-	eventType?: ActivityEventType;
+	eventType: ActivityEventType;
 	category?: ActivityCategory;
 	actionText?: string;
 	subtitle?: string;
+	details?: string;
+	body?: string; // Inline body text (e.g. first 20 symbols of note)
+	imageKind?: 'poster' | 'system';
+	imageUrl?: string;
 	href?: string;
 	icon?: string;
 	payload?: ActivityPayload;
@@ -47,7 +62,7 @@ export interface GroupedActivityItem {
 	/** Stable key for #each – uses ids of constituent events joined */
 	id: string;
 	mediaId?: string;
-	mediaTitle: string;
+	mediaTitle?: string;
 	mediaPosterUrl?: string;
 	mediaType?: MediaType;
 	eventType: ActivityEventType; // always episode_watched | chapter_read
@@ -58,12 +73,13 @@ export interface GroupedActivityItem {
 	to: number;
 	/** Season (only for episode_watched, if all in same season) */
 	season?: number;
-	/** Volume (only for chapter_read, if all in same volume) */
-	volume?: number;
 	/** Number of items grouped */
 	count: number;
 	/** Timestamp of the newest item in the group */
 	occurredAt: string;
+	body?: string;
+	details?: string;
+	icon?: string;
 }
 
 export type FeedItem = ActivityItem | GroupedActivityItem;
