@@ -1,9 +1,10 @@
 export type MediaType = 'film' | 'tv' | 'game' | 'anime' | 'manga' | 'manhwa' | 'manhua' | 'comic' | 'book';
 export type MediaSource = 'tmdb' | 'rawg' | 'steam' | 'igdb' | 'anilist' | 'comicvine' | 'openlibrary' | 'manual';
-export type TrackingStatusType = 'planned' | 'in_progress' | 'completed' | 'dropped' | 'paused';
+export type TrackingStatusType = 'planned' | 'in_progress' | 'completed' | 'dropped' | 'paused' | 'watched_letsplay';
 export type CompletionTier = 'main_story' | 'main_plus_sides' | 'completionist';
 
 export type ActivityEventType =
+  // user_action
   | 'status_changed'
   | 'episode_watched'
   | 'chapter_read'
@@ -17,9 +18,25 @@ export type ActivityEventType =
   | 'rewatch_completed'
   | 'added_to_collection'
   | 'removed_from_collection'
+  | 'collection_created'
+  | 'profile_updated'
+  // system
   | 'mal_import'
   | 'anilist_import'
-  | 'tmdb_import';
+  | 'tmdb_import'
+  | 'import_completed'
+  | 'import_failed'
+  | 'backup_created'
+  | 'backup_failed'
+  | 'app_error'
+  | 'app_warning'
+  // media_update
+  | 'media_new_episode'
+  | 'media_new_season'
+  | 'media_new_chapter'
+  | 'media_new_volume'
+  | 'media_dropped'
+  | 'media_hiatus';
 
 export interface MediaSeasonData {
   seasonNumber: number;
@@ -86,10 +103,10 @@ export interface CollectionItem {
 
 export interface ActivityLog {
   id: string; // UUID
-  mediaId: string;
-  mediaTitle: string;
+  mediaId?: string;
+  mediaTitle?: string;
   mediaPosterUrl?: string;
-  mediaType: MediaType;
+  mediaType?: MediaType;
   eventType: ActivityEventType;
   payload: string; // JSON string
   occurredAt: string; // ISO string

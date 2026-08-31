@@ -28,6 +28,7 @@ export const STATUS_LABELS_BY_GROUP: Record<MediaTypeGroup, Record<string, strin
 		completed: 'Completed',
 		dropped: 'Dropped',
 		paused: 'Paused',
+		watched_letsplay: 'Watched Let\'s Play',
 	},
 	read: {
 		planned: 'Planned',
@@ -56,6 +57,7 @@ export const TRACKING_STATUS_LABELS_GENERIC: Record<string, string> = {
 	completed: 'Completed',
 	dropped: 'Dropped',
 	paused: 'Paused',
+	watched_letsplay: 'Watched Let\'s Play',
 };
 
 // ---------------------------------------------------------------------------

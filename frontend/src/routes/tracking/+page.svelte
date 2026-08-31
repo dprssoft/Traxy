@@ -8,11 +8,11 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// Add paused to standard tabs, watching is now in_progress
 	const tabs = [
 		{ id: 'in_progress', label: 'In Progress' },
 		{ id: 'planned', label: 'Planned' },
 		{ id: 'completed', label: 'Completed' },
+		{ id: 'watched_letsplay', label: 'Let\'s Play' },
 		{ id: 'paused', label: 'Paused' },
 		{ id: 'dropped', label: 'Dropped' },
 	] as const;
