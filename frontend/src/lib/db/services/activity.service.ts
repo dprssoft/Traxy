@@ -36,11 +36,12 @@ function rowToItem(row: any): ActivityItem {
 	if (Array.isArray(row)) {
 		[id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt] = row;
 	} else {
-		({ id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt } = row);
+		({ id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt } =
+			row);
 	}
 	const parsedPayload = payload
-		? (typeof payload === 'string' ? JSON.parse(payload) : payload) as ActivityPayload
-		: {} as ActivityPayload;
+		? ((typeof payload === 'string' ? JSON.parse(payload) : payload) as ActivityPayload)
+		: ({} as ActivityPayload);
 
 	const evt = eventType as ActivityItem['eventType'];
 	const category = getCategoryForEventType(evt);
@@ -68,13 +69,14 @@ export async function handleProgressDecrement(
 	mediaId: string,
 	eventType: ActivityItem['eventType'],
 	payloadKey: keyof ActivityPayload,
-	newValue: number
-): Promise<{ highestRemaining: number }> {
+	newValue: number,
+): Promise<{ highestRemaining: number; highestRemainingOccurredAt: string | null }> {
 	const db = getDb();
 	const logs = await getActivityForMedia(mediaId);
-	const targetLogs = logs.filter(l => l.eventType === eventType);
+	const targetLogs = logs.filter((l) => l.eventType === eventType);
 
 	let highestRemaining = 0;
+	let highestRemainingOccurredAt: string | null = null;
 	const toDelete: string[] = [];
 
 	for (const log of targetLogs) {
@@ -84,25 +86,29 @@ export async function handleProgressDecrement(
 				toDelete.push(log.id);
 			} else if (val > highestRemaining) {
 				highestRemaining = val;
+				highestRemainingOccurredAt = log.occurredAt;
 			}
 		}
 	}
 
 	if (toDelete.length > 0) {
-		for (const id of toDelete) {
-			await db.run('DELETE FROM ActivityLog WHERE id = ?', [id]);
-		}
+		const placeholders = toDelete.map(() => '?').join(',');
+		await db.run(`DELETE FROM ActivityLog WHERE id IN (${placeholders})`, toDelete);
 	}
 
-	return { highestRemaining };
+	return { highestRemaining, highestRemainingOccurredAt };
 }
 
 /**
  * Write a new event to the ActivityLog.
  * Called by tracking.service, cycle.service, and system events after every meaningful change.
+ * Pass `occurredAt` to backdate the log (e.g. when continuing a session after a correction).
  */
 export async function logActivity(
-	entry: Omit<ActivityLog, 'id' | 'occurredAt' | 'payload'> & { payload: ActivityPayload },
+	entry: Omit<ActivityLog, 'id' | 'occurredAt' | 'payload'> & {
+		payload: ActivityPayload;
+		occurredAt?: string;
+	},
 ): Promise<void> {
 	const db = getDb();
 	await db.run(
@@ -116,7 +122,7 @@ export async function logActivity(
 			entry.mediaType ?? null,
 			entry.eventType,
 			JSON.stringify(entry.payload),
-			new Date().toISOString(),
+			entry.occurredAt ?? new Date().toISOString(),
 		],
 	);
 }
@@ -125,7 +131,7 @@ export async function logActivity(
 export async function getActivityFeed(limit = 20, offset = 0): Promise<ActivityItem[]> {
 	const db = getDb();
 	const result = await db.query(
-		'SELECT * FROM ActivityLog ORDER BY occurredAt DESC LIMIT ? OFFSET ?',
+		'SELECT * FROM ActivityLog ORDER BY occurredAt DESC, rowid DESC LIMIT ? OFFSET ?',
 		[limit, offset],
 	);
 	if (!result.values) return [];
@@ -136,7 +142,7 @@ export async function getActivityFeed(limit = 20, offset = 0): Promise<ActivityI
 export async function getActivityForMedia(mediaId: string): Promise<ActivityItem[]> {
 	const db = getDb();
 	const result = await db.query(
-		'SELECT * FROM ActivityLog WHERE mediaId = ? ORDER BY occurredAt DESC',
+		'SELECT * FROM ActivityLog WHERE mediaId = ? ORDER BY occurredAt DESC, rowid DESC',
 		[mediaId],
 	);
 	if (!result.values) return [];

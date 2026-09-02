@@ -1,5 +1,9 @@
 import { getDb } from '../index';
-import type { LocalTrackingStatus, LocalWatchCycle, TrackingListItem } from '$lib/types/trackingTypes';
+import type {
+	LocalTrackingStatus,
+	LocalWatchCycle,
+	TrackingListItem,
+} from '$lib/types/trackingTypes';
 import type { TrackingStatusType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { logActivity } from './activity.service';
@@ -11,41 +15,85 @@ import type { ActivityPayload } from '$lib/types/activityTypes';
 // Progress field → ActivityLog event type mapping
 const PROGRESS_EVENT_MAP: Partial<Record<keyof LocalTrackingStatus, string>> = {
 	currentEpisode: 'episode_watched',
-	currentSeason:  'episode_watched',
+	currentSeason: 'episode_watched',
 	currentChapter: 'chapter_read',
-	currentVolume:  'chapter_read',
-	currentPage:    'pages_updated',
-	currentIssue:   'issue_read',
-	hoursPlayed:    'hours_updated',
+	currentVolume: 'chapter_read',
+	currentPage: 'pages_updated',
+	currentIssue: 'issue_read',
+	hoursPlayed: 'hours_updated',
 };
 
 function rowToTracking(row: any): LocalTrackingStatus {
-	let id, mediaId, status, score, note, currentEpisode, currentSeason,
-		currentChapter, currentVolume, currentPage, currentIssue,
-		hoursPlayed, completionTier, createdAt, updatedAt;
+	let id,
+		mediaId,
+		status,
+		score,
+		note,
+		currentEpisode,
+		currentSeason,
+		currentChapter,
+		currentVolume,
+		currentPage,
+		currentIssue,
+		hoursPlayed,
+		completionTier,
+		createdAt,
+		updatedAt;
 	if (Array.isArray(row)) {
-		[id, mediaId, status, score, note, currentEpisode, currentSeason,
-			currentChapter, currentVolume, currentPage, currentIssue,
-			hoursPlayed, completionTier, createdAt, updatedAt] = row;
+		[
+			id,
+			mediaId,
+			status,
+			score,
+			note,
+			currentEpisode,
+			currentSeason,
+			currentChapter,
+			currentVolume,
+			currentPage,
+			currentIssue,
+			hoursPlayed,
+			completionTier,
+			createdAt,
+			updatedAt,
+		] = row;
 	} else {
-		({ id, mediaId, status, score, note, currentEpisode, currentSeason,
-			currentChapter, currentVolume, currentPage, currentIssue,
-			hoursPlayed, completionTier, createdAt, updatedAt } = row);
+		({
+			id,
+			mediaId,
+			status,
+			score,
+			note,
+			currentEpisode,
+			currentSeason,
+			currentChapter,
+			currentVolume,
+			currentPage,
+			currentIssue,
+			hoursPlayed,
+			completionTier,
+			createdAt,
+			updatedAt,
+		} = row);
 	}
 	return {
-		id, mediaId,
+		id,
+		mediaId,
 		status: status as TrackingStatusType,
 		score: score ?? undefined,
 		note: note ?? undefined,
 		currentEpisode: currentEpisode ?? undefined,
-		currentSeason:  currentSeason  ?? undefined,
+		currentSeason: currentSeason ?? undefined,
 		currentChapter: currentChapter ?? undefined,
-		currentVolume:  currentVolume  ?? undefined,
-		currentPage:    currentPage    ?? undefined,
-		currentIssue:   currentIssue   ?? undefined,
-		hoursPlayed:    hoursPlayed    ?? undefined,
-		completionTier: completionTier ? (completionTier as LocalTrackingStatus['completionTier']) : undefined,
-		createdAt, updatedAt,
+		currentVolume: currentVolume ?? undefined,
+		currentPage: currentPage ?? undefined,
+		currentIssue: currentIssue ?? undefined,
+		hoursPlayed: hoursPlayed ?? undefined,
+		completionTier: completionTier
+			? (completionTier as LocalTrackingStatus['completionTier'])
+			: undefined,
+		createdAt,
+		updatedAt,
 	};
 }
 
@@ -106,12 +154,18 @@ export async function upsertTracking(
 			WHERE mediaId = ?`,
 			[
 				updated.status,
-				updated.score ?? null, updated.note ?? null,
-				updated.currentEpisode ?? null, updated.currentSeason ?? null,
-				updated.currentChapter ?? null, updated.currentVolume ?? null,
-				updated.currentPage ?? null, updated.currentIssue ?? null,
-				updated.hoursPlayed ?? null, updated.completionTier ?? null,
-				now, data.mediaId,
+				updated.score ?? null,
+				updated.note ?? null,
+				updated.currentEpisode ?? null,
+				updated.currentSeason ?? null,
+				updated.currentChapter ?? null,
+				updated.currentVolume ?? null,
+				updated.currentPage ?? null,
+				updated.currentIssue ?? null,
+				updated.hoursPlayed ?? null,
+				updated.completionTier ?? null,
+				now,
+				data.mediaId,
 			],
 		);
 
@@ -156,13 +210,21 @@ export async function upsertTracking(
 				 createdAt, updatedAt)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
-				id, data.mediaId, newStatus,
-				data.score ?? null, data.note ?? null,
-				data.currentEpisode ?? null, data.currentSeason ?? null,
-				data.currentChapter ?? null, data.currentVolume ?? null,
-				data.currentPage ?? null, data.currentIssue ?? null,
-				data.hoursPlayed ?? null, data.completionTier ?? null,
-				now, now,
+				id,
+				data.mediaId,
+				newStatus,
+				data.score ?? null,
+				data.note ?? null,
+				data.currentEpisode ?? null,
+				data.currentSeason ?? null,
+				data.currentChapter ?? null,
+				data.currentVolume ?? null,
+				data.currentPage ?? null,
+				data.currentIssue ?? null,
+				data.hoursPlayed ?? null,
+				data.completionTier ?? null,
+				now,
+				now,
 			],
 		);
 
@@ -202,10 +264,11 @@ export async function updateProgress(
 	const media = await getMediaById(mediaId);
 	const now = new Date().toISOString();
 
-	await db.run(
-		`UPDATE TrackingStatus SET ${field} = ?, updatedAt = ? WHERE mediaId = ?`,
-		[value, now, mediaId],
-	);
+	await db.run(`UPDATE TrackingStatus SET ${field} = ?, updatedAt = ? WHERE mediaId = ?`, [
+		value,
+		now,
+		mediaId,
+	]);
 
 	// Season changes are side-effects of episode changes — never log separately.
 	if (field === 'currentSeason') return;
@@ -213,33 +276,44 @@ export async function updateProgress(
 	const numValue = typeof value === 'number' ? value : parseFloat(value as string);
 	const prevNumValue = prev ? ((prev[field] as number | undefined) ?? 0) : 0;
 
-	// Only log for numeric progress events when the value is > 0 and represents forward progress.
+	// Only log for numeric progress events when the value is >= 0 and represents forward progress.
 	const isProgressField = field in PROGRESS_EVENT_MAP;
 	if (isProgressField) {
-		if (isNaN(numValue) || numValue <= 0) return;     // Bug 3: skip zero/falsy
-		if (numValue <= prevNumValue) {
-			// Bug 1: skip decrements, BUT ensure the feed is accurate by deleting higher logs
-			const payloadKey =
-				field === 'currentEpisode' ? 'episode' :
-				field === 'currentChapter' ? 'chapter' :
-				field === 'currentVolume' ? 'volume' :
-				field === 'currentPage' ? 'page' :
-				field === 'currentIssue' ? 'issue' :
-				field === 'hoursPlayed' ? 'hours' : null;
+		if (isNaN(numValue) || numValue < 0) return;
 
+		const payloadKey =
+			field === 'currentEpisode'
+				? 'episode'
+				: field === 'currentChapter'
+					? 'chapter'
+					: field === 'currentVolume'
+						? 'volume'
+						: field === 'currentPage'
+							? 'page'
+							: field === 'currentIssue'
+								? 'issue'
+								: field === 'hoursPlayed'
+									? 'hours'
+									: null;
+
+		if (numValue <= prevNumValue) {
+			// Decrement: delete higher logs so feed reflects correct state
 			if (payloadKey) {
-				const evtType = (PROGRESS_EVENT_MAP[field] ?? 'status_changed') as import('$lib/db/schema').ActivityEventType;
-				const { highestRemaining } = await handleProgressDecrement(mediaId, evtType, payloadKey as keyof ActivityPayload, numValue);
-				if (highestRemaining >= numValue) {
-					return; // We already have a log for this value, no need to log a new one
-				}
-			} else {
-				return;
+				const evtType = (PROGRESS_EVENT_MAP[field] ??
+					'status_changed') as import('$lib/db/schema').ActivityEventType;
+				await handleProgressDecrement(
+					mediaId,
+					evtType,
+					payloadKey as keyof ActivityPayload,
+					numValue,
+				);
 			}
+			return;
 		}
 	}
 
-	const eventType = (PROGRESS_EVENT_MAP[field] ?? 'status_changed') as import('$lib/db/schema').ActivityEventType;
+	const eventType = (PROGRESS_EVENT_MAP[field] ??
+		'status_changed') as import('$lib/db/schema').ActivityEventType;
 	const payload: Record<string, unknown> = {};
 	if (field === 'currentEpisode') payload.episode = value;
 	else if (field === 'currentChapter') payload.chapter = value;
@@ -259,7 +333,10 @@ export async function updateProgress(
 }
 
 /** Update the user's score for a media item. */
-export async function updateScore(mediaId: string, score: number | null): Promise<LocalTrackingStatus> {
+export async function updateScore(
+	mediaId: string,
+	score: number | null,
+): Promise<LocalTrackingStatus> {
 	const db = getDb();
 	const prev = await getTracking(mediaId);
 	const media = await getMediaById(mediaId);
@@ -303,7 +380,11 @@ export async function updateNote(mediaId: string, note: string): Promise<LocalTr
 	const now = new Date().toISOString();
 
 	if (prev) {
-		await db.run('UPDATE TrackingStatus SET note = ?, updatedAt = ? WHERE mediaId = ?', [note || null, now, mediaId]);
+		await db.run('UPDATE TrackingStatus SET note = ?, updatedAt = ? WHERE mediaId = ?', [
+			note || null,
+			now,
+			mediaId,
+		]);
 
 		await logActivity({
 			mediaId,
