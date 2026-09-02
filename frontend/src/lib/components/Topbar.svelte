@@ -11,7 +11,7 @@
 		'/catalogue': 'Catalogue',
 		'/stats': 'Statistics',
 		'/settings': 'Settings',
-		'/search': 'Search'
+		'/search': 'Search',
 	};
 
 	const currentTitle = $derived.by(() => {
@@ -84,6 +84,20 @@
 	}
 
 	function handlePointerMove(e: PointerEvent) {
+		const dx = Math.abs(e.clientX - startPointerX);
+		const dy = Math.abs(e.clientY - startPointerY);
+
+		// If moved before long-press activates, it's a swipe/scroll gesture, not a hold or tap
+		if (!isDragging && (dx > 8 || dy > 8)) {
+			if (holdTimer) {
+				clearTimeout(holdTimer);
+				holdTimer = null;
+			}
+			isPressing = false;
+			didDrag = true;
+			return;
+		}
+
 		if (!isDragging) return;
 
 		dragOffsetX = e.clientX - startPointerX;
@@ -118,13 +132,15 @@
 			isDragging = false;
 			isOverDropZone = false;
 			dragOffsetX = 0;
-			// Keep didDrag true briefly so click doesn't trigger immediately
+			// Keep didDrag true briefly so trailing click doesn't trigger immediately
 			setTimeout(() => {
 				didDrag = false;
-			}, 250);
-		} else {
-			// Normal tap on touch screens
-			triggerMenuToggle();
+			}, 300);
+		} else if (didDrag) {
+			// Swipe gesture occurred; reset didDrag after trailing click window
+			setTimeout(() => {
+				didDrag = false;
+			}, 300);
 		}
 
 		isPressing = false;
@@ -139,24 +155,18 @@
 		isDragging = false;
 		isOverDropZone = false;
 		dragOffsetX = 0;
+		didDrag = false;
 	}
 
-	let lastToggleTime = 0;
-	function triggerMenuToggle() {
+	function handleClick(e: MouseEvent) {
+		// Only trigger menu toggle if this was a genuine tap/click, not a swipe or drag
 		if (didDrag || isDragging) return;
-		const now = Date.now();
-		if (now - lastToggleTime < 150) return; // Prevent double-trigger from pointerup + click
-		lastToggleTime = now;
 
 		if (isDesktop) {
 			layoutStore.toggleSidebar();
 		} else {
 			layoutStore.toggleMobileMenu();
 		}
-	}
-
-	function handleClick(e: MouseEvent) {
-		triggerMenuToggle();
 	}
 
 	function directMirrorDrop() {
@@ -186,11 +196,11 @@
 			onpointercancel={handlePointerCancel}
 			onclick={handleClick}
 			class="relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 touch-none select-none
-				{isDragging 
-					? 'scale-115 ring-2 ring-indigo-400 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-xl shadow-indigo-500/50 z-50 cursor-grab active:cursor-grabbing' 
-					: isPressing 
-						? 'scale-95 bg-indigo-700/60 ring-2 ring-indigo-500/50' 
-						: 'bg-[#141727] hover:bg-[#1c2138] border border-white/[0.08] text-white shadow-md shadow-black/30'}"
+				{isDragging
+				? 'scale-115 ring-2 ring-indigo-400 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-xl shadow-indigo-500/50 z-50 cursor-grab active:cursor-grabbing'
+				: isPressing
+					? 'scale-95 bg-indigo-700/60 ring-2 ring-indigo-500/50'
+					: 'bg-[#141727] hover:bg-[#1c2138] border border-white/[0.08] text-white shadow-md shadow-black/30'}"
 			style={isDragging ? `transform: translateX(${dragOffsetX * 0.4}px) scale(1.15);` : ''}
 			aria-label="Navigation menu and layout mirror handle"
 			title="Hold and drag to mirror top bar, or tap to open menu"
@@ -198,18 +208,24 @@
 			<!-- Icon visuals: 4-square grid / launcher icon matching wireframe square icon -->
 			<div class="w-5 h-5 flex flex-col justify-center gap-1">
 				<div class="flex items-center justify-between gap-1">
-					<span class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-indigo-400 to-purple-400"></span>
+					<span
+						class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-indigo-400 to-purple-400"
+					></span>
 					<span class="w-2 h-2 rounded-[4px] bg-white/80"></span>
 				</div>
 				<div class="flex items-center justify-between gap-1">
 					<span class="w-2 h-2 rounded-[4px] bg-white/80"></span>
-					<span class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-purple-400 to-pink-400"></span>
+					<span
+						class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-purple-400 to-pink-400"
+					></span>
 				</div>
 			</div>
 
 			<!-- Press-and-hold progress ring indicator -->
 			{#if isPressing}
-				<div class="absolute inset-0 rounded-2xl border-2 border-indigo-400 animate-ping opacity-60 pointer-events-none"></div>
+				<div
+					class="absolute inset-0 rounded-2xl border-2 border-indigo-400 animate-ping opacity-60 pointer-events-none"
+				></div>
 			{/if}
 		</button>
 
@@ -226,12 +242,22 @@
 			type="button"
 			onclick={directMirrorDrop}
 			class="flex items-center justify-center gap-2 px-3 sm:px-4 h-10 rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer animate-pulse shrink-0
-				{isOverDropZone 
-					? 'bg-indigo-500/25 border-indigo-400 text-indigo-200 scale-105 shadow-xl shadow-indigo-500/20' 
-					: 'bg-white/[0.04] border-white/20 text-slate-400 hover:border-indigo-400/50'}"
+				{isOverDropZone
+				? 'bg-indigo-500/25 border-indigo-400 text-indigo-200 scale-105 shadow-xl shadow-indigo-500/20'
+				: 'bg-white/[0.04] border-white/20 text-slate-400 hover:border-indigo-400/50'}"
 		>
-			<svg class="w-4 h-4 animate-spin-slow shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+			<svg
+				class="w-4 h-4 animate-spin-slow shrink-0"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+				/>
 			</svg>
 			<span class="text-xs font-bold whitespace-nowrap">
 				{isOverDropZone ? 'Release to Mirror!' : 'Drop Here'}
@@ -240,7 +266,11 @@
 	{/if}
 
 	<!-- Right / Left: Integrated Searchbar (Wide bar from wireframe) -->
-	<div class="flex-1 min-w-0 {isDragging ? 'max-w-[150px] sm:max-w-xs' : 'max-w-md'} {isMirrored ? 'mr-auto' : 'ml-auto'} transition-all">
+	<div
+		class="flex-1 min-w-0 {isDragging ? 'max-w-[150px] sm:max-w-xs' : 'max-w-md'} {isMirrored
+			? 'mr-auto'
+			: 'ml-auto'} transition-all"
+	>
 		<Searchbar />
 	</div>
 </header>
