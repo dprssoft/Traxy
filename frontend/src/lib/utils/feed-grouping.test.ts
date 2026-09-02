@@ -199,4 +199,120 @@ describe('groupConsecutiveProgress', () => {
 		expect(isGrouped(result[1])).toBe(false);
 		expect(isGrouped(result[2])).toBe(false);
 	});
+
+	it('REGRESSION: groups chapters that are only 1 ms apart (backdate after decrement correction)', () => {
+		// After a decrement correction, tracking.service backdates the new log to
+		// predecessor.occurredAt + 1 ms. Both items must still be grouped.
+		const base = new Date('2026-06-01T12:00:00.000Z').getTime();
+		const ch4 = makeItem({
+			id: 'ch4',
+			mediaType: 'manga',
+			eventType: 'chapter_read',
+			occurredAt: new Date(base + 1).toISOString(), // +1 ms newer
+			payload: { chapter: 4 },
+		});
+		const ch3 = makeItem({
+			id: 'ch3',
+			mediaType: 'manga',
+			eventType: 'chapter_read',
+			occurredAt: new Date(base).toISOString(),
+			payload: { chapter: 3 },
+		});
+
+		// Feed is newest-first: ch4 then ch3
+		const result = groupConsecutiveProgress([ch4, ch3]);
+		expect(result).toHaveLength(1);
+		const grouped = result[0] as GroupedActivityItem;
+		expect(isGrouped(grouped)).toBe(true);
+		expect(grouped.from).toBe(3);
+		expect(grouped.to).toBe(4);
+		expect(grouped.count).toBe(2);
+	});
+
+	it('preserves separate streaks when reading media A, then media B, then media A again', () => {
+		// Media A streak 2 (newest, chapters 4-5)
+		const a5 = makeItem({
+			id: 'a5',
+			mediaId: 'media-A',
+			mediaType: 'manga',
+			eventType: 'chapter_read',
+			occurredAt: '2026-06-01T14:00:01Z',
+			payload: { chapter: 5 },
+		});
+		const a4 = makeItem({
+			id: 'a4',
+			mediaId: 'media-A',
+			mediaType: 'manga',
+			eventType: 'chapter_read',
+			occurredAt: '2026-06-01T14:00:00Z',
+			payload: { chapter: 4 },
+		});
+
+		// Media B streak (middle, episodes 1-2)
+		const b2 = makeItem({
+			id: 'b2',
+			mediaId: 'media-B',
+			eventType: 'episode_watched',
+			occurredAt: '2026-06-01T13:00:01Z',
+			payload: { episode: 2 },
+		});
+		const b1 = makeItem({
+			id: 'b1',
+			mediaId: 'media-B',
+			eventType: 'episode_watched',
+			occurredAt: '2026-06-01T13:00:00Z',
+			payload: { episode: 1 },
+		});
+
+		// Media A streak 1 (oldest, chapters 1-3)
+		const a3 = makeItem({
+			id: 'a3',
+			mediaId: 'media-A',
+			mediaType: 'manga',
+			eventType: 'chapter_read',
+			occurredAt: '2026-06-01T12:00:02Z',
+			payload: { chapter: 3 },
+		});
+		const a2 = makeItem({
+			id: 'a2',
+			mediaId: 'media-A',
+			mediaType: 'manga',
+			eventType: 'chapter_read',
+			occurredAt: '2026-06-01T12:00:01Z',
+			payload: { chapter: 2 },
+		});
+		const a1 = makeItem({
+			id: 'a1',
+			mediaId: 'media-A',
+			mediaType: 'manga',
+			eventType: 'chapter_read',
+			occurredAt: '2026-06-01T12:00:00Z',
+			payload: { chapter: 1 },
+		});
+
+		const result = groupConsecutiveProgress([a5, a4, b2, b1, a3, a2, a1]);
+
+		expect(result).toHaveLength(3);
+
+		// First entry: Media A chapters 4-5
+		expect(isGrouped(result[0])).toBe(true);
+		const g1 = result[0] as GroupedActivityItem;
+		expect(g1.mediaId).toBe('media-A');
+		expect(g1.from).toBe(4);
+		expect(g1.to).toBe(5);
+
+		// Second entry: Media B episodes 1-2
+		expect(isGrouped(result[1])).toBe(true);
+		const g2 = result[1] as GroupedActivityItem;
+		expect(g2.mediaId).toBe('media-B');
+		expect(g2.from).toBe(1);
+		expect(g2.to).toBe(2);
+
+		// Third entry: Media A chapters 1-3
+		expect(isGrouped(result[2])).toBe(true);
+		const g3 = result[2] as GroupedActivityItem;
+		expect(g3.mediaId).toBe('media-A');
+		expect(g3.from).toBe(1);
+		expect(g3.to).toBe(3);
+	});
 });

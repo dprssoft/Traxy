@@ -34,7 +34,11 @@ vi.mock('../index', () => ({
 					const mediaId = values[values.length - 1];
 					const existing = dbTrackingRecords.get(mediaId) || {};
 					// Parse dynamic field updates like `UPDATE TrackingStatus SET field = ?, updatedAt = ? WHERE mediaId = ?`
-					if (sql.startsWith('UPDATE TrackingStatus SET current') || sql.startsWith('UPDATE TrackingStatus SET hour') || sql.startsWith('UPDATE TrackingStatus SET page')) {
+					if (
+						sql.startsWith('UPDATE TrackingStatus SET current') ||
+						sql.startsWith('UPDATE TrackingStatus SET hour') ||
+						sql.startsWith('UPDATE TrackingStatus SET page')
+					) {
 						const match = sql.match(/SET (\w+) = \?/);
 						if (match) {
 							const field = match[1];
@@ -46,22 +50,71 @@ vi.mock('../index', () => ({
 						existing.note = values[0];
 					} else {
 						// Full upsert update
-						const [status, score, note, currentEpisode, currentSeason, currentChapter, currentVolume, currentPage, currentIssue, hoursPlayed, completionTier, updatedAt] = values;
+						const [
+							status,
+							score,
+							note,
+							currentEpisode,
+							currentSeason,
+							currentChapter,
+							currentVolume,
+							currentPage,
+							currentIssue,
+							hoursPlayed,
+							completionTier,
+							updatedAt,
+						] = values;
 						Object.assign(existing, {
-							status, score, note, currentEpisode, currentSeason,
-							currentChapter, currentVolume, currentPage, currentIssue,
-							hoursPlayed, completionTier, updatedAt,
+							status,
+							score,
+							note,
+							currentEpisode,
+							currentSeason,
+							currentChapter,
+							currentVolume,
+							currentPage,
+							currentIssue,
+							hoursPlayed,
+							completionTier,
+							updatedAt,
 						});
 					}
 					dbTrackingRecords.set(mediaId, existing);
 				}
 			} else if (sql.includes('INSERT INTO TrackingStatus')) {
-				const [id, mediaId, status, score, note, currentEpisode, currentSeason, currentChapter, currentVolume, currentPage, currentIssue, hoursPlayed, completionTier, createdAt, updatedAt] = values;
+				const [
+					id,
+					mediaId,
+					status,
+					score,
+					note,
+					currentEpisode,
+					currentSeason,
+					currentChapter,
+					currentVolume,
+					currentPage,
+					currentIssue,
+					hoursPlayed,
+					completionTier,
+					createdAt,
+					updatedAt,
+				] = values;
 				dbTrackingRecords.set(mediaId, {
-					id, mediaId, status, score, note,
-					currentEpisode, currentSeason, currentChapter, currentVolume,
-					currentPage, currentIssue, hoursPlayed, completionTier,
-					createdAt, updatedAt,
+					id,
+					mediaId,
+					status,
+					score,
+					note,
+					currentEpisode,
+					currentSeason,
+					currentChapter,
+					currentVolume,
+					currentPage,
+					currentIssue,
+					hoursPlayed,
+					completionTier,
+					createdAt,
+					updatedAt,
 				});
 			} else if (sql.includes('DELETE FROM TrackingStatus WHERE mediaId = ?')) {
 				dbTrackingRecords.delete(values[0]);
@@ -75,7 +128,10 @@ vi.mock('../index', () => ({
 const mockLogActivity = vi.fn();
 vi.mock('./activity.service', () => ({
 	logActivity: (entry: any) => mockLogActivity(entry),
-	handleProgressDecrement: vi.fn(async () => ({ highestRemaining: 100 })),
+	handleProgressDecrement: vi.fn(async () => ({
+		highestRemaining: 100,
+		highestRemainingOccurredAt: null,
+	})),
 }));
 
 vi.mock('./media.service', () => ({
@@ -123,7 +179,7 @@ describe('tracking.service Scenarios', () => {
 					mediaId: 'media-1',
 					eventType: 'episode_watched',
 					payload: { episode: 2 },
-				})
+				}),
 			);
 		});
 
@@ -144,7 +200,7 @@ describe('tracking.service Scenarios', () => {
 					mediaId: 'manga-1',
 					eventType: 'chapter_read',
 					payload: { chapter: 11 },
-				})
+				}),
 			);
 		});
 
@@ -176,6 +232,71 @@ describe('tracking.service Scenarios', () => {
 
 			expect(dbTrackingRecords.get('manga-1').currentChapter).toBe(9);
 			expect(mockLogActivity).not.toHaveBeenCalled();
+		});
+
+		it('calls handleProgressDecrement when progress is decreased and does not log new activity', async () => {
+			const { handleProgressDecrement } = await import('./activity.service');
+
+			dbTrackingRecords.set('manga-1', {
+				id: 't-2',
+				mediaId: 'manga-1',
+				currentChapter: 5,
+				status: 'in_progress',
+			});
+
+			await updateProgress('manga-1', 'currentChapter', 3);
+
+			expect(dbTrackingRecords.get('manga-1').currentChapter).toBe(3);
+			expect(handleProgressDecrement).toHaveBeenCalledWith(
+				'manga-1',
+				'chapter_read',
+				'chapter',
+				3,
+			);
+			expect(mockLogActivity).not.toHaveBeenCalled();
+		});
+
+		it('calls handleProgressDecrement when progress is decreased all the way to 0', async () => {
+			const { handleProgressDecrement } = await import('./activity.service');
+
+			dbTrackingRecords.set('media-1', {
+				id: 't-1',
+				mediaId: 'media-1',
+				currentEpisode: 5,
+				status: 'in_progress',
+			});
+
+			await updateProgress('media-1', 'currentEpisode', 0);
+
+			expect(dbTrackingRecords.get('media-1').currentEpisode).toBe(0);
+			expect(handleProgressDecrement).toHaveBeenCalledWith(
+				'media-1',
+				'episode_watched',
+				'episode',
+				0,
+			);
+			expect(mockLogActivity).not.toHaveBeenCalled();
+		});
+
+		it('forward progress after decrement logs with normal timestamp and does not backdate', async () => {
+			dbTrackingRecords.set('manga-1', {
+				id: 't-2',
+				mediaId: 'manga-1',
+				currentChapter: 3,
+				status: 'in_progress',
+			});
+
+			await updateProgress('manga-1', 'currentChapter', 4);
+
+			expect(mockLogActivity).toHaveBeenCalledTimes(1);
+			expect(mockLogActivity).toHaveBeenCalledWith(
+				expect.objectContaining({
+					eventType: 'chapter_read',
+					payload: { chapter: 4 },
+				}),
+			);
+			const call = mockLogActivity.mock.calls[0][0];
+			expect(call.occurredAt).toBeUndefined();
 		});
 
 		it('REGRESSION BUG 3: does NOT log activity when episode is set to 0 or negative', async () => {
@@ -222,7 +343,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'pages_updated',
 					payload: { page: 120 },
-				})
+				}),
 			);
 		});
 
@@ -241,7 +362,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'hours_updated',
 					payload: { hours: 8.0 },
-				})
+				}),
 			);
 		});
 	});
@@ -259,7 +380,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'status_changed',
 					payload: { from: undefined, to: 'planned' },
-				})
+				}),
 			);
 		});
 
@@ -275,7 +396,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'status_changed',
 					payload: { from: undefined, to: 'in_progress' },
-				})
+				}),
 			);
 		});
 
@@ -296,7 +417,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'status_changed',
 					payload: { from: 'planned', to: 'in_progress' },
-				})
+				}),
 			);
 		});
 
@@ -317,7 +438,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'status_changed',
 					payload: { from: 'in_progress', to: 'completed' },
-				})
+				}),
 			);
 		});
 
@@ -367,7 +488,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'score_set',
 					payload: { from: undefined, score: 9 },
-				})
+				}),
 			);
 		});
 
@@ -386,7 +507,7 @@ describe('tracking.service Scenarios', () => {
 				expect.objectContaining({
 					eventType: 'score_changed',
 					payload: { from: '8', score: 10 },
-				})
+				}),
 			);
 		});
 
@@ -415,7 +536,7 @@ describe('tracking.service Scenarios', () => {
 			expect(mockLogActivity).toHaveBeenCalledWith(
 				expect.objectContaining({
 					eventType: 'note_updated',
-				})
+				}),
 			);
 		});
 	});
