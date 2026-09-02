@@ -7,7 +7,6 @@
 	import { isGrouped } from '$lib/types/activityTypes';
 	import { onMount, untrack } from 'svelte';
 
-
 	let { data }: { data: PageData } = $props();
 
 	// Filter state matching wireframe
@@ -31,13 +30,12 @@
 
 	import { groupConsecutiveProgress } from '$lib/utils/feed';
 
-
 	// Items with category mapping
 	const allItems = $derived(
 		rawDbItems.map((item) => ({
 			...item,
-			category: item.category ?? 'user_action'
-		}))
+			category: item.category ?? 'user_action',
+		})),
 	);
 
 	// Apply grouping then category filters
@@ -51,7 +49,6 @@
 		});
 		return groupConsecutiveProgress(preFiltered);
 	});
-
 
 	async function loadMore() {
 		if (isLoading || !hasMore) return;
@@ -73,6 +70,17 @@
 	}
 
 	onMount(() => {
+		// Fresh query from DB so deletions or tracking updates are immediately reflected on navigation
+		getActivityFeed(20, 0)
+			.then((fresh) => {
+				if (fresh) {
+					rawDbItems = fresh;
+					offset = fresh.length;
+					hasMore = fresh.length === 20;
+				}
+			})
+			.catch(() => {});
+
 		function handleClickOutside(e: PointerEvent | MouseEvent) {
 			if (!filterOpen) return;
 			const target = e.target as Node | null;
@@ -116,50 +124,68 @@
 				type="button"
 				onclick={() => (filterOpen = !filterOpen)}
 				class="p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-center
-					{filterOpen 
-						? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-500/25' 
-						: 'bg-[#121424] text-slate-400 hover:text-white hover:bg-[#181c33] border-white/[0.08]'}"
+					{filterOpen
+					? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-500/25'
+					: 'bg-[#121424] text-slate-400 hover:text-white hover:bg-[#181c33] border-white/[0.08]'}"
 				aria-label="Filter activity feed"
 				title="Filter activities"
 			>
 				<!-- Funnel Icon from wireframe -->
-				<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+				<svg
+					class="w-5 h-5"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+					/>
 				</svg>
 			</button>
 
 			<!-- Filter Popover Menu from Wireframe (User actions, System messages, Media updates) -->
 			{#if filterOpen}
-				<div 
+				<div
 					class="absolute right-0 top-12 w-56 p-4 bg-[#141727]/95 backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-2xl z-40 space-y-3 animate-in fade-in zoom-in-95 duration-150"
 				>
-					<div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-white/[0.06]">
+					<div
+						class="text-[11px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-white/[0.06]"
+					>
 						Filter Activities
 					</div>
 
-					<label class="flex items-center gap-3 text-xs text-slate-200 hover:text-white font-medium cursor-pointer select-none">
-						<input 
-							type="checkbox" 
-							bind:checked={filterUserActions} 
-							class="w-4 h-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/40 bg-[#0a0b12] cursor-pointer" 
+					<label
+						class="flex items-center gap-3 text-xs text-slate-200 hover:text-white font-medium cursor-pointer select-none"
+					>
+						<input
+							type="checkbox"
+							bind:checked={filterUserActions}
+							class="w-4 h-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/40 bg-[#0a0b12] cursor-pointer"
 						/>
 						<span>User actions</span>
 					</label>
 
-					<label class="flex items-center gap-3 text-xs text-slate-200 hover:text-white font-medium cursor-pointer select-none">
-						<input 
-							type="checkbox" 
-							bind:checked={filterSystemMessages} 
-							class="w-4 h-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/40 bg-[#0a0b12] cursor-pointer" 
+					<label
+						class="flex items-center gap-3 text-xs text-slate-200 hover:text-white font-medium cursor-pointer select-none"
+					>
+						<input
+							type="checkbox"
+							bind:checked={filterSystemMessages}
+							class="w-4 h-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/40 bg-[#0a0b12] cursor-pointer"
 						/>
 						<span>System messages</span>
 					</label>
 
-					<label class="flex items-center gap-3 text-xs text-slate-200 hover:text-white font-medium cursor-pointer select-none">
-						<input 
-							type="checkbox" 
-							bind:checked={filterMediaUpdates} 
-							class="w-4 h-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/40 bg-[#0a0b12] cursor-pointer" 
+					<label
+						class="flex items-center gap-3 text-xs text-slate-200 hover:text-white font-medium cursor-pointer select-none"
+					>
+						<input
+							type="checkbox"
+							bind:checked={filterMediaUpdates}
+							class="w-4 h-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/40 bg-[#0a0b12] cursor-pointer"
 						/>
 						<span>Media updates</span>
 					</label>
@@ -171,24 +197,36 @@
 	<!-- Activity Cards List -->
 	{#if rawDbItems.length === 0}
 		<!-- Clean empty state when no activities exist yet in DB -->
-		<div class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-10 text-center shadow-xl space-y-4">
-			<div class="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 border border-indigo-500/30 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/20">
+		<div
+			class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-10 text-center shadow-xl space-y-4"
+		>
+			<div
+				class="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 border border-indigo-500/30 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/20"
+			>
 				🎬
 			</div>
 			<div>
 				<h2 class="text-xl font-bold text-white mb-1">Welcome to Traxy!</h2>
 				<p class="text-xs text-slate-400 max-w-sm mx-auto">
-					Your activity feed is empty. Search for movies, TV series, anime, games, books, or comics to begin building your library.
+					Your activity feed is empty. Search for movies, TV series, anime, games, books,
+					or comics to begin building your library.
 				</p>
 			</div>
-			<a href="/search" class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all cursor-pointer">
+			<a
+				href="/search"
+				class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all cursor-pointer"
+			>
 				<span>🔍</span> Search & Track Media
 			</a>
 		</div>
 	{:else if filteredItems().length === 0}
 		<!-- Empty state when all items are filtered out by checkboxes -->
-		<div class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-8 text-center shadow-xl space-y-3">
-			<div class="w-12 h-12 mx-auto rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xl text-slate-400">
+		<div
+			class="bg-[#121422]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-8 text-center shadow-xl space-y-3"
+		>
+			<div
+				class="w-12 h-12 mx-auto rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xl text-slate-400"
+			>
 				🔍
 			</div>
 			<h2 class="text-base font-bold text-white">No activities match your filter</h2>
