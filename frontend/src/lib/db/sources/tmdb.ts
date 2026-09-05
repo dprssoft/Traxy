@@ -105,3 +105,123 @@ export async function getTmdbDetails(
 		return null;
 	}
 }
+
+// ── Discovery / Catalogue endpoints ──────────────────────────────────────────
+
+interface TmdbDiscoverResponse {
+	results: TmdbSearchItem[];
+	total_pages: number;
+}
+
+/**
+ * Trending movies or TV shows for the current week.
+ * TMDB endpoint: /trending/{movie|tv}/week
+ */
+export async function discoverTmdbTrending(
+	type: 'film' | 'tv',
+	language = 'en-US',
+	page = 1,
+): Promise<SearchResult[]> {
+	const apiKey = apiKeyStore.current.tmdb || ENV_TMDB_API_KEY;
+	if (!apiKey) return [];
+
+	const endpoint = type === 'film' ? 'movie' : 'tv';
+	try {
+		return await withCache(`tmdb:trending:${type}:${language}:${page}`, async () => {
+			const data = await fetchJson<TmdbDiscoverResponse>(
+				`${BASE_URL}/trending/${endpoint}/week?api_key=${apiKey}&language=${language}&page=${page}`,
+			);
+			return data.results
+				.filter((item) => item.media_type === 'movie' || item.media_type === 'tv' || !item.media_type)
+				.map(
+					(item): SearchResult => ({
+						externalId: item.id.toString(),
+						source: 'tmdb',
+						type,
+						title: item.title ?? item.name ?? '',
+						year: parseYear(item.release_date ?? item.first_air_date),
+						posterUrl: posterUrl(item.poster_path),
+						description: item.overview || undefined,
+					}),
+				);
+		});
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Newly released movies or TV shows, sorted by release date descending.
+ * TMDB endpoint: /discover/{movie|tv}
+ */
+export async function discoverTmdbNew(
+	type: 'film' | 'tv',
+	language = 'en-US',
+	page = 1,
+): Promise<SearchResult[]> {
+	const apiKey = apiKeyStore.current.tmdb || ENV_TMDB_API_KEY;
+	if (!apiKey) return [];
+
+	const endpoint = type === 'film' ? 'movie' : 'tv';
+	const today = new Date().toISOString().split('T')[0];
+	const sortField = type === 'film' ? 'primary_release_date' : 'first_air_date';
+	const dateFilter = type === 'film'
+		? `&primary_release_date.lte=${today}`
+		: `&first_air_date.lte=${today}`;
+
+	try {
+		return await withCache(`tmdb:new:${type}:${language}:${page}`, async () => {
+			const data = await fetchJson<TmdbDiscoverResponse>(
+				`${BASE_URL}/discover/${endpoint}?api_key=${apiKey}&language=${language}&sort_by=${sortField}.desc${dateFilter}&page=${page}&vote_count.gte=10`,
+			);
+			return data.results.map(
+				(item): SearchResult => ({
+					externalId: item.id.toString(),
+					source: 'tmdb',
+					type,
+					title: item.title ?? item.name ?? '',
+					year: parseYear(item.release_date ?? item.first_air_date),
+					posterUrl: posterUrl(item.poster_path),
+					description: item.overview || undefined,
+				}),
+			);
+		});
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Top rated movies or TV shows.
+ * TMDB endpoint: /{movie|tv}/top_rated
+ */
+export async function discoverTmdbTopRated(
+	type: 'film' | 'tv',
+	language = 'en-US',
+	page = 1,
+): Promise<SearchResult[]> {
+	const apiKey = apiKeyStore.current.tmdb || ENV_TMDB_API_KEY;
+	if (!apiKey) return [];
+
+	const endpoint = type === 'film' ? 'movie' : 'tv';
+	try {
+		return await withCache(`tmdb:top_rated:${type}:${language}:${page}`, async () => {
+			const data = await fetchJson<TmdbDiscoverResponse>(
+				`${BASE_URL}/${endpoint}/top_rated?api_key=${apiKey}&language=${language}&page=${page}`,
+			);
+			return data.results.map(
+				(item): SearchResult => ({
+					externalId: item.id.toString(),
+					source: 'tmdb',
+					type,
+					title: item.title ?? item.name ?? '',
+					year: parseYear(item.release_date ?? item.first_air_date),
+					posterUrl: posterUrl(item.poster_path),
+					description: item.overview || undefined,
+				}),
+			);
+		});
+	} catch {
+		return [];
+	}
+}

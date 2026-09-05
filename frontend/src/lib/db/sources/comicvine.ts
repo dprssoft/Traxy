@@ -93,3 +93,25 @@ export async function getComicVineDetails(id: string): Promise<SearchResult | nu
 		return null;
 	}
 }
+
+// ── Discovery / Catalogue endpoints ──────────────────────────────────────────
+
+/** Recently added comic volumes from ComicVine. */
+export async function discoverComicVineNew(): Promise<SearchResult[]> {
+	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
+	if (!apiKey) return [];
+
+	const baseUrl = getComicVineBaseUrl();
+	try {
+		return await withCache('comicvine:discover:new', async () => {
+			const data = await fetchJson<ComicVineSearchResponse>(
+				`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=date_added:desc&limit=20`,
+				6000,
+				CV_HEADERS,
+			);
+			return data.results.map(mapVolume);
+		});
+	} catch {
+		return [];
+	}
+}

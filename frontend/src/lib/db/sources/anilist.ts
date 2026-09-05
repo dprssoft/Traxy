@@ -227,3 +227,123 @@ export async function getAnilistDetails(id: number): Promise<SearchResult | null
 		return null;
 	}
 }
+
+// ── Discovery / Catalogue endpoints ──────────────────────────────────────────
+
+const DISCOVER_QUERY = `
+query ($type: MediaType, $sort: [MediaSort], $status: MediaStatus, $page: Int, $perPage: Int) {
+  Page(page: $page, perPage: $perPage) {
+    media(type: $type, sort: $sort, status: $status) {
+      id
+      title { romaji english native }
+      type
+      format
+      status
+      episodes
+      chapters
+      volumes
+      coverImage { extraLarge }
+      startDate { year }
+      description
+      countryOfOrigin
+    }
+  }
+}
+`;
+
+async function discoverAnilist(
+	mediaType: 'ANIME' | 'MANGA',
+	sort: string[],
+	status?: string,
+	page = 1,
+	perPage = 20,
+): Promise<SearchResult[]> {
+	const cacheKey = `anilist:discover:${mediaType}:${sort.join(',')}:${status ?? 'any'}:${page}`;
+	const cached = await getCached<SearchResult[]>(cacheKey);
+	if (cached) return cached;
+
+	try {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 5000);
+		const variables: Record<string, unknown> = {
+			type: mediaType,
+			sort,
+			page,
+			perPage,
+		};
+		if (status) variables.status = status;
+
+		const res = await fetch(BASE_URL, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			body: JSON.stringify({ query: DISCOVER_QUERY, variables }),
+			signal: controller.signal,
+		});
+		clearTimeout(timeout);
+		if (!res.ok) return [];
+		const data = await res.json();
+
+		const results = (data.data?.Page?.media ?? []).map(mapAnilistItem);
+		await setCache(cacheKey, results);
+		return results;
+	} catch {
+		return [];
+	}
+}
+
+/** Trending anime or manga this week. */
+export function discoverAnilistTrending(
+	mediaType: 'ANIME' | 'MANGA',
+	page = 1,
+): Promise<SearchResult[]> {
+	return discoverAnilist(mediaType, ['TRENDING_DESC'], undefined, page);
+}
+
+/** Newly releasing anime or manga. */
+export function discoverAnilistNew(
+	mediaType: 'ANIME' | 'MANGA',
+	page = 1,
+): Promise<SearchResult[]> {
+	return discoverAnilist(mediaType, ['START_DATE_DESC'], 'RELEASING', page);
+}
+
+/** Top rated anime or manga by score. */
+export function discoverAnilistTopRated(
+	mediaType: 'ANIME' | 'MANGA',
+	page = 1,
+): Promise<SearchResult[]> {
+	return discoverAnilist(mediaType, ['SCORE_DESC'], undefined, page);
+}
+
+/** Random anime or manga — fetches a random page from popular results. */
+export async function discoverAnilistRandom(
+	mediaType: 'ANIME' | 'MANGA',
+): Promise<SearchResult[]> {
+	const randomPage = Math.floor(Math.random() * 50) + 1;
+	// Don't cache random results so they vary per visit
+	try {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 5000);
+		const res = await fetch(BASE_URL, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			body: JSON.stringify({
+				query: DISCOVER_QUERY,
+				variables: { type: mediaType, sort: ['POPULARITY_DESC'], page: randomPage, perPage: 10 },
+			}),
+			signal: controller.signal,
+		});
+		clearTimeout(timeout);
+		if (!res.ok) return [];
+		const data = await res.json();
+		const items: SearchResult[] = (data.data?.Page?.media ?? []).map(mapAnilistItem);
+		// Shuffle the results for extra randomness
+		for (let i = items.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[items[i], items[j]] = [items[j], items[i]];
+		}
+		return items;
+	} catch {
+		return [];
+	}
+}

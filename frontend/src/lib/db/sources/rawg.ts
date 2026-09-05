@@ -188,3 +188,78 @@ export async function getRawgDetails(id: string): Promise<SearchResult | null> {
 		return null;
 	}
 }
+
+// ── Discovery / Catalogue endpoints ──────────────────────────────────────────
+
+/** Most hyped upcoming and recent games. */
+export async function discoverIgdbTrending(): Promise<SearchResult[]> {
+	const creds = getCredentials();
+	if (!creds) return [];
+
+	try {
+		return await withCache('igdb:discover:trending', async () => {
+			const token = await getAccessToken(creds.clientId, creds.clientSecret);
+			const games = await igdbFetch(
+				creds.clientId,
+				token,
+				'games',
+				`fields name, cover.url, first_release_date, platforms.name, summary;
+				sort hypes desc;
+				where hypes > 0 & version_parent = null;
+				limit 20;`,
+			);
+			return games.map(mapGame);
+		});
+	} catch {
+		return [];
+	}
+}
+
+/** Recently released games, sorted by release date. */
+export async function discoverIgdbNew(): Promise<SearchResult[]> {
+	const creds = getCredentials();
+	if (!creds) return [];
+
+	const nowUnix = Math.floor(Date.now() / 1000);
+	try {
+		return await withCache('igdb:discover:new', async () => {
+			const token = await getAccessToken(creds.clientId, creds.clientSecret);
+			const games = await igdbFetch(
+				creds.clientId,
+				token,
+				'games',
+				`fields name, cover.url, first_release_date, platforms.name, summary;
+				sort first_release_date desc;
+				where first_release_date < ${nowUnix} & first_release_date != null & version_parent = null;
+				limit 20;`,
+			);
+			return games.map(mapGame);
+		});
+	} catch {
+		return [];
+	}
+}
+
+/** Top rated games by total rating. */
+export async function discoverIgdbTopRated(): Promise<SearchResult[]> {
+	const creds = getCredentials();
+	if (!creds) return [];
+
+	try {
+		return await withCache('igdb:discover:top_rated', async () => {
+			const token = await getAccessToken(creds.clientId, creds.clientSecret);
+			const games = await igdbFetch(
+				creds.clientId,
+				token,
+				'games',
+				`fields name, cover.url, first_release_date, platforms.name, summary;
+				sort total_rating desc;
+				where total_rating_count > 50 & version_parent = null;
+				limit 20;`,
+			);
+			return games.map(mapGame);
+		});
+	} catch {
+		return [];
+	}
+}
