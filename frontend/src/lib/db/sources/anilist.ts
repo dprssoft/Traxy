@@ -162,7 +162,7 @@ export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Pro
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 4000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(BASE_URL, {
 			method: 'POST',
 			headers: {
@@ -194,7 +194,7 @@ export async function getAnilistDetails(id: number): Promise<SearchResult | null
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 4000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(BASE_URL, {
 			method: 'POST',
 			headers: {
@@ -264,7 +264,7 @@ async function discoverAnilist(
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 5000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const variables: Record<string, unknown> = {
 			type: mediaType,
 			sort,
@@ -323,7 +323,7 @@ export async function discoverAnilistRandom(
 	// Don't cache random results so they vary per visit
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 5000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(BASE_URL, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },

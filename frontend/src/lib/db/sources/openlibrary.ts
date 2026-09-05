@@ -13,7 +13,7 @@ export async function searchOpenLibrary(query: string): Promise<SearchResult[]> 
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 4000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(
 			`${BASE_URL}/search.json?q=${encodeURIComponent(query)}&limit=10`,
 			{ signal: controller.signal }
@@ -47,7 +47,7 @@ export async function getOpenLibraryDetails(id: string): Promise<SearchResult | 
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 4000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(`${BASE_URL}${id}.json`, { signal: controller.signal });
 		clearTimeout(timeout);
 		if (!res.ok) return null;
@@ -84,7 +84,7 @@ export async function discoverOpenLibraryTrending(): Promise<SearchResult[]> {
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 5000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(`${BASE_URL}/trending/daily.json?limit=20`, {
 			signal: controller.signal,
 		});
@@ -116,7 +116,7 @@ export async function discoverOpenLibraryNew(): Promise<SearchResult[]> {
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 5000);
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(
 			`${BASE_URL}/search.json?sort=new&limit=20&has_fulltext=false`,
 			{ signal: controller.signal },
