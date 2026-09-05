@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -9,6 +10,8 @@
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
 	import { layoutStore } from '$lib/stores/layout';
+	import { App } from '@capacitor/app';
+	import { Capacitor } from '@capacitor/core';
 
 	let { children } = $props();
 
@@ -22,6 +25,20 @@
 		if (!from || !from.url) return;
 		const p = from.url.pathname.replace(/\/$/, '') || '/';
 		previousPath.set(p);
+	});
+
+	onMount(() => {
+		if (Capacitor.isNativePlatform()) {
+			App.addListener('backButton', ({ canGoBack }) => {
+				if (layoutStore.mobileMenuOpen) {
+					layoutStore.closeMobileMenu();
+				} else if (canGoBack) {
+					window.history.back();
+				} else {
+					App.exitApp();
+				}
+			});
+		}
 	});
 </script>
 
