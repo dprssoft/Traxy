@@ -14,7 +14,7 @@
 <button
 	type="button"
 	{onclick}
-	class="group relative flex-shrink-0 w-[140px] sm:w-[160px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 rounded-2xl transition-all"
+	class="group relative flex-shrink-0 w-[105px] xs:w-[120px] sm:w-[145px] md:w-[160px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 rounded-2xl transition-all"
 >
 	<!-- Poster -->
 	<div
@@ -29,7 +29,7 @@
 			/>
 		{:else}
 			<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1a1d2e] to-[#121422]">
-				<span class="text-3xl font-black text-slate-600">{item.title.substring(0, 2)}</span>
+				<span class="text-2xl sm:text-3xl font-black text-slate-600">{item.title.substring(0, 2)}</span>
 			</div>
 		{/if}
 
@@ -39,23 +39,23 @@
 		></div>
 
 		<!-- Media type badge -->
-		<div class="absolute top-2 left-2">
+		<div class="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
 			<span
-				class="text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-md {getTypeColor(item.type)} border border-white/[0.1]"
+				class="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-md {getTypeColor(item.type)} border border-white/[0.1]"
 			>
 				{MEDIA_TYPE_LABELS[item.type] ?? item.type}
 			</span>
 		</div>
 
 		<!-- Title + Year overlay at bottom -->
-		<div class="absolute inset-x-0 bottom-0 p-2.5">
+		<div class="absolute inset-x-0 bottom-0 p-2 sm:p-2.5">
 			<h3
-				class="text-white text-xs font-bold leading-tight line-clamp-2 group-hover:text-indigo-300 transition-colors"
+				class="text-white text-[11px] sm:text-xs font-bold leading-tight line-clamp-2 group-hover:text-indigo-300 transition-colors"
 			>
 				{item.title}
 			</h3>
 			{#if item.year}
-				<span class="text-[10px] text-slate-400 font-medium mt-0.5 block">{item.year}</span>
+				<span class="text-[9px] sm:text-[10px] text-slate-400 font-medium mt-0.5 block">{item.year}</span>
 			{/if}
 		</div>
 
