@@ -9,9 +9,11 @@
 		media: LocalMedia;
 		tracking: LocalTrackingStatus | null;
 		onTrackingChanged?: (t: LocalTrackingStatus | null) => void;
+		/** 'default' = auto-width (original behaviour); 'full' = full-width pill CTA */
+		variant?: 'default' | 'full';
 	}
 
-	let { media, tracking, onTrackingChanged }: Props = $props();
+	let { media, tracking, onTrackingChanged, variant = 'default' }: Props = $props();
 
 	let isOpen = $state(false);
 	let isUpdating = $state(false);
@@ -84,7 +86,8 @@
 	<button
 		onclick={() => isOpen = !isOpen}
 		disabled={isUpdating}
-		class="flex items-center justify-between w-full sm:w-auto min-w-[160px] px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer text-sm active:scale-95"
+		class="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer text-sm active:scale-95
+			{variant === 'full' ? 'w-full' : 'w-full sm:w-auto min-w-[160px]'}"
 	>
 		{#if isUpdating}
 			<span class="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto"></span>
@@ -101,10 +104,10 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="fixed inset-0 z-40" onclick={() => isOpen = false}></div>
 		<div class="absolute top-full left-0 mt-1.5 w-52 bg-[#141727]/95 backdrop-blur-xl border border-white/[0.1] rounded-2xl shadow-2xl z-50 overflow-hidden py-1.5 space-y-0.5">
-			{#each options as opt}
+			{#each options as opt (opt.value)}
 				<button
 					class="w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer {tracking?.status === opt.value ? 'bg-indigo-600/20 text-indigo-400 font-bold' : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'}"
-					onclick={() => updateStatus(opt.value as any)}
+					onclick={() => updateStatus(opt.value as 'planned' | 'in_progress' | 'completed' | 'paused' | 'dropped' | 'watched_letsplay')}
 				>
 					{opt.label}
 				</button>

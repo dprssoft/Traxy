@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	let { note, onSave }: { note?: string; onSave: (val: string) => void } = $props();
+	let { note, onSave, maxLength }: { note?: string; onSave: (val: string) => void; maxLength?: number } = $props();
 
 	let currentNote = $state(untrack(() => note ?? ''));
 	let isEditing = $state(false);
@@ -37,23 +37,31 @@
 	{#if isEditing}
 		<textarea 
 			bind:value={currentNote} 
+			maxlength={maxLength}
 			class="w-full h-32 p-3 bg-[#16192b] border border-white/[0.08] rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-white placeholder-slate-500 text-sm resize-none transition-colors outline-none"
 			placeholder="Write your personal thoughts, review notes, or memories here..."></textarea>
-		<div class="flex justify-end gap-2 mt-3">
-			<button 
-				type="button"
-				onclick={() => { currentNote = note ?? ''; isEditing = false; }} 
-				class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
-			>
-				Cancel
-			</button>
-			<button 
-				type="button"
-				onclick={save} 
-				class="px-4 py-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md shadow-indigo-600/20 transition-colors cursor-pointer"
-			>
-				Save Note
-			</button>
+		<div class="flex justify-between items-center mt-2">
+			{#if maxLength}
+				<span class="text-[11px] text-slate-500">{currentNote.length}/{maxLength}</span>
+			{:else}
+				<span></span>
+			{/if}
+			<div class="flex gap-2">
+				<button 
+					type="button"
+					onclick={() => { currentNote = note ?? ''; isEditing = false; }} 
+					class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
+				>
+					Cancel
+				</button>
+				<button 
+					type="button"
+					onclick={save} 
+					class="px-4 py-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md shadow-indigo-600/20 transition-colors cursor-pointer"
+				>
+					Save Note
+				</button>
+			</div>
 		</div>
 	{:else}
 		{#if currentNote}
