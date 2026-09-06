@@ -12,11 +12,21 @@ export interface LocalMedia {
 	year?: number;
 	posterUrl?: string;
 	description?: string;
+	originalTitle?: string;
+	serializationYears?: string;
+	author?: string;
+	country?: string;
+	genres?: string[];
+	releaseStatus?: string;
 	// TV / Anime
 	totalEpisodes?: number;
 	totalSeasons?: number;
+	// Manga / Comic
+	totalVolumes?: number;
+	totalChapters?: number;
 	// Game
 	platforms?: string[]; // parsed from JSON
+	timeToBeat?: string;
 	// Book
 	totalPages?: number;
 	seasonData?: MediaSeasonData[];
@@ -31,13 +41,22 @@ export interface SearchResult {
 	source: MediaSource;
 	type: MediaType;
 	title: string;
+	originalTitle?: string;
 	year?: number;
+	serializationYears?: string;
+	author?: string;
+	country?: string;
+	genres?: string[];
+	releaseStatus?: string;
 	posterUrl?: string;
 	description?: string;
 	// Type-specific extras
 	totalEpisodes?: number;
 	totalSeasons?: number;
+	totalVolumes?: number;
+	totalChapters?: number;
 	totalPages?: number;
 	platforms?: string[];
+	timeToBeat?: string;
 	seasonData?: MediaSeasonData[];
 }
