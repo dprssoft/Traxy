@@ -6,4 +6,4 @@ include ':capacitor-community-sqlite'
 project(':capacitor-community-sqlite').projectDir = new File('../node_modules/.pnpm/@capacitor-community+sqlite@8.1.1_@capacitor+core@8.5.0/node_modules/@capacitor-community/sqlite/android')
 
 include ':capacitor-app'
-project(':capacitor-app').projectDir = new File('../node_modules/.pnpm/@capacitor+app@8.1.1_@capacitor+core@8.5.0/node_modules/@capacitor/app/android')
+project(':capacitor-app').projectDir = new File('../node_modules/.pnpm/@capacitor+app@8.0.0_@capacitor+core@8.5.0/node_modules/@capacitor/app/android')
