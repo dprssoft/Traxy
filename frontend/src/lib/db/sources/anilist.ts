@@ -257,12 +257,11 @@ async function discoverAnilist(
 	status?: string,
 	page = 1,
 	perPage = 20,
+	forceRefresh = false,
 ): Promise<SearchResult[]> {
 	const cacheKey = `anilist:discover:${mediaType}:${sort.join(',')}:${status ?? 'any'}:${page}`;
-	const cached = await getCached<SearchResult[]>(cacheKey);
-	if (cached) return cached;
 
-	try {
+	const fetcher = async (): Promise<SearchResult[]> => {
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 15000);
 		const variables: Record<string, unknown> = {
@@ -283,9 +282,21 @@ async function discoverAnilist(
 		if (!res.ok) return [];
 		const data = await res.json();
 
-		const results = (data.data?.Page?.media ?? []).map(mapAnilistItem);
-		await setCache(cacheKey, results);
-		return results;
+		return (data.data?.Page?.media ?? []).map(mapAnilistItem);
+	};
+
+	try {
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		const cached = await getCached<SearchResult[]>(cacheKey);
+		if (cached) return cached;
+
+		const result = await fetcher();
+		await setCache(cacheKey, result);
+		return result;
 	} catch {
 		return [];
 	}
@@ -295,24 +306,27 @@ async function discoverAnilist(
 export function discoverAnilistTrending(
 	mediaType: 'ANIME' | 'MANGA',
 	page = 1,
+	forceRefresh = false,
 ): Promise<SearchResult[]> {
-	return discoverAnilist(mediaType, ['TRENDING_DESC'], undefined, page);
+	return discoverAnilist(mediaType, ['TRENDING_DESC'], undefined, page, 20, forceRefresh);
 }
 
 /** Newly releasing anime or manga. */
 export function discoverAnilistNew(
 	mediaType: 'ANIME' | 'MANGA',
 	page = 1,
+	forceRefresh = false,
 ): Promise<SearchResult[]> {
-	return discoverAnilist(mediaType, ['START_DATE_DESC'], 'RELEASING', page);
+	return discoverAnilist(mediaType, ['START_DATE_DESC'], 'RELEASING', page, 20, forceRefresh);
 }
 
 /** Top rated anime or manga by score. */
 export function discoverAnilistTopRated(
 	mediaType: 'ANIME' | 'MANGA',
 	page = 1,
+	forceRefresh = false,
 ): Promise<SearchResult[]> {
-	return discoverAnilist(mediaType, ['SCORE_DESC'], undefined, page);
+	return discoverAnilist(mediaType, ['SCORE_DESC'], undefined, page, 20, forceRefresh);
 }
 
 /** Random anime or manga — fetches a random page from popular results. */

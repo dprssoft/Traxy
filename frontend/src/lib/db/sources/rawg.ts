@@ -5,6 +5,7 @@
 // Capacitor bypasses this natively. For web dev, a proxy is needed.
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { withCache } from '../fetchUtils';
+import { setCache } from '../apiCache';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
 import { Capacitor } from '@capacitor/core';
 
@@ -156,9 +157,9 @@ export async function searchRawg(query: string): Promise<SearchResult[]> {
 				token,
 				'games',
 				`fields name, cover.url, first_release_date, platforms.name, summary;
-				search "${query.replace(/"/g, '')}";
-				where version_parent = null;
-				limit 15;`,
+			search "${query.replace(/"/g, '')}";
+			where version_parent = null;
+			limit 15;`,
 			);
 			return games.map(mapGame);
 		});
@@ -179,8 +180,8 @@ export async function getRawgDetails(id: string): Promise<SearchResult | null> {
 				token,
 				'games',
 				`fields name, cover.url, first_release_date, platforms.name, summary;
-				where id = ${id};
-				limit 1;`,
+			where id = ${id};
+			limit 1;`,
 			);
 			return games[0] ? mapGame(games[0]) : null;
 		});
@@ -192,73 +193,132 @@ export async function getRawgDetails(id: string): Promise<SearchResult | null> {
 // ── Discovery / Catalogue endpoints ──────────────────────────────────────────
 
 /** Most hyped upcoming and recent games. */
-export async function discoverIgdbTrending(): Promise<SearchResult[]> {
+export async function discoverIgdbTrending(forceRefresh = false): Promise<SearchResult[]> {
 	const creds = getCredentials();
 	if (!creds) return [];
 
+	const cacheKey = 'igdb:discover:trending';
+	const fetcher = async (): Promise<SearchResult[]> => {
+		const token = await getAccessToken(creds.clientId, creds.clientSecret);
+		const games = await igdbFetch(
+			creds.clientId,
+			token,
+			'games',
+			`fields name, cover.url, first_release_date, platforms.name, summary;
+		sort hypes desc;
+		where hypes > 0 & version_parent = null;
+		limit 20;`,
+		);
+		return games.map(mapGame);
+	};
+
 	try {
-		return await withCache('igdb:discover:trending', async () => {
-			const token = await getAccessToken(creds.clientId, creds.clientSecret);
-			const games = await igdbFetch(
-				creds.clientId,
-				token,
-				'games',
-				`fields name, cover.url, first_release_date, platforms.name, summary;
-				sort hypes desc;
-				where hypes > 0 & version_parent = null;
-				limit 20;`,
-			);
-			return games.map(mapGame);
-		});
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		return await withCache(cacheKey, fetcher);
 	} catch {
 		return [];
 	}
 }
 
 /** Recently released games, sorted by release date. */
-export async function discoverIgdbNew(): Promise<SearchResult[]> {
+export async function discoverIgdbNew(forceRefresh = false): Promise<SearchResult[]> {
 	const creds = getCredentials();
 	if (!creds) return [];
 
+	const cacheKey = 'igdb:discover:new';
 	const nowUnix = Math.floor(Date.now() / 1000);
+
+	const fetcher = async (): Promise<SearchResult[]> => {
+		const token = await getAccessToken(creds.clientId, creds.clientSecret);
+		const games = await igdbFetch(
+			creds.clientId,
+			token,
+			'games',
+			`fields name, cover.url, first_release_date, platforms.name, summary;
+		sort first_release_date desc;
+		where first_release_date < ${nowUnix} & first_release_date != null & version_parent = null;
+		limit 20;`,
+		);
+		return games.map(mapGame);
+	};
+
 	try {
-		return await withCache('igdb:discover:new', async () => {
-			const token = await getAccessToken(creds.clientId, creds.clientSecret);
-			const games = await igdbFetch(
-				creds.clientId,
-				token,
-				'games',
-				`fields name, cover.url, first_release_date, platforms.name, summary;
-				sort first_release_date desc;
-				where first_release_date < ${nowUnix} & first_release_date != null & version_parent = null;
-				limit 20;`,
-			);
-			return games.map(mapGame);
-		});
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		return await withCache(cacheKey, fetcher);
 	} catch {
 		return [];
 	}
 }
 
 /** Top rated games by total rating. */
-export async function discoverIgdbTopRated(): Promise<SearchResult[]> {
+export async function discoverIgdbTopRated(forceRefresh = false): Promise<SearchResult[]> {
 	const creds = getCredentials();
 	if (!creds) return [];
 
+	const cacheKey = 'igdb:discover:top_rated';
+	const fetcher = async (): Promise<SearchResult[]> => {
+		const token = await getAccessToken(creds.clientId, creds.clientSecret);
+		const games = await igdbFetch(
+			creds.clientId,
+			token,
+			'games',
+			`fields name, cover.url, first_release_date, platforms.name, summary;
+		sort total_rating desc;
+		where total_rating_count > 50 & version_parent = null;
+		limit 20;`,
+		);
+		return games.map(mapGame);
+	};
+
 	try {
-		return await withCache('igdb:discover:top_rated', async () => {
-			const token = await getAccessToken(creds.clientId, creds.clientSecret);
-			const games = await igdbFetch(
-				creds.clientId,
-				token,
-				'games',
-				`fields name, cover.url, first_release_date, platforms.name, summary;
-				sort total_rating desc;
-				where total_rating_count > 50 & version_parent = null;
-				limit 20;`,
-			);
-			return games.map(mapGame);
-		});
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		return await withCache(cacheKey, fetcher);
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Random games — uses a random offset against a broad popularity query
+ * so results vary on every call. Never cached.
+ */
+export async function discoverIgdbRandom(): Promise<SearchResult[]> {
+	const creds = getCredentials();
+	if (!creds) return [];
+
+	const randomOffset = Math.floor(Math.random() * 150);
+
+	try {
+		const token = await getAccessToken(creds.clientId, creds.clientSecret);
+		const games = await igdbFetch(
+			creds.clientId,
+			token,
+			'games',
+			`fields name, cover.url, first_release_date, platforms.name, summary;
+		sort rating_count desc;
+		where rating_count > 10 & version_parent = null & cover != null;
+		limit 20;
+		offset ${randomOffset};`,
+		);
+		// Shuffle locally for extra variety
+		const mapped = games.map(mapGame);
+		for (let i = mapped.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[mapped[i], mapped[j]] = [mapped[j], mapped[i]];
+		}
+		return mapped;
 	} catch {
 		return [];
 	}

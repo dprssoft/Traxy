@@ -77,12 +77,9 @@ export async function getOpenLibraryDetails(id: string): Promise<SearchResult | 
 // ── Discovery / Catalogue endpoints ──────────────────────────────────────────
 
 /** Trending books from OpenLibrary's daily trending endpoint. */
-export async function discoverOpenLibraryTrending(): Promise<SearchResult[]> {
+export async function discoverOpenLibraryTrending(forceRefresh = false): Promise<SearchResult[]> {
 	const cacheKey = 'openlibrary:discover:trending';
-	const cached = await getCached<SearchResult[]>(cacheKey);
-	if (cached) return cached;
-
-	try {
+	const fetcher = async (): Promise<SearchResult[]> => {
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(`${BASE_URL}/trending/daily.json?limit=20`, {
@@ -92,7 +89,7 @@ export async function discoverOpenLibraryTrending(): Promise<SearchResult[]> {
 		if (!res.ok) return [];
 		const data = await res.json();
 
-		const results: SearchResult[] = (data.works ?? []).map((item: any) => ({
+		return (data.works ?? []).map((item: any) => ({
 			externalId: item.key, // e.g. /works/OL82563W
 			source: 'openlibrary' as const,
 			type: 'book' as const,
@@ -100,21 +97,29 @@ export async function discoverOpenLibraryTrending(): Promise<SearchResult[]> {
 			year: item.first_publish_year,
 			posterUrl: item.cover_i ? `${IMAGE_BASE}/${item.cover_i}-M.jpg` : undefined,
 		}));
+	};
 
-		await setCache(cacheKey, results);
-		return results;
+	try {
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		const cached = await getCached<SearchResult[]>(cacheKey);
+		if (cached) return cached;
+		
+		const result = await fetcher();
+		await setCache(cacheKey, result);
+		return result;
 	} catch {
 		return [];
 	}
 }
 
 /** Newly added books sorted by new. */
-export async function discoverOpenLibraryNew(): Promise<SearchResult[]> {
+export async function discoverOpenLibraryNew(forceRefresh = false): Promise<SearchResult[]> {
 	const cacheKey = 'openlibrary:discover:new';
-	const cached = await getCached<SearchResult[]>(cacheKey);
-	if (cached) return cached;
-
-	try {
+	const fetcher = async (): Promise<SearchResult[]> => {
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 15000);
 		const res = await fetch(
@@ -125,7 +130,7 @@ export async function discoverOpenLibraryNew(): Promise<SearchResult[]> {
 		if (!res.ok) return [];
 		const data = await res.json();
 
-		const results: SearchResult[] = data.docs.map((item: any) => ({
+		return data.docs.map((item: any) => ({
 			externalId: item.key,
 			source: 'openlibrary' as const,
 			type: 'book' as const,
@@ -133,8 +138,100 @@ export async function discoverOpenLibraryNew(): Promise<SearchResult[]> {
 			year: item.first_publish_year,
 			posterUrl: item.cover_i ? `${IMAGE_BASE}/${item.cover_i}-M.jpg` : undefined,
 		}));
+	};
 
-		await setCache(cacheKey, results);
+	try {
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		const cached = await getCached<SearchResult[]>(cacheKey);
+		if (cached) return cached;
+		
+		const result = await fetcher();
+		await setCache(cacheKey, result);
+		return result;
+	} catch {
+		return [];
+	}
+}
+
+/** 
+ * Proxy for Top Rated: OpenLibrary yearly trending books.
+ * This gives a popularity-ranked list that serves as a reasonable "top rated" proxy.
+ */
+export async function discoverOpenLibraryTopRated(forceRefresh = false): Promise<SearchResult[]> {
+	const cacheKey = 'openlibrary:discover:top_rated';
+	const fetcher = async (): Promise<SearchResult[]> => {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 15000);
+		const res = await fetch(`${BASE_URL}/trending/yearly.json?limit=20`, {
+			signal: controller.signal,
+		});
+		clearTimeout(timeout);
+		if (!res.ok) return [];
+		const data = await res.json();
+
+		return (data.works ?? []).map((item: any) => ({
+			externalId: item.key,
+			source: 'openlibrary' as const,
+			type: 'book' as const,
+			title: item.title,
+			year: item.first_publish_year,
+			posterUrl: item.cover_i ? `${IMAGE_BASE}/${item.cover_i}-M.jpg` : undefined,
+		}));
+	};
+
+	try {
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		const cached = await getCached<SearchResult[]>(cacheKey);
+		if (cached) return cached;
+		
+		const result = await fetcher();
+		await setCache(cacheKey, result);
+		return result;
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Random books: fetch trending with a random page offset.
+ */
+export async function discoverOpenLibraryRandom(): Promise<SearchResult[]> {
+	// Offset logic: OpenLibrary uses `page` for pagination.
+	const randomPage = Math.floor(Math.random() * 50) + 1;
+	
+	try {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 15000);
+		const res = await fetch(`${BASE_URL}/trending/daily.json?limit=20&page=${randomPage}`, {
+			signal: controller.signal,
+		});
+		clearTimeout(timeout);
+		if (!res.ok) return [];
+		const data = await res.json();
+
+		const results: SearchResult[] = (data.works ?? []).map((item: any) => ({
+			externalId: item.key,
+			source: 'openlibrary' as const,
+			type: 'book' as const,
+			title: item.title,
+			year: item.first_publish_year,
+			posterUrl: item.cover_i ? `${IMAGE_BASE}/${item.cover_i}-M.jpg` : undefined,
+		}));
+		
+		// Shuffle results
+		for (let i = results.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[results[i], results[j]] = [results[j], results[i]];
+		}
+		
 		return results;
 	} catch {
 		return [];

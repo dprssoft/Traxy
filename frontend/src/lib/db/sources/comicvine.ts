@@ -1,5 +1,6 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { fetchJson, parseYear, withCache } from '../fetchUtils';
+import { getCached, setCache } from '../apiCache';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
 import { Capacitor } from '@capacitor/core';
 
@@ -97,20 +98,109 @@ export async function getComicVineDetails(id: string): Promise<SearchResult | nu
 // ── Discovery / Catalogue endpoints ──────────────────────────────────────────
 
 /** Recently added comic volumes from ComicVine. */
-export async function discoverComicVineNew(): Promise<SearchResult[]> {
+export async function discoverComicVineNew(forceRefresh = false): Promise<SearchResult[]> {
+	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
+	if (!apiKey) return [];
+
+	const cacheKey = 'comicvine:discover:new';
+	const baseUrl = getComicVineBaseUrl();
+	
+	const fetcher = async (): Promise<SearchResult[]> => {
+		const data = await fetchJson<ComicVineSearchResponse>(
+			`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=date_added:desc&limit=20`,
+			6000,
+			CV_HEADERS,
+		);
+		return data.results.map(mapVolume);
+	};
+
+	try {
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		
+		const cached = await getCached<SearchResult[]>(cacheKey);
+		if (cached) return cached;
+		
+		const result = await fetcher();
+		await setCache(cacheKey, result);
+		return result;
+	} catch {
+		return [];
+	}
+}
+
+/** 
+ * Proxy for Trending: ComicVine volumes sorted by count_of_issues descending.
+ */
+export async function discoverComicVineTrending(forceRefresh = false): Promise<SearchResult[]> {
+	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
+	if (!apiKey) return [];
+
+	const cacheKey = 'comicvine:discover:trending';
+	const baseUrl = getComicVineBaseUrl();
+	
+	const fetcher = async (): Promise<SearchResult[]> => {
+		const data = await fetchJson<ComicVineSearchResponse>(
+			`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=count_of_issues:desc&limit=20`,
+			6000,
+			CV_HEADERS,
+		);
+		return data.results.map(mapVolume);
+	};
+
+	try {
+		if (forceRefresh) {
+			const result = await fetcher();
+			await setCache(cacheKey, result);
+			return result;
+		}
+		
+		const cached = await getCached<SearchResult[]>(cacheKey);
+		if (cached) return cached;
+		
+		const result = await fetcher();
+		await setCache(cacheKey, result);
+		return result;
+	} catch {
+		return [];
+	}
+}
+
+/** 
+ * Proxy for Top Rated: same as Trending, ComicVine volumes sorted by count_of_issues descending.
+ */
+export async function discoverComicVineTopRated(forceRefresh = false): Promise<SearchResult[]> {
+	return discoverComicVineTrending(forceRefresh);
+}
+
+/**
+ * Random comics: fetch new releases with a random page offset.
+ */
+export async function discoverComicVineRandom(): Promise<SearchResult[]> {
 	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
 	if (!apiKey) return [];
 
 	const baseUrl = getComicVineBaseUrl();
+	const randomOffset = Math.floor(Math.random() * 200) * 20; // 200 random pages, limit 20
+	
 	try {
-		return await withCache('comicvine:discover:new', async () => {
-			const data = await fetchJson<ComicVineSearchResponse>(
-				`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=date_added:desc&limit=20`,
-				6000,
-				CV_HEADERS,
-			);
-			return data.results.map(mapVolume);
-		});
+		const data = await fetchJson<ComicVineSearchResponse>(
+			`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=date_added:desc&offset=${randomOffset}&limit=20`,
+			6000,
+			CV_HEADERS,
+		);
+		const results = data.results.map(mapVolume);
+		
+		// Shuffle results
+		for (let i = results.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[results[i], results[j]] = [results[j], results[i]];
+		}
+		
+		return results;
 	} catch {
 		return [];
 	}
