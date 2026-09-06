@@ -12,10 +12,12 @@
 	import { layoutStore } from '$lib/stores/layout';
 	import { App } from '@capacitor/app';
 	import { Capacitor } from '@capacitor/core';
+	import { page } from '$app/stores';
 
 	let { children } = $props();
 
 	const isMirrored = $derived(layoutStore.topbarMirrored);
+	const isMediaPage = $derived($page.url.pathname.startsWith('/media'));
 
 	beforeNavigate(({ from }) => {
 		const p = from?.url?.pathname ?? null;
@@ -54,11 +56,13 @@
 
 	<!-- Main App Shell -->
 	<div class="flex-1 flex flex-col min-w-0 pb-20 md:pb-12">
-		<!-- Desktop / Mobile Topbar -->
-		<Topbar />
+		<!-- Desktop / Mobile Topbar (hidden on media pages per wireframe) -->
+		{#if !isMediaPage}
+			<Topbar />
+		{/if}
 
 		<!-- Page Content -->
-		<main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+		<main class="flex-1 w-full max-w-6xl mx-auto {isMediaPage ? 'p-0 sm:px-4 sm:py-6' : 'px-4 sm:px-8 py-6 sm:py-8'}">
 			{@render children()}
 		</main>
 	</div>

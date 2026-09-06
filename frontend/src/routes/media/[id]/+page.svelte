@@ -5,6 +5,4 @@
 	let { data }: { data: PageData } = $props();
 </script>
 
-<div class="max-w-6xl mx-auto py-8 px-4">
-	<MediaPageView media={data.media} tracking={data.tracking} cycles={data.cycles} />
-</div>
+<MediaPageView media={data.media} tracking={data.tracking} cycles={data.cycles} />
