@@ -1,4 +1,4 @@
-﻿import { getDb } from './index';
+import { getDb } from './index';
 
 const CACHE_MAX_AGE_DAYS = 7;
 
@@ -21,6 +21,39 @@ export async function getCached<T>(cacheKey: string): Promise<T | null> {
 		// Cache miss is never fatal
 	}
 	return null;
+}
+
+/**
+ * Batch-reads multiple cache keys in a single SQL query.
+ * Returns a Map of cacheKey → parsed value for all keys that had a fresh cache hit.
+ * Keys with no valid cache entry are absent from the map.
+ */
+export async function getCachedBatch<T>(cacheKeys: string[]): Promise<Map<string, T>> {
+	const result = new Map<string, T>();
+	if (cacheKeys.length === 0) return result;
+	try {
+		const db = getDb();
+		const cutoff = new Date(Date.now() - CACHE_MAX_AGE_DAYS * 86_400_000).toISOString();
+		const placeholders = cacheKeys.map(() => '?').join(', ');
+		const queryResult = await db.query(
+			`SELECT cacheKey, data FROM ApiCache WHERE cacheKey IN (${placeholders}) AND cachedAt > ?`,
+			[...cacheKeys, cutoff],
+		);
+		if (queryResult.values) {
+			for (const row of queryResult.values) {
+				const key = row[0] as string;
+				const data = row[1] as string;
+				try {
+					result.set(key, JSON.parse(data) as T);
+				} catch {
+					// Skip malformed rows
+				}
+			}
+		}
+	} catch {
+		// Batch cache miss is never fatal — callers will fetch individually
+	}
+	return result;
 }
 
 /**

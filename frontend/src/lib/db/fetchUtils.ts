@@ -7,7 +7,7 @@ import { getCached, setCache } from './apiCache';
  */
 export async function fetchJson<T>(
 	url: string,
-	timeoutMs = 5000,
+	timeoutMs = 4000,
 	headers?: Record<string, string>,
 ): Promise<T> {
 	const controller = new AbortController();
