@@ -51,3 +51,8 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 		throw err;
 	}
 }
+
+export async function clearMediaCache(): Promise<void> {
+	const db = getDb();
+	await db.run('DELETE FROM ApiCache');
+}

@@ -1,12 +1,39 @@
 <script lang="ts">
-	import { exportDatabaseJson, importDatabaseJson } from '$lib/db/services/backup.service';
+	import { exportDatabaseJson, importDatabaseJson, clearMediaCache } from '$lib/db/services/backup.service';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let backupStatus = $state('');
 	let exporting = $state(false);
 	let importing = $state(false);
+
+	let showCacheModal = $state(false);
+	let cacheTimer = $state(3);
+	let cacheInterval: ReturnType<typeof setInterval>;
+
+	function startCacheTimer() {
+		cacheTimer = 3;
+		clearInterval(cacheInterval);
+		cacheInterval = setInterval(() => {
+			if (cacheTimer > 0) cacheTimer--;
+			else clearInterval(cacheInterval);
+		}, 1000);
+	}
+
+	async function handleClearCache() {
+		try {
+			await clearMediaCache();
+			backupStatus = 'success:Media cache cleared successfully.';
+			setTimeout(() => (backupStatus = ''), 4000);
+		} catch (err) {
+			console.error(err);
+			backupStatus = 'error:Failed to clear media cache.';
+		} finally {
+			showCacheModal = false;
+		}
+	}
 
 	async function handleExport() {
 		try {
@@ -101,4 +128,42 @@
 			{statusMsg}
 		</div>
 	{/if}
+
+	<div class="pt-8">
+		<SectionHeader
+			title="Danger Zone"
+			subtitle="Destructive actions that cannot be undone."
+		/>
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+			<!-- Clear Cache Card -->
+			<div class="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex flex-col justify-between gap-4">
+				<div>
+					<h3 class="font-bold text-rose-500 text-sm mb-1">Clear Media Cache</h3>
+					<p class="text-xs text-slate-400">Clears cached API search results and metadata. Useful if media info (country, runtime, etc.) is incorrect.</p>
+				</div>
+				<Button variant="danger" onclick={() => { showCacheModal = true; startCacheTimer(); }} class="w-full">
+					🗑 Clear Media Cache
+				</Button>
+			</div>
+		</div>
+	</div>
 </div>
+
+<Modal bind:open={showCacheModal} title="Clear Media Cache" size="md">
+	<div class="space-y-4">
+		<p class="text-sm text-slate-300">
+			This will delete all cached API responses and temporary metadata. It will <strong>not</strong> delete any of your tracked media, reviews, or lists.
+		</p>
+		<p class="text-sm text-slate-300">
+			The app will simply re-fetch the latest data from sources like TMDB, AniList, and Wikipedia the next time it needs them.
+		</p>
+	</div>
+	{#snippet footer()}
+		<div class="flex justify-end gap-3 mt-6">
+			<Button variant="secondary" onclick={() => (showCacheModal = false)}>Cancel</Button>
+			<Button variant="danger" onclick={handleClearCache} disabled={cacheTimer > 0}>
+				{cacheTimer > 0 ? `Clear Cache (${cacheTimer}s)` : 'Clear Cache'}
+			</Button>
+		</div>
+	{/snippet}
+</Modal>
