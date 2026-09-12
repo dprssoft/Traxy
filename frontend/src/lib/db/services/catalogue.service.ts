@@ -6,6 +6,45 @@ import type { SearchResult } from '$lib/types/mediaTypes';
 import type { MediaType } from '$lib/db/schema';
 import { getCached, getCachedBatch } from '../apiCache';
 
+// In-memory cache for fast catalogue navigation
+interface MemoryCacheEntry {
+	data: SearchResult[];
+	timestamp: number;
+}
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const memoryCache = new Map<string, MemoryCacheEntry>();
+
+function getMemoryCacheKey(type: MediaType | 'all', category: DiscoverCategory): string {
+	return `${type}:${category}`;
+}
+
+export function getMemoryCacheBatch(
+	type: MediaType | 'all',
+	categories: DiscoverCategory[]
+): Partial<Record<DiscoverCategory, SearchResult[]>> {
+	const result: Partial<Record<DiscoverCategory, SearchResult[]>> = {};
+	const now = Date.now();
+	for (const cat of categories) {
+		const key = getMemoryCacheKey(type, cat);
+		const entry = memoryCache.get(key);
+		if (entry && now - entry.timestamp < CACHE_TTL) {
+			result[cat] = entry.data;
+		}
+	}
+	return result;
+}
+
+export function setMemoryCache(
+	type: MediaType | 'all',
+	category: DiscoverCategory,
+	data: SearchResult[]
+) {
+	memoryCache.set(getMemoryCacheKey(type, category), {
+		data,
+		timestamp: Date.now()
+	});
+}
+
 // TMDB
 import {
 	discoverTmdbTrending,
@@ -293,32 +332,52 @@ export async function discoverMedia(
 	category: DiscoverCategory,
 	forceRefresh = false,
 ): Promise<SearchResult[]> {
+	if (forceRefresh) {
+		memoryCache.delete(getMemoryCacheKey(type, category));
+	} else {
+		const mem = memoryCache.get(getMemoryCacheKey(type, category));
+		if (mem && Date.now() - mem.timestamp < CACHE_TTL) {
+			return mem.data;
+		}
+	}
+
+	let result: SearchResult[];
+
 	if (category === 'visited') {
-		return getVisitedMedia(type);
+		result = await getVisitedMedia(type);
+	} else if (type === 'all') {
+		result = await discoverAll(category, forceRefresh);
+	} else {
+		switch (type) {
+			case 'film':
+			case 'tv':
+				result = await discoverTmdbByCategory(type, category, forceRefresh);
+				break;
+			case 'anime':
+			case 'manga':
+			case 'manhwa':
+			case 'manhua':
+				result = await discoverAnilistByCategory(type, category, forceRefresh);
+				break;
+			case 'game':
+				result = await discoverIgdbByCategory(category, forceRefresh);
+				break;
+			case 'book':
+				result = await discoverOpenLibraryByCategory(category, forceRefresh);
+				break;
+			case 'comic':
+				result = await discoverComicByCategory(category, forceRefresh);
+				break;
+			default:
+				result = [];
+		}
 	}
 
-	if (type === 'all') {
-		return discoverAll(category, forceRefresh);
+	if (result.length > 0 || category === 'visited') {
+		setMemoryCache(type, category, result);
 	}
 
-	switch (type) {
-		case 'film':
-		case 'tv':
-			return discoverTmdbByCategory(type, category, forceRefresh);
-		case 'anime':
-		case 'manga':
-		case 'manhwa':
-		case 'manhua':
-			return discoverAnilistByCategory(type, category, forceRefresh);
-		case 'game':
-			return discoverIgdbByCategory(category, forceRefresh);
-		case 'book':
-			return discoverOpenLibraryByCategory(category, forceRefresh);
-		case 'comic':
-			return discoverComicByCategory(category, forceRefresh);
-		default:
-			return [];
-	}
+	return result;
 }
 
 /**

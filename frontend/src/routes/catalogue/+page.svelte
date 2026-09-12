@@ -15,6 +15,7 @@
 		CATEGORIES,
 		recordVisitedMedia,
 		getCatalogueCacheBatch,
+		getMemoryCacheBatch,
 		type DiscoverCategory,
 	} from '$lib/db/services/catalogue.service';
 	import type { SearchResult } from '$lib/types/mediaTypes';
@@ -159,17 +160,29 @@
 			categoryError[cat.id] = false;
 		}
 
-		// ── Warm cache in one batch SQLite query ──────────────────────────────────
+		// ── Fast path: check in-memory cache first to avoid flashing loading states ─
 		if (!forceRefresh && !silent) {
 			const catIds = CATEGORIES.map((c) => c.id);
-			const cached = await getCatalogueCacheBatch(selectedType, catIds);
+			const memBatch = getMemoryCacheBatch(selectedType, catIds);
 			for (const cat of CATEGORIES) {
-				const hit = cached[cat.id];
-				if (hit && hit.length > 0) {
-					categoryData[cat.id] = hit;
+				if (memBatch[cat.id]) {
+					categoryData[cat.id] = memBatch[cat.id]!;
 					categoryLoading[cat.id] = false;
 				} else {
 					categoryLoading[cat.id] = true;
+				}
+			}
+
+			// For the ones not in memory, try SQLite cache batch
+			const missingCats = CATEGORIES.filter((c) => categoryLoading[c.id]).map((c) => c.id);
+			if (missingCats.length > 0) {
+				const cached = await getCatalogueCacheBatch(selectedType, missingCats);
+				for (const cat of missingCats) {
+					const hit = cached[cat];
+					if (hit && hit.length > 0) {
+						categoryData[cat] = hit;
+						categoryLoading[cat] = false;
+					}
 				}
 			}
 		} else if (!silent) {
@@ -183,7 +196,7 @@
 			const data = await discoverMedia(selectedType, 'trending', forceRefresh);
 			categoryData['trending'] = data;
 		} catch {
-			categoryData['trending'] = [];
+			if (!categoryData['trending']?.length) categoryData['trending'] = [];
 			categoryError['trending'] = true;
 		} finally {
 			if (!silent || forceRefresh) categoryLoading['trending'] = false;
@@ -197,7 +210,7 @@
 					const data = await discoverMedia(selectedType, cat.id, forceRefresh);
 					categoryData[cat.id] = data;
 				} catch {
-					categoryData[cat.id] = [];
+					if (!categoryData[cat.id]?.length) categoryData[cat.id] = [];
 					categoryError[cat.id] = true;
 				} finally {
 					if (!silent || forceRefresh) categoryLoading[cat.id] = false;
