@@ -19,9 +19,10 @@
 		media: LocalMedia;
 		tracking: LocalTrackingStatus | null;
 		cycles: LocalWatchCycle[];
+		showCountryFlags?: boolean;
 	}
 
-	let { media, tracking: initialTracking, cycles: initialCycles }: Props = $props();
+	let { media, tracking: initialTracking, cycles: initialCycles, showCountryFlags = false }: Props = $props();
 
 	// tracking and cycles are written locally (by handlers) AND synced from props
 	// eslint-disable-next-line svelte/prefer-writable-derived
@@ -182,6 +183,14 @@
 	// Derived metadata helpers matching wireframe
 	// -------------------------------------------------------------------------
 
+	function formatRuntime(min: number): string {
+		if (!min || min <= 0) return '—';
+		const h = Math.floor(min / 60);
+		const m = min % 60;
+		if (h > 0) return `${h}h ${m}m`;
+		return `${m}m`;
+	}
+
 	// Item 1: media.title
 	// Item 2: media.originalTitle (if not English / different)
 	const displayOriginalTitle = $derived(
@@ -194,21 +203,51 @@
 	);
 
 	// Item 4: Author (Director / Author / Developer / Creator)
+	const authorLabel = $derived(
+		media.type === 'film' ? 'Director' :
+		media.type === 'tv' || media.type === 'anime' ? 'Creator' :
+		media.type === 'game' ? 'Studio' :
+		media.type === 'book' ? 'Author' :
+		media.type === 'manga' || media.type === 'manhwa' || media.type === 'manhua' ? 'Mangaka' :
+		media.type === 'comic' ? 'Publisher' : 'Author',
+	);
 	const displayAuthor = $derived(
-		media.author ||
-		(media.type === 'game' ? (media.platforms?.[0] ? `${media.platforms[0]} Dev` : 'Developer') :
-		 media.type === 'book' ? 'Author' :
-		 media.type === 'comic' || media.type === 'manga' ? 'Creator' : 'Director'),
+		media.author || '—',
 	);
 
 	// Item 5: Country of origin
-	const displayCountry = $derived(
-		media.country ||
-		(media.type === 'anime' || media.type === 'manga' ? 'Japan' :
-		 media.type === 'manhwa' ? 'South Korea' :
-		 media.type === 'manhua' ? 'China' :
-		 media.type === 'comic' ? 'USA' : '—'),
-	);
+	const COUNTRY_FLAGS: Record<string, string> = {
+		'Japan': '🇯🇵',
+		'South Korea': '🇰🇷',
+		'China': '🇨🇳',
+		'United States': '🇺🇸',
+		'United States of America': '🇺🇸',
+		'USA': '🇺🇸',
+		'United Kingdom': '🇬🇧',
+		'UK': '🇬🇧',
+		'France': '🇫🇷',
+		'Germany': '🇩🇪',
+		'Italy': '🇮🇹',
+		'Spain': '🇪🇸',
+		'Canada': '🇨🇦',
+		'Australia': '🇦🇺',
+		'India': '🇮🇳',
+		'Brazil': '🇧🇷',
+		'Mexico': '🇲🇽',
+		'Russia': '🇷🇺',
+		'Taiwan': '🇹🇼',
+	};
+	const displayCountry = $derived((() => {
+		const c = media.country ||
+			(media.type === 'anime' || media.type === 'manga' ? 'Japan' :
+			 media.type === 'manhwa' ? 'South Korea' :
+			 media.type === 'manhua' ? 'China' :
+			 media.type === 'comic' ? 'USA' : '—');
+		if (c !== '—' && showCountryFlags && COUNTRY_FLAGS[c]) {
+			return COUNTRY_FLAGS[c];
+		}
+		return c;
+	})());
 
 	// Item 7: Genres (up to 3)
 	const displayGenres = $derived((() => {
@@ -226,27 +265,34 @@
 		return [];
 	})());
 
-	// Item 9: Status (airing; finished; hiatus; axed etc)
+	// Item 9: Status (airing; finished; hiatus; axed etc) — NEVER show tracking status here
 	const mediaStatusText = $derived((() => {
 		if (media.releaseStatus) {
 			return media.releaseStatus.charAt(0).toUpperCase() + media.releaseStatus.slice(1).toLowerCase();
 		}
-		if (tracking?.status) {
-			return getStatusLabel(tracking.status, media.type);
-		}
-		if (media.type === 'tv' || media.type === 'anime') return 'Finished';
-		if (media.type === 'film' || media.type === 'game') return 'Released';
+		// Type-based default when no release status is known
+		if (media.type === 'film') return 'Released';
+		if (media.type === 'game') return 'Released';
 		if (media.type === 'book') return 'Published';
-		return 'Available';
+		if (media.type === 'tv' || media.type === 'anime') return '—';
+		return '—';
 	})());
 
 	// Item 10: Seasons/Episodes, Volumes/Chapters, Pages, Time to beat
 	const mediaCountText = $derived((() => {
 		if (media.type === 'game') {
-			return media.timeToBeat ? `${media.timeToBeat}` : 'Game';
+			if (media.timeToBeat) {
+				try {
+					const ttb = JSON.parse(media.timeToBeat);
+					return ttb.main ? `${ttb.main}h` : '—';
+				} catch {
+					return media.timeToBeat;
+				}
+			}
+			return '—';
 		}
 		if (media.type === 'book') {
-			return media.totalPages ? `${media.totalPages} p.` : 'Book';
+			return media.totalPages ? `${media.totalPages} p.` : '—';
 		}
 		if (media.type === 'manga' || media.type === 'manhwa' || media.type === 'manhua' || media.type === 'comic') {
 			if (media.totalVolumes && media.totalChapters) {
@@ -254,20 +300,24 @@
 			}
 			if (media.totalChapters) return `${media.totalChapters} ch.`;
 			if (media.totalVolumes) return `${media.totalVolumes} vol.`;
-			return 'Manga';
+			return '—';
 		}
 		if (media.type === 'tv' || media.type === 'anime') {
+			if (media.type === 'anime' && media.runtimeMinutes && !media.totalEpisodes) {
+				return formatRuntime(media.runtimeMinutes);
+			}
 			if (media.totalSeasons && media.totalEpisodes) {
 				return `${media.totalSeasons}s · ${media.totalEpisodes}ep`;
 			}
 			if (media.totalEpisodes) return `${media.totalEpisodes} ep.`;
 			if (media.totalSeasons) return `${media.totalSeasons} season`;
-			return 'Series';
+			return '—';
 		}
 		if (media.type === 'film') {
-			return media.year ? `${media.year}` : 'Movie';
+			if (media.runtimeMinutes) return formatRuntime(media.runtimeMinutes);
+			return media.year ? `${media.year}` : '—';
 		}
-		return 'Media';
+		return '—';
 	})());
 
 	// Item 12: Track button label
@@ -366,15 +416,34 @@
 				{/if}
 			</div>
 
-			<!-- 9. Status & 10. Seasons/Episodes -->
-			<div class="flex items-center justify-between gap-1 text-[11px] font-bold px-0.5">
-				<span class="text-slate-300 truncate" title={mediaStatusText}>
-					{mediaStatusText}
-				</span>
-				<span class="text-slate-500 truncate" title={mediaCountText}>
-					{mediaCountText}
-				</span>
-			</div>
+			<!-- 9. Status & 10. Seasons/Episodes OR Time to Beat for Games -->
+			{#if media.type === 'game' && media.timeToBeat}
+				{@const ttb = (() => {
+					try { return JSON.parse(media.timeToBeat); } 
+					catch { return null; }
+				})()}
+				{#if ttb}
+					<div class="flex flex-col gap-1 mt-1 bg-[#16192b]/80 rounded-xl p-2.5 border border-white/[0.08]">
+						<div class="flex justify-between items-center text-[10px]">
+							<span class="text-slate-400 font-bold uppercase tracking-wider">Main Story</span>
+							<span class="text-indigo-400 font-bold">{ttb.main ? `${ttb.main}h` : '--'}</span>
+						</div>
+						<div class="flex justify-between items-center text-[10px]">
+							<span class="text-slate-400 font-bold uppercase tracking-wider">Completionist</span>
+							<span class="text-purple-400 font-bold">{ttb.completionist ? `${ttb.completionist}h` : '--'}</span>
+						</div>
+					</div>
+				{/if}
+			{:else}
+				<div class="flex items-center justify-between gap-1 text-[11px] font-bold px-0.5">
+					<span class="text-slate-300 truncate" title={mediaStatusText}>
+						{mediaStatusText}
+					</span>
+					<span class="text-slate-500 truncate" title={mediaCountText}>
+						{mediaCountText}
+					</span>
+				</div>
+			{/if}
 
 			<!-- 11. User rating (5 stars divided by half, score up to 10) -->
 			<div class="flex flex-col items-center sm:items-start gap-1">
@@ -460,7 +529,7 @@
 					</span>
 				</div>
 				<div class="flex flex-col min-w-0">
-					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Author</span>
+					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">{authorLabel}</span>
 					<span class="text-xs font-semibold text-slate-200 truncate" title={displayAuthor}>
 						{displayAuthor}
 					</span>
