@@ -30,6 +30,7 @@ interface ComicVineVolume {
 	deck?: string;
 	description?: string;
 	count_of_issues?: number;
+	publisher?: { name?: string };
 }
 
 interface ComicVineSearchResponse {
@@ -49,7 +50,10 @@ function mapVolume(item: ComicVineVolume): SearchResult {
 		year: parseYear(item.start_year),
 		posterUrl: item.image?.medium_url ?? item.image?.original_url ?? undefined,
 		description: item.deck ?? item.description?.replace(HTML_TAG_RE, '') ?? undefined,
-		totalEpisodes: item.count_of_issues ?? undefined,
+		author: item.publisher?.name ?? undefined,
+		country: undefined,
+		totalChapters: item.count_of_issues ?? undefined,
+		releaseStatus: item.count_of_issues ? 'Published' : undefined,
 	};
 }
 
@@ -64,7 +68,7 @@ export async function searchComicVine(query: string): Promise<SearchResult[]> {
 	try {
 		return await withCache(`comicvine:search:${query}`, async () => {
 			const data = await fetchJson<ComicVineSearchResponse>(
-				`${baseUrl}/search/?api_key=${apiKey}&format=json&resources=volume&query=${encodeURIComponent(query)}`,
+				`${baseUrl}/search/?api_key=${apiKey}&format=json&resources=volume&field_list=id,name,start_year,image,deck,description,count_of_issues,publisher&query=${encodeURIComponent(query)}`,
 				6000,
 				CV_HEADERS,
 			);
@@ -84,7 +88,7 @@ export async function getComicVineDetails(id: string): Promise<SearchResult | nu
 	try {
 		return await withCache(`comicvine:detail:${id}`, async () => {
 			const data = await fetchJson<ComicVineDetailResponse>(
-				`${baseUrl}/volume/4050-${id}/?api_key=${apiKey}&format=json`,
+				`${baseUrl}/volume/4050-${id}/?api_key=${apiKey}&format=json&field_list=id,name,start_year,image,deck,description,count_of_issues,publisher`,
 				6000,
 				CV_HEADERS,
 			);

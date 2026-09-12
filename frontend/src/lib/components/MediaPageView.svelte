@@ -218,34 +218,40 @@
 
 	// Item 5: Country of origin
 	const COUNTRY_FLAGS: Record<string, string> = {
-		'Japan': '🇯🇵',
-		'South Korea': '🇰🇷',
-		'China': '🇨🇳',
-		'United States': '🇺🇸',
-		'United States of America': '🇺🇸',
-		'USA': '🇺🇸',
-		'United Kingdom': '🇬🇧',
-		'UK': '🇬🇧',
-		'France': '🇫🇷',
-		'Germany': '🇩🇪',
-		'Italy': '🇮🇹',
-		'Spain': '🇪🇸',
-		'Canada': '🇨🇦',
-		'Australia': '🇦🇺',
-		'India': '🇮🇳',
-		'Brazil': '🇧🇷',
-		'Mexico': '🇲🇽',
-		'Russia': '🇷🇺',
-		'Taiwan': '🇹🇼',
+		'japan': '🇯🇵',
+		'south korea': '🇰🇷',
+		'republic of korea': '🇰🇷',
+		'china': '🇨🇳',
+		'people\'s republic of china': '🇨🇳',
+		'united states': '🇺🇸',
+		'united states of america': '🇺🇸',
+		'usa': '🇺🇸',
+		'us': '🇺🇸',
+		'united kingdom': '🇬🇧',
+		'uk': '🇬🇧',
+		'great britain': '🇬🇧',
+		'france': '🇫🇷',
+		'germany': '🇩🇪',
+		'italy': '🇮🇹',
+		'spain': '🇪🇸',
+		'canada': '🇨🇦',
+		'australia': '🇦🇺',
+		'india': '🇮🇳',
+		'brazil': '🇧🇷',
+		'mexico': '🇲🇽',
+		'russia': '🇷🇺',
+		'russian federation': '🇷🇺',
+		'taiwan': '🇹🇼',
+		'republic of china': '🇹🇼',
 	};
 	const displayCountry = $derived((() => {
 		const c = media.country ||
 			(media.type === 'anime' || media.type === 'manga' ? 'Japan' :
 			 media.type === 'manhwa' ? 'South Korea' :
-			 media.type === 'manhua' ? 'China' :
-			 media.type === 'comic' ? 'USA' : '—');
-		if (c !== '—' && showCountryFlags && COUNTRY_FLAGS[c]) {
-			return COUNTRY_FLAGS[c];
+			 media.type === 'manhua' ? 'China' : '—');
+		if (c !== '—' && showCountryFlags) {
+			const key = c.toLowerCase().trim();
+			if (COUNTRY_FLAGS[key]) return COUNTRY_FLAGS[key];
 		}
 		return c;
 	})());
