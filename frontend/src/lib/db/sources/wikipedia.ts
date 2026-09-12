@@ -125,7 +125,63 @@ async function findWikidataEntity(
 			}
 		}
 
-		return bestMatch.id;
+		if (maxScore >= 0) {
+			return bestMatch.id;
+		}
+
+		// Fallback: If Wikidata exact search failed to find a good match, use Wikipedia's fuzzy full-text search
+		return await fallbackWikipediaSearch(title, type);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Bypasses Wikidata's precise label search by using Wikipedia's fuzzy full-text search,
+ * then maps the top Wikipedia article to its corresponding Wikidata entity.
+ */
+async function fallbackWikipediaSearch(title: string, type: MediaType): Promise<string | null> {
+	try {
+		const typeSuffix: Record<string, string> = {
+			film: 'film',
+			tv: 'tv series',
+			anime: 'anime',
+			manga: 'manga',
+			manhwa: 'manhwa',
+			manhua: 'manhua',
+			comic: 'comic',
+			book: 'novel',
+			game: 'video game',
+		};
+
+		const suffix = typeSuffix[type] ?? '';
+		const searchQuery = `${title} ${suffix}`.trim();
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 8000);
+		
+		const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&origin=*`;
+		const wikiRes = await fetch(wikiUrl, { signal: controller.signal });
+		clearTimeout(timeout);
+		if (!wikiRes.ok) return null;
+
+		const wikiData = await wikiRes.json();
+		if (!wikiData.query?.search?.length) return null;
+
+		const topTitle = wikiData.query.search[0].title;
+
+		// Map Wikipedia title to Wikidata ID
+		const wdUrl = `${WIKIDATA_API}?action=wbgetentities&sites=enwiki&titles=${encodeURIComponent(topTitle)}&props=info&format=json&origin=*`;
+		const wdRes = await fetch(wdUrl);
+		if (!wdRes.ok) return null;
+
+		const wdData = await wdRes.json();
+		if (wdData.entities) {
+			const entityId = Object.keys(wdData.entities)[0];
+			if (entityId !== '-1') return entityId;
+		}
+		
+		return null;
 	} catch {
 		return null;
 	}
