@@ -150,6 +150,7 @@ Before creating any UI element, check `src/lib/components/` and `src/lib/compone
 If a suitable component exists, reuse or extend it. Do NOT duplicate or build ad-hoc DIY solutions.
 - Never write inline custom button/badge/card styling (e.g., ad-hoc `bg-[#121422]` divs or custom button markups) when shared atoms exist. Use `Card`, `Button`, `Badge`, etc.
 - Use `MediaCard.svelte` for any list or grid displaying media items. Do NOT recreate poster + title + metadata cards from scratch.
+- **No-DIY rule applies project-wide**: before writing any utility, hook, helper, or logic, search the codebase first. If equivalent code exists anywhere in `src/lib/`, reuse or extend it — never duplicate.
 
 ### Service layer is mandatory
 Pages and components MUST NOT import directly from `$lib/db/index` or call Dexie/database queries directly.
@@ -164,3 +165,21 @@ Each settings section lives in its own sub-route under `routes/settings/<section
 
 ### Feature flags for extensions
 New optional or upcoming features must be gated by a flag key in `AppSettings` (e.g. `feat_cloud_sync`, `feat_catalogue`, `feat_rewind`). Always check the flag before rendering associated UI or route segments.
+
+## Git & Commit Discipline
+
+Every change must be committed as a real programmer would:
+- One logical change per commit; do not bundle unrelated edits.
+- Commit message format: `<type>(<scope>): <short imperative summary>` (Conventional Commits).
+  - Types: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`, `style`.
+  - Scope: the affected subsystem or route (e.g. `feed`, `auth`, `media`, `api`).
+- Stage only the files relevant to the commit; do not stage unintended changes.
+- Never commit `.env` files, generated build artifacts, or editor metadata.
+- Run `pnpm lint` (frontend) or verify the build compiles (backend) before committing.
+
+## Agent Chat Style
+
+- **Caveman mode**: responses in chat must be strictly brief — answer only what was asked, skip
+  filler, preamble, and post-summaries. Every token counts.
+- **No auto-proceed on plans**: always stop after presenting a plan and wait for explicit user
+  approval before executing any changes.
