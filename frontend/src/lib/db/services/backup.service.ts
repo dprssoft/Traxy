@@ -56,3 +56,11 @@ export async function clearMediaCache(): Promise<void> {
 	const db = getDb();
 	await db.run('DELETE FROM ApiCache');
 }
+
+export async function resetAllUserData(): Promise<void> {
+	const db = getDb();
+	const tables = ['ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'CustomCollection', 'LocalMedia', 'ApiCache', 'AppSettings'];
+	for (const table of tables) {
+		await db.run(`DELETE FROM ${table}`);
+	}
+}

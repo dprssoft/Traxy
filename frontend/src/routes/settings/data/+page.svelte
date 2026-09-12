@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { exportDatabaseJson, importDatabaseJson, clearMediaCache } from '$lib/db/services/backup.service';
+	import { exportDatabaseJson, importDatabaseJson, clearMediaCache, resetAllUserData } from '$lib/db/services/backup.service';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -22,6 +22,26 @@
 		}, 1000);
 	}
 
+	let showResetModal = $state(false);
+	let resetTimer = $state(5);
+	let resetInput = $state('');
+	let resetInterval: ReturnType<typeof setInterval>;
+
+	function startResetTimer() {
+		resetTimer = 5;
+		clearInterval(resetInterval);
+		resetInterval = setInterval(() => {
+			if (resetTimer > 0) resetTimer--;
+			else clearInterval(resetInterval);
+		}, 1000);
+	}
+
+	$effect(() => {
+		if (showResetModal && resetInput === 'RESET' && resetTimer === 5) {
+			startResetTimer();
+		}
+	});
+
 	async function handleClearCache() {
 		try {
 			await clearMediaCache();
@@ -32,6 +52,17 @@
 			backupStatus = 'error:Failed to clear media cache.';
 		} finally {
 			showCacheModal = false;
+		}
+	}
+
+	async function handleResetApp() {
+		try {
+			await resetAllUserData();
+			window.location.reload();
+		} catch (err) {
+			console.error(err);
+			backupStatus = 'error:Failed to reset app.';
+			showResetModal = false;
 		}
 	}
 
@@ -145,6 +176,17 @@
 					🗑 Clear Media Cache
 				</Button>
 			</div>
+
+			<!-- Reset App Card -->
+			<div class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col justify-between gap-4">
+				<div>
+					<h3 class="font-bold text-rose-500 text-sm mb-1">Factory Reset</h3>
+					<p class="text-xs text-slate-400">Permanently deletes all your tracked media, reviews, collections, history, and settings. This cannot be undone.</p>
+				</div>
+				<Button variant="danger" onclick={() => { showResetModal = true; resetInput = ''; resetTimer = 5; clearInterval(resetInterval); }} class="w-full">
+					⚠️ Reset All Data
+				</Button>
+			</div>
 		</div>
 	</div>
 </div>
@@ -163,6 +205,47 @@
 			<Button variant="secondary" onclick={() => (showCacheModal = false)}>Cancel</Button>
 			<Button variant="danger" onclick={handleClearCache} disabled={cacheTimer > 0}>
 				{cacheTimer > 0 ? `Clear Cache (${cacheTimer}s)` : 'Clear Cache'}
+			</Button>
+		</div>
+	{/snippet}
+</Modal>
+
+<Modal bind:open={showResetModal} title="⚠️ Factory Reset" size="md">
+	<div class="space-y-4">
+		<p class="text-sm font-semibold text-rose-400">
+			This action will permanently erase all your data.
+		</p>
+		<p class="text-sm text-slate-300">
+			Your entire library, watch history, custom collections, reviews, and settings will be deleted forever. <strong>This cannot be undone.</strong>
+		</p>
+		<div class="pt-2">
+			<label for="reset-confirm" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+				Type "RESET" to confirm
+			</label>
+			<input
+				id="reset-confirm"
+				type="text"
+				bind:value={resetInput}
+				placeholder="RESET"
+				class="w-full bg-[#0d0e1a] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+			/>
+		</div>
+	</div>
+	{#snippet footer()}
+		<div class="flex justify-end gap-3 mt-6">
+			<Button variant="secondary" onclick={() => (showResetModal = false)}>Cancel</Button>
+			<Button
+				variant="danger"
+				onclick={handleResetApp}
+				disabled={resetInput !== 'RESET' || resetTimer > 0}
+			>
+				{#if resetInput !== 'RESET'}
+					Reset App
+				{:else if resetTimer > 0}
+					Reset App ({resetTimer}s)
+				{:else}
+					Delete Everything
+				{/if}
 			</Button>
 		</div>
 	{/snippet}
