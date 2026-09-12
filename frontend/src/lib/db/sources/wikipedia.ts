@@ -73,26 +73,11 @@ async function findWikidataEntity(
 	title: string,
 	type: MediaType,
 ): Promise<string | null> {
-	// Build a type-specific search suffix for disambiguation
-	const typeSuffix: Record<string, string> = {
-		film: 'film',
-		tv: 'television series',
-		anime: 'anime',
-		manga: 'manga',
-		manhwa: 'manhwa',
-		manhua: 'manhua',
-		comic: 'comic book',
-		book: 'novel',
-		game: 'video game',
-	};
-
-	const suffix = typeSuffix[type] ?? '';
-	const searchQuery = `${title} ${suffix}`.trim();
-
 	try {
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 8000);
-		const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(searchQuery)}&language=en&format=json&limit=5&origin=*`;
+		// Search just the title
+		const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(title)}&language=en&format=json&limit=10&origin=*`;
 		const res = await fetch(url, { signal: controller.signal });
 		clearTimeout(timeout);
 		if (!res.ok) return null;
@@ -100,8 +85,47 @@ async function findWikidataEntity(
 		const data: WikidataSearchResult = await res.json();
 		if (!data.search || data.search.length === 0) return null;
 
-		// Return the first result — Wikidata's relevance ranking is usually good
-		return data.search[0].id;
+		const keywords: Record<string, string[]> = {
+			film: ['film', 'movie'],
+			tv: ['television', 'tv', 'series'],
+			anime: ['anime', 'animation', 'series'],
+			manga: ['manga', 'comic', 'series'],
+			manhwa: ['manhwa', 'comic', 'webtoon'],
+			manhua: ['manhua', 'comic', 'webtoon'],
+			comic: ['comic', 'graphic novel'],
+			book: ['novel', 'book', 'series'],
+			game: ['game', 'video game'],
+		};
+
+		const typeKeywords = keywords[type] || [];
+		
+		let bestMatch = data.search[0]; // fallback to first
+		let maxScore = -1;
+
+		for (const item of data.search) {
+			let score = 0;
+			const desc = (item.description || '').toLowerCase();
+			
+			if (desc) {
+				for (const kw of typeKeywords) {
+					if (desc.includes(kw)) score += 2;
+				}
+				// Bonus for 'franchise' or 'media' if it's broadly correct
+				if (desc.includes('franchise') || desc.includes('media')) score += 1;
+			}
+			
+			// Exact title match bonus
+			if (item.label && item.label.toLowerCase() === title.toLowerCase()) {
+				score += 1;
+			}
+			
+			if (score > maxScore) {
+				maxScore = score;
+				bestMatch = item;
+			}
+		}
+
+		return bestMatch.id;
 	} catch {
 		return null;
 	}
