@@ -217,41 +217,55 @@
 	);
 
 	// Item 5: Country of origin
-	const COUNTRY_FLAGS: Record<string, string> = {
-		'japan': '🇯🇵',
-		'south korea': '🇰🇷',
-		'republic of korea': '🇰🇷',
-		'china': '🇨🇳',
-		'people\'s republic of china': '🇨🇳',
-		'united states': '🇺🇸',
-		'united states of america': '🇺🇸',
-		'usa': '🇺🇸',
-		'us': '🇺🇸',
-		'united kingdom': '🇬🇧',
-		'uk': '🇬🇧',
-		'great britain': '🇬🇧',
-		'france': '🇫🇷',
-		'germany': '🇩🇪',
-		'italy': '🇮🇹',
-		'spain': '🇪🇸',
-		'canada': '🇨🇦',
-		'australia': '🇦🇺',
-		'india': '🇮🇳',
-		'brazil': '🇧🇷',
-		'mexico': '🇲🇽',
-		'russia': '🇷🇺',
-		'russian federation': '🇷🇺',
-		'taiwan': '🇹🇼',
-		'republic of china': '🇹🇼',
-	};
+	// Build a reverse map: English country name -> ISO 3166-1 alpha-2 code (for flag emoji)
+	// We use Intl.DisplayNames to go name->code by iterating all ~250 ISO codes.
+	function countryNameToFlag(name: string): string | null {
+		if (typeof Intl === 'undefined' || !Intl.DisplayNames) return null;
+		const normalised = name.toLowerCase().trim();
+		// Fast-path aliases for non-standard names Wikidata/TMDB might return
+		const aliases: Record<string, string> = {
+			'united states of america': 'US',
+			'usa': 'US',
+			'us': 'US',
+			'uk': 'GB',
+			'great britain': 'GB',
+			'people\'s republic of china': 'CN',
+			'republic of korea': 'KR',
+			'republic of china': 'TW',
+			'russian federation': 'RU',
+		};
+		if (aliases[normalised]) {
+			const code = aliases[normalised];
+			return String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+		}
+		// Search all ISO 3166-1 alpha-2 codes via Intl.DisplayNames
+		try {
+			const dn = new Intl.DisplayNames(['en'], { type: 'region' });
+			// There are only 26^2 = 676 possible 2-letter codes, most are invalid
+			// In practice we only need to check the ~250 valid ones — but iterating all is fast
+			for (let i = 65; i <= 90; i++) {
+				for (let j = 65; j <= 90; j++) {
+					const code = String.fromCharCode(i, j);
+					try {
+						const label = dn.of(code);
+						if (label && label.toLowerCase() === normalised) {
+							return String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+						}
+					} catch { /* invalid code, skip */ }
+				}
+			}
+		} catch { /* Intl not available */ }
+		return null;
+	}
+
 	const displayCountry = $derived((() => {
 		const c = media.country ||
 			(media.type === 'anime' || media.type === 'manga' ? 'Japan' :
 			 media.type === 'manhwa' ? 'South Korea' :
 			 media.type === 'manhua' ? 'China' : '—');
 		if (c !== '—' && showCountryFlags) {
-			const key = c.toLowerCase().trim();
-			if (COUNTRY_FLAGS[key]) return COUNTRY_FLAGS[key];
+			const flag = countryNameToFlag(c);
+			if (flag) return flag;
 		}
 		return c;
 	})());
