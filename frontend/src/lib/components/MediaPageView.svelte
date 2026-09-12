@@ -14,6 +14,7 @@
 	import { getDb } from '$lib/db/index';
 	import { DEFAULT_COLLECTION_NAME } from '$lib/constants';
 	import { v4 as uuidv4 } from 'uuid';
+	import { MarqueeText } from '$lib/components/ui';
 
 	interface Props {
 		media: LocalMedia;
@@ -530,15 +531,11 @@
 				</div>
 				<div class="flex flex-col min-w-0">
 					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">{authorLabel}</span>
-					<span class="text-xs font-semibold text-slate-200 truncate" title={displayAuthor}>
-						{displayAuthor}
-					</span>
+					<MarqueeText class="text-xs font-semibold text-slate-200" title={displayAuthor} text={displayAuthor} />
 				</div>
 				<div class="flex flex-col min-w-0">
 					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Country</span>
-					<span class="text-xs font-semibold text-slate-200 truncate" title={displayCountry}>
-						{displayCountry}
-					</span>
+					<MarqueeText class="text-xs font-semibold text-slate-200" title={displayCountry} text={displayCountry} />
 				</div>
 			</div>
 
