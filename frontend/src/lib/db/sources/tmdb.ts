@@ -26,6 +26,8 @@ interface TmdbItemDetails {
 	id: number;
 	title?: string;
 	name?: string;
+	original_title?: string;
+	original_name?: string;
 	release_date?: string;
 	first_air_date?: string;
 	poster_path?: string | null;
@@ -33,10 +35,37 @@ interface TmdbItemDetails {
 	number_of_episodes?: number;
 	number_of_seasons?: number;
 	seasons?: { season_number: number; episode_count: number }[];
+	status?: string;
+	genres?: { id: number; name: string }[];
+	production_countries?: { iso_3166_1: string; name: string }[];
+	credits?: {
+		crew?: { job: string; name: string }[];
+	};
+	created_by?: { name: string }[];
+	runtime?: number;
 }
 
 function posterUrl(path?: string | null): string | undefined {
 	return path ? `${IMAGE_BASE}${path}` : undefined;
+}
+
+/** Map TMDB status strings to our release status labels */
+function mapTmdbStatus(status?: string): string | undefined {
+	if (!status) return undefined;
+	const map: Record<string, string> = {
+		'Released': 'Released',
+		'Post Production': 'Post Production',
+		'In Production': 'In Production',
+		'Planned': 'Planned',
+		'Canceled': 'Cancelled',
+		'Rumored': 'Rumored',
+		// TV statuses
+		'Returning Series': 'Airing',
+		'Ended': 'Finished',
+		'Cancelled': 'Cancelled',
+		'Pilot': 'Pilot',
+	};
+	return map[status] ?? status;
 }
 
 export async function searchTmdb(query: string, language = 'en-US'): Promise<SearchResult[]> {
@@ -80,16 +109,42 @@ export async function getTmdbDetails(
 	try {
 		return await withCache(`tmdb:detail:${type}:${id}:${language}`, async () => {
 			const data = await fetchJson<TmdbItemDetails>(
-				`${BASE_URL}/${endpoint}/${id}?api_key=${apiKey}&language=${language}`,
+				`${BASE_URL}/${endpoint}/${id}?api_key=${apiKey}&language=${language}&append_to_response=credits`,
 			);
+
+			// Extract director (for films) or creator (for TV)
+			let author: string | undefined;
+			if (type === 'film') {
+				const director = data.credits?.crew?.find((c) => c.job === 'Director');
+				author = director?.name;
+			} else {
+				author = data.created_by?.[0]?.name;
+			}
+
+			// Extract country
+			const country = data.production_countries?.[0]?.name;
+
+			// Extract genres
+			const genres = data.genres?.map((g) => g.name);
+
+			// Original title
+			const displayTitle = data.title ?? data.name ?? '';
+			const origTitle = data.original_title ?? data.original_name;
+			const originalTitle = origTitle && origTitle !== displayTitle ? origTitle : undefined;
+
 			return {
 				externalId: data.id.toString(),
 				source: 'tmdb',
 				type,
-				title: data.title ?? data.name ?? '',
+				title: displayTitle,
+				originalTitle,
 				year: parseYear(data.release_date ?? data.first_air_date),
 				posterUrl: posterUrl(data.poster_path),
 				description: data.overview || undefined,
+				author,
+				country,
+				genres,
+				releaseStatus: mapTmdbStatus(data.status),
 				totalEpisodes: data.number_of_episodes,
 				totalSeasons: data.number_of_seasons,
 				seasonData: data.seasons
@@ -100,6 +155,7 @@ export async function getTmdbDetails(
 								episodeCount: s.episode_count,
 							}))
 					: undefined,
+				runtimeMinutes: type === 'film' ? (data.runtime ?? undefined) : undefined,
 			};
 		});
 	} catch {

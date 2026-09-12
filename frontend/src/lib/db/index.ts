@@ -47,11 +47,21 @@ export const initDb = async () => {
         year INTEGER,
         posterUrl TEXT,
         description TEXT,
+        originalTitle TEXT,
+        serializationYears TEXT,
+        author TEXT,
+        country TEXT,
+        genres TEXT,
+        releaseStatus TEXT,
         totalEpisodes INTEGER,
         totalSeasons INTEGER,
+        totalVolumes INTEGER,
+        totalChapters INTEGER,
         platforms TEXT,
         totalPages INTEGER,
-        seasonData TEXT
+        seasonData TEXT,
+        timeToBeat TEXT,
+        runtimeMinutes INTEGER
     );
     CREATE TABLE IF NOT EXISTS TrackingStatus (
         id TEXT PRIMARY KEY,
@@ -124,10 +134,26 @@ export const initDb = async () => {
 
     await db.execute(schema);
 
-    try {
-        await db.execute('ALTER TABLE Media ADD COLUMN seasonData TEXT;');
-    } catch (e) {
-        // Ignore if column already exists
+    // ── Migrations for existing databases ────────────────────────────────
+    const newColumns = [
+        'seasonData TEXT',
+        'timeToBeat TEXT',
+        'originalTitle TEXT',
+        'serializationYears TEXT',
+        'author TEXT',
+        'country TEXT',
+        'genres TEXT',
+        'releaseStatus TEXT',
+        'totalVolumes INTEGER',
+        'totalChapters INTEGER',
+        'runtimeMinutes INTEGER',
+    ];
+    for (const col of newColumns) {
+        try {
+            await db.execute(`ALTER TABLE Media ADD COLUMN ${col};`);
+        } catch {
+            // Ignore if column already exists
+        }
     }
 };
 

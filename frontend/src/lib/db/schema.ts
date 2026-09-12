@@ -53,11 +53,21 @@ export interface Media {
   year?: number;
   posterUrl?: string;
   description?: string;
+  originalTitle?: string;
+  serializationYears?: string;
+  author?: string;
+  country?: string;
+  genres?: string; // JSON array
+  releaseStatus?: string;
   totalEpisodes?: number; // TV/Anime specific
   totalSeasons?: number; // TV/Anime specific
+  totalVolumes?: number; // Manga/Comic specific
+  totalChapters?: number; // Manga/Comic specific
   platforms?: string; // JSON array (Game specific)
   totalPages?: number; // Book specific
   seasonData?: string; // JSON array of MediaSeasonData
+  timeToBeat?: string; // JSON string
+  runtimeMinutes?: number; // Film / anime-movie runtime in minutes
 }
 
 export interface TrackingStatus {

@@ -3,50 +3,97 @@ import type { LocalMedia } from '$lib/types/mediaTypes';
 import type { MediaSource, MediaType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 
+// Column names in the order defined in CREATE TABLE — used for positional→named conversion
+const MEDIA_COLUMNS = [
+	'id', 'source', 'externalId', 'type', 'title', 'year', 'posterUrl', 'description',
+	'originalTitle', 'serializationYears', 'author', 'country', 'genres', 'releaseStatus',
+	'totalEpisodes', 'totalSeasons', 'totalVolumes', 'totalChapters',
+	'platforms', 'totalPages', 'seasonData', 'timeToBeat', 'runtimeMinutes',
+];
+
 function rowToMedia(row: any): LocalMedia {
-	let id, source, externalId, type, title, year, posterUrl, description,
-		totalEpisodes, totalSeasons, platforms, totalPages, seasonData;
+	// capacitor-community/sqlite may return rows as arrays (positional) or objects (named).
+	// Normalise to a plain object keyed by column name so we never rely on ordering.
+	let r: Record<string, any>;
 	if (Array.isArray(row)) {
-		[id, source, externalId, type, title, year, posterUrl, description,
-			totalEpisodes, totalSeasons, platforms, totalPages, seasonData] = row;
+		r = {};
+		MEDIA_COLUMNS.forEach((col, i) => { r[col] = row[i]; });
+		// If the DB has more columns than our list (e.g. from older schema), extras are ignored.
+		// If the row has fewer entries (older DB without ALTER TABLE cols yet), extras default to undefined.
 	} else {
-		({ id, source, externalId, type, title, year, posterUrl, description,
-			totalEpisodes, totalSeasons, platforms, totalPages, seasonData } = row);
+		r = row as Record<string, any>;
 	}
+
 	return {
-		id,
-		source: source as MediaSource,
-		externalId,
-		type: type as MediaType,
-		title,
-		year: year ?? undefined,
-		posterUrl: posterUrl ?? undefined,
-		description: description ?? undefined,
-		totalEpisodes: totalEpisodes ?? undefined,
-		totalSeasons: totalSeasons ?? undefined,
-		platforms: platforms ? (JSON.parse(platforms) as string[]) : undefined,
-		totalPages: totalPages ?? undefined,
-		seasonData: seasonData ? JSON.parse(seasonData) : undefined,
+		id: r.id,
+		source: r.source as MediaSource,
+		externalId: r.externalId,
+		type: r.type as MediaType,
+		title: r.title,
+		year: r.year ?? undefined,
+		posterUrl: r.posterUrl ?? undefined,
+		description: r.description ?? undefined,
+		originalTitle: r.originalTitle ?? undefined,
+		serializationYears: r.serializationYears ?? undefined,
+		author: r.author ?? undefined,
+		country: r.country ?? undefined,
+		genres: r.genres ? (JSON.parse(r.genres) as string[]) : undefined,
+		releaseStatus: r.releaseStatus ?? undefined,
+		totalEpisodes: r.totalEpisodes ?? undefined,
+		totalSeasons: r.totalSeasons ?? undefined,
+		totalVolumes: r.totalVolumes ?? undefined,
+		totalChapters: r.totalChapters ?? undefined,
+		platforms: r.platforms ? (JSON.parse(r.platforms) as string[]) : undefined,
+		totalPages: r.totalPages ?? undefined,
+		seasonData: r.seasonData ? JSON.parse(r.seasonData) : undefined,
+		timeToBeat: r.timeToBeat ?? undefined,
+		runtimeMinutes: r.runtimeMinutes ?? undefined,
 	};
 }
 
 /**
  * Insert or update a media record. Returns the stored record with its UUID.
- * If the (source, externalId) pair already exists, returns the existing record unchanged.
+ * If the (source, externalId) pair already exists, the existing record is
+ * patched with any non-null fields from the incoming data (backfill), then returned.
  */
 export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }): Promise<LocalMedia> {
 	const db = getDb();
 
 	// Deduplicate on (source, externalId)
 	const existing = await getMediaByExternalId(data.source, data.externalId);
-	if (existing) return existing;
+	if (existing) {
+		// Backfill any missing metadata fields from the freshly-fetched data
+		const patch: Partial<LocalMedia> = {};
+		if (!existing.author && data.author) patch.author = data.author;
+		if (!existing.country && data.country) patch.country = data.country;
+		if (!existing.releaseStatus && data.releaseStatus) patch.releaseStatus = data.releaseStatus;
+		if ((!existing.genres || existing.genres.length === 0) && data.genres?.length) patch.genres = data.genres;
+		if (!existing.originalTitle && data.originalTitle) patch.originalTitle = data.originalTitle;
+		if (!existing.totalEpisodes && data.totalEpisodes) patch.totalEpisodes = data.totalEpisodes;
+		if (!existing.totalSeasons && data.totalSeasons) patch.totalSeasons = data.totalSeasons;
+		if (!existing.totalVolumes && data.totalVolumes) patch.totalVolumes = data.totalVolumes;
+		if (!existing.totalChapters && data.totalChapters) patch.totalChapters = data.totalChapters;
+		if (!existing.totalPages && data.totalPages) patch.totalPages = data.totalPages;
+		if (!existing.seasonData && data.seasonData) patch.seasonData = data.seasonData;
+		if (!existing.timeToBeat && data.timeToBeat) patch.timeToBeat = data.timeToBeat;
+		if (!existing.runtimeMinutes && data.runtimeMinutes) patch.runtimeMinutes = data.runtimeMinutes;
+		if ((!existing.platforms || existing.platforms.length === 0) && data.platforms?.length) patch.platforms = data.platforms;
+
+		if (Object.keys(patch).length > 0) {
+			await updateMediaMeta(existing.id, patch);
+			return { ...existing, ...patch };
+		}
+		return existing;
+	}
 
 	const id = data.id ?? uuidv4();
 	await db.run(
 		`INSERT OR REPLACE INTO Media
 			(id, source, externalId, type, title, year, posterUrl, description,
-			 totalEpisodes, totalSeasons, platforms, totalPages, seasonData)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			 originalTitle, serializationYears, author, country, genres, releaseStatus,
+			 totalEpisodes, totalSeasons, totalVolumes, totalChapters,
+			 platforms, totalPages, seasonData, timeToBeat, runtimeMinutes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			id,
 			data.source,
@@ -56,11 +103,21 @@ export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }
 			data.year ?? null,
 			data.posterUrl ?? null,
 			data.description ?? null,
+			data.originalTitle ?? null,
+			data.serializationYears ?? null,
+			data.author ?? null,
+			data.country ?? null,
+			data.genres ? JSON.stringify(data.genres) : null,
+			data.releaseStatus ?? null,
 			data.totalEpisodes ?? null,
 			data.totalSeasons ?? null,
+			data.totalVolumes ?? null,
+			data.totalChapters ?? null,
 			data.platforms ? JSON.stringify(data.platforms) : null,
 			data.totalPages ?? null,
 			data.seasonData ? JSON.stringify(data.seasonData) : null,
+			data.timeToBeat ?? null,
+			data.runtimeMinutes ?? null,
 		],
 	);
 	return { ...data, id };
@@ -111,7 +168,12 @@ export async function updateMediaMeta(id: string, patch: Partial<LocalMedia>): P
 	const updates: string[] = [];
 	const values: any[] = [];
 	
-	const fields = ['title', 'year', 'posterUrl', 'description', 'totalEpisodes', 'totalSeasons', 'totalPages'];
+	const fields = [
+		'title', 'year', 'posterUrl', 'description',
+		'originalTitle', 'serializationYears', 'author', 'country', 'releaseStatus',
+		'totalEpisodes', 'totalSeasons', 'totalVolumes', 'totalChapters', 'totalPages', 'timeToBeat',
+		'runtimeMinutes',
+	];
 	for (const field of fields) {
 		if (patch[field as keyof LocalMedia] !== undefined) {
 			updates.push(`${field} = ?`);
@@ -127,6 +189,11 @@ export async function updateMediaMeta(id: string, patch: Partial<LocalMedia>): P
 	if (patch.seasonData !== undefined) {
 		updates.push('seasonData = ?');
 		values.push(patch.seasonData ? JSON.stringify(patch.seasonData) : null);
+	}
+
+	if (patch.genres !== undefined) {
+		updates.push('genres = ?');
+		values.push(patch.genres ? JSON.stringify(patch.genres) : null);
 	}
 
 	if (updates.length === 0) return;

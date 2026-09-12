@@ -16,9 +16,18 @@ query ($query: String, $type: MediaType) {
       chapters
       volumes
       coverImage { extraLarge }
-      startDate { year }
+      startDate { year month }
+      endDate { year month }
       description
       countryOfOrigin
+      genres
+      duration
+      staff(sort: RELEVANCE, perPage: 5) {
+        edges {
+          role
+          node { name { full } }
+        }
+      }
     }
   }
 }
@@ -56,9 +65,18 @@ query ($id: Int) {
     chapters
     volumes
     coverImage { extraLarge }
-    startDate { year }
+    startDate { year month }
+    endDate { year month }
     description
     countryOfOrigin
+    genres
+    duration
+    staff(sort: RELEVANCE, perPage: 5) {
+      edges {
+        role
+        node { name { full } }
+      }
+    }
   }
 }
 `;
@@ -73,18 +91,67 @@ function mapAnilistType(item: any): import('$lib/db/schema').MediaType {
 	return 'anime'; // fallback
 }
 
+/** Map AniList status to our release status labels */
+function mapAnilistStatus(status?: string): string | undefined {
+	if (!status) return undefined;
+	const map: Record<string, string> = {
+		'RELEASING': 'Airing',
+		'FINISHED': 'Finished',
+		'NOT_YET_RELEASED': 'Upcoming',
+		'CANCELLED': 'Cancelled',
+		'HIATUS': 'Hiatus',
+	};
+	return map[status] ?? status;
+}
+
+/** Map AniList countryOfOrigin code to country name */
+function mapAnilistCountry(code?: string): string | undefined {
+	if (!code) return undefined;
+	const map: Record<string, string> = {
+		'JP': 'Japan',
+		'KR': 'South Korea',
+		'CN': 'China',
+		'TW': 'Taiwan',
+		'US': 'USA',
+	};
+	return map[code] ?? code;
+}
+
+/** Extract the most relevant author/creator from AniList staff edges */
+function extractAnilistAuthor(item: any): string | undefined {
+	const staff = item.staff?.edges;
+	if (!staff || staff.length === 0) return undefined;
+	// Priority: Original Creator > Story > Director > first staff member
+	const priorityRoles = ['Original Creator', 'Story & Art', 'Story', 'Director', 'Original Story'];
+	for (const role of priorityRoles) {
+		const match = staff.find((e: any) => e.role?.includes(role));
+		if (match?.node?.name?.full) return match.node.name.full;
+	}
+	return staff[0]?.node?.name?.full;
+}
+
 function mapAnilistItem(item: any): SearchResult {
+	const displayTitle = item.title.english || item.title.romaji || item.title.native;
+	const origTitle = item.title.native || item.title.romaji;
 	return {
 		externalId: item.id.toString(),
 		source: 'anilist',
 		type: mapAnilistType(item),
-		title: item.title.english || item.title.romaji || item.title.native,
+		title: displayTitle,
+		originalTitle: origTitle && origTitle !== displayTitle ? origTitle : undefined,
 		year: item.startDate?.year || undefined,
 		posterUrl: item.coverImage?.extraLarge || undefined,
 		description: item.description?.replace(/<[^>]*>?/gm, '') || undefined,
+		author: extractAnilistAuthor(item),
+		country: mapAnilistCountry(item.countryOfOrigin),
+		genres: item.genres?.length > 0 ? item.genres : undefined,
+		releaseStatus: mapAnilistStatus(item.status),
 		totalEpisodes: item.episodes || undefined,
 		totalSeasons: undefined, // AniList doesn't do seasons the same way
-		totalPages: undefined, // Volumes/chapters instead
+		totalVolumes: item.volumes || undefined,
+		totalChapters: item.chapters || undefined,
+		totalPages: undefined,
+		runtimeMinutes: item.format === 'MOVIE' ? (item.duration || undefined) : undefined,
 	};
 }
 
@@ -243,9 +310,18 @@ query ($type: MediaType, $sort: [MediaSort], $status: MediaStatus, $page: Int, $
       chapters
       volumes
       coverImage { extraLarge }
-      startDate { year }
+      startDate { year month }
+      endDate { year month }
       description
       countryOfOrigin
+      genres
+      duration
+      staff(sort: RELEVANCE, perPage: 3) {
+        edges {
+          role
+          node { name { full } }
+        }
+      }
     }
   }
 }

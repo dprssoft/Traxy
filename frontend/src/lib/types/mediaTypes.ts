@@ -30,6 +30,7 @@ export interface LocalMedia {
 	// Book
 	totalPages?: number;
 	seasonData?: MediaSeasonData[];
+	runtimeMinutes?: number;
 }
 
 /**
@@ -59,4 +60,5 @@ export interface SearchResult {
 	platforms?: string[];
 	timeToBeat?: string;
 	seasonData?: MediaSeasonData[];
+	runtimeMinutes?: number;
 }
