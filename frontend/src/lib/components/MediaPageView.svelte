@@ -300,16 +300,18 @@
 	})());
 
 	// Item 10: Seasons/Episodes, Volumes/Chapters, Pages, Time to beat
+	const ttb = $derived((() => {
+		if (media.type !== 'game' || !media.timeToBeat) return null;
+		try {
+			return JSON.parse(media.timeToBeat) as { main: number; extra: number; completionist: number };
+		} catch {
+			return null;
+		}
+	})());
+
 	const mediaCountText = $derived((() => {
 		if (media.type === 'game') {
-			if (media.timeToBeat) {
-				try {
-					const ttb = JSON.parse(media.timeToBeat);
-					return ttb.main ? `${ttb.main}h` : '—';
-				} catch {
-					return media.timeToBeat;
-				}
-			}
+			if (ttb?.main) return `${ttb.main}h`;
 			return '—';
 		}
 		if (media.type === 'book') {
@@ -438,23 +440,21 @@
 			</div>
 
 			<!-- 9. Status & 10. Seasons/Episodes OR Time to Beat for Games -->
-			{#if media.type === 'game' && media.timeToBeat}
-				{@const ttb = (() => {
-					try { return JSON.parse(media.timeToBeat); } 
-					catch { return null; }
-				})()}
-				{#if ttb}
-					<div class="flex flex-col gap-1 mt-1 bg-[#16192b]/80 rounded-xl p-2.5 border border-white/[0.08]">
-						<div class="flex justify-between items-center text-[10px]">
-							<span class="text-slate-400 font-bold uppercase tracking-wider">Main Story</span>
-							<span class="text-indigo-400 font-bold">{ttb.main ? `${ttb.main}h` : '--'}</span>
-						</div>
-						<div class="flex justify-between items-center text-[10px]">
-							<span class="text-slate-400 font-bold uppercase tracking-wider">Completionist</span>
-							<span class="text-purple-400 font-bold">{ttb.completionist ? `${ttb.completionist}h` : '--'}</span>
-						</div>
+			{#if media.type === 'game' && ttb}
+				<div class="flex flex-col gap-1 mt-1 bg-[#16192b]/80 rounded-xl p-2.5 border border-white/[0.08]">
+					<div class="flex justify-between items-center text-[10px]">
+						<span class="text-slate-400 font-bold uppercase tracking-wider">Main Story</span>
+						<span class="text-indigo-400 font-bold">{ttb.main ? `${ttb.main}h` : '--'}</span>
 					</div>
-				{/if}
+					<div class="flex justify-between items-center text-[10px]">
+						<span class="text-slate-400 font-bold uppercase tracking-wider">+ Extras</span>
+						<span class="text-fuchsia-400 font-bold">{ttb.extra ? `${ttb.extra}h` : '--'}</span>
+					</div>
+					<div class="flex justify-between items-center text-[10px]">
+						<span class="text-slate-400 font-bold uppercase tracking-wider">Completionist</span>
+						<span class="text-purple-400 font-bold">{ttb.completionist ? `${ttb.completionist}h` : '--'}</span>
+					</div>
+				</div>
 			{:else}
 				<div class="flex items-center justify-between gap-1 text-[11px] font-bold px-0.5">
 					<span class="text-slate-300 truncate" title={mediaStatusText}>
