@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Traxy Android Build & Install
+Comment=Build Traxy and install to remote phone
+Exec=/home/yni/Desktop/build-install-android.sh
+Icon=system-software-install
+Terminal=true
+Categories=Development;

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ADB Connect Phone
+Comment=Connect to phone at 192.168.0.195
+Exec=/home/yni/Desktop/adb-connect-phone.sh
+Icon=network-wireless
+Terminal=true
+Categories=Development;
