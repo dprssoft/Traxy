@@ -40,6 +40,16 @@ export default defineConfig({
 					'User-Agent': 'TraxyApp/1.0',
 				},
 			},
+			'/api-proxy/hltb': {
+				target: 'https://howlongtobeat.com',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/hltb/, ''),
+				headers: {
+					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+					'Referer': 'https://howlongtobeat.com/',
+					'Origin': 'https://howlongtobeat.com',
+				},
+			},
 		},
 	},
 	preview: {
@@ -60,6 +70,16 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/api-proxy\/comicvine/, ''),
 				headers: {
 					'User-Agent': 'TraxyApp/1.0',
+				},
+			},
+			'/api-proxy/hltb': {
+				target: 'https://howlongtobeat.com',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy\/hltb/, ''),
+				headers: {
+					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+					'Referer': 'https://howlongtobeat.com/',
+					'Origin': 'https://howlongtobeat.com',
 				},
 			},
 		},
