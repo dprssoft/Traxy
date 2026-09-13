@@ -33,7 +33,9 @@ export const load: PageLoad = async ({ params }) => {
 					await updateMediaMeta(params.id, patch);
 					refreshed = true;
 				}
-			} catch {}
+			} catch {
+				// Best effort fallback
+			}
 		}
 	} else if (media.type === 'anime' && media.source === 'anilist' && (!media.seasonData || !media.runtimeMinutes)) {
 		try {
@@ -50,7 +52,35 @@ export const load: PageLoad = async ({ params }) => {
 				await updateMediaMeta(params.id, patch);
 				refreshed = true;
 			}
-		} catch {}
+		} catch {
+			// Best effort fallback
+		}
+	} else if (media.type === 'game' && !media.timeToBeat) {
+		try {
+			if (media.source === 'igdb') {
+				// Direct IGDB lookup using the stored game ID
+				const { fetchIgdbTimeToBeat } = await import('$lib/db/sources/rawg');
+				const ttb = await fetchIgdbTimeToBeat(media.externalId);
+				if (ttb) {
+					await updateMediaMeta(params.id, { timeToBeat: JSON.stringify(ttb) });
+					refreshed = true;
+				} else {
+					console.error('[TTB] IGDB returned no data for id:', media.externalId);
+				}
+			} else {
+				// Non-IGDB source: search IGDB by title
+				const { fetchIgdbTimeToBeatByTitle } = await import('$lib/db/sources/rawg');
+				const ttb = await fetchIgdbTimeToBeatByTitle(media.title);
+				if (ttb) {
+					await updateMediaMeta(params.id, { timeToBeat: JSON.stringify(ttb) });
+					refreshed = true;
+				} else {
+					console.error('[TTB] IGDB title search returned no data for:', media.title);
+				}
+			}
+		} catch (e) {
+			console.error('[TTB] enrichment failed:', e);
+		}
 	}
 	
 	if (refreshed) {
