@@ -323,3 +323,82 @@ export async function discoverIgdbRandom(): Promise<SearchResult[]> {
 		return [];
 	}
 }
+
+/**
+ * Fetches time-to-beat data from IGDB's game_time_to_beats table.
+ * @param igdbId  The IGDB game ID (as stored in media.externalId for source=igdb).
+ * @returns       { main, extra, completionist } in hours, or null if unavailable.
+ */
+export async function fetchIgdbTimeToBeat(
+	igdbId: string,
+): Promise<{ main: number; extra: number; completionist: number } | null> {
+	const creds = getCredentials();
+	if (!creds) return null;
+
+	try {
+		const token = await getAccessToken(creds.clientId, creds.clientSecret);
+		const url = `${getIgdbApiUrl()}/game_time_to_beats`;
+		const res = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Client-ID': creds.clientId,
+				Authorization: `Bearer ${token}`,
+				'Content-Type': 'text/plain',
+			},
+			body: `fields normally,hastily,completely; where game_id = ${igdbId}; limit 1;`,
+		});
+		if (!res.ok) return null;
+		const rows = await res.json();
+		if (!rows || rows.length === 0) return null;
+		const row = rows[0];
+
+		// IGDB stores times in seconds; convert to hours (1 decimal)
+		const toHours = (s: number) => (s ? Math.round((s / 3600) * 10) / 10 : 0);
+
+		return {
+			main: toHours(row.normally as number),
+			extra: toHours(row.hastily as number),
+			completionist: toHours(row.completely as number),
+		};
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Resolves a game title to an IGDB ID by searching IGDB,
+ * then fetches time-to-beat. Used for non-IGDB-sourced games.
+ */
+export async function fetchIgdbTimeToBeatByTitle(
+	title: string,
+): Promise<{ main: number; extra: number; completionist: number } | null> {
+	const creds = getCredentials();
+	if (!creds) return null;
+
+	try {
+		const token = await getAccessToken(creds.clientId, creds.clientSecret);
+		const games = await igdbFetch(
+			creds.clientId,
+			token,
+			'games',
+			`fields id,name; search "${title.replace(/"/g, '')}"; where version_parent = null; limit 3;`,
+		);
+		if (!games || games.length === 0) return null;
+
+		// Pick closest name match
+		const targetName = title.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+		let bestId = games[0].id;
+		for (const g of games) {
+			const gName = g.name.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+			if (gName === targetName) {
+				bestId = g.id;
+				break;
+			}
+		}
+
+		return await fetchIgdbTimeToBeat(bestId.toString());
+	} catch {
+		return null;
+	}
+}
+
