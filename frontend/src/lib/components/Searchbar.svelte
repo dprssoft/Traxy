@@ -7,6 +7,7 @@
 	import { searchAnilist, getAnilistDetails } from '$lib/db/sources/anilist';
 	import { searchComicVine, getComicVineDetails } from '$lib/db/sources/comicvine';
 	import { searchOpenLibrary, getOpenLibraryDetails } from '$lib/db/sources/openlibrary';
+	import { searchFlashpoint, getFlashpointDetails } from '$lib/db/sources/flashpoint';
 	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
 	import { deduplicateResults } from '$lib/utils/search-dedup';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
@@ -91,6 +92,9 @@
 			// so the deduplicator has enough context to suppress TMDB/OL duplicates.
 			if (t === 'all' || t === 'film' || t === 'tv') promises.push(searchTmdb(q));
 			if (t === 'all' || t === 'game') promises.push(searchRawg(q));
+			if ((t === 'all' || t === 'game') && searchPrefsStore.current.flashpointEnabled) {
+				promises.push(searchFlashpoint(q));
+			}
 			if (t === 'all' || t === 'anime' || t === 'tv') promises.push(searchAnilist(q, 'ANIME'));
 			if (t === 'all' || t === 'comic' || t === 'book') {
 				promises.push(searchAnilist(q, 'MANGA'));
@@ -159,6 +163,7 @@
 		else if (item.source === 'anilist') fullDetails = await getAnilistDetails(parseInt(item.externalId));
 		else if (item.source === 'comicvine') fullDetails = await getComicVineDetails(item.externalId);
 		else if (item.source === 'openlibrary') fullDetails = await getOpenLibraryDetails(item.externalId);
+		else if (item.source === 'flashpoint') fullDetails = await getFlashpointDetails(item.externalId);
 
 		if (!fullDetails) fullDetails = item;
 

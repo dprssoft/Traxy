@@ -39,6 +39,14 @@
 			set: (v) =>
 				searchPrefsStore.save({ ...searchPrefsStore.current, suppressMangaVolumes: v }),
 		},
+		{
+			id: 'pref-flashpoint',
+			label: 'Include Flashpoint Archive in game search',
+			hint: 'Search the Flashpoint Archive (~200k Flash, HTML5, and Shockwave games) alongside IGDB. Disabled by default. No API key required.',
+			get: () => searchPrefsStore.current.flashpointEnabled,
+			set: (v) =>
+				searchPrefsStore.save({ ...searchPrefsStore.current, flashpointEnabled: v }),
+		},
 	];
 </script>
 
@@ -49,7 +57,7 @@
 	/>
 
 	<div class="space-y-3">
-		{#each settings as s}
+		{#each settings as s (s.id)}
 			<div
 				class="flex items-start justify-between gap-4 p-4 rounded-xl bg-[#16192b]/60 border border-white/[0.06]"
 			>

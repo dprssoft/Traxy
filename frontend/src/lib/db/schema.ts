@@ -1,5 +1,5 @@
 export type MediaType = 'film' | 'tv' | 'game' | 'anime' | 'manga' | 'manhwa' | 'manhua' | 'comic' | 'book';
-export type MediaSource = 'tmdb' | 'rawg' | 'steam' | 'igdb' | 'anilist' | 'comicvine' | 'openlibrary' | 'manual';
+export type MediaSource = 'tmdb' | 'rawg' | 'steam' | 'igdb' | 'anilist' | 'comicvine' | 'openlibrary' | 'flashpoint' | 'manual';
 export type TrackingStatusType = 'planned' | 'in_progress' | 'completed' | 'dropped' | 'paused' | 'watched_letsplay';
 export type CompletionTier = 'main_story' | 'main_plus_sides' | 'completionist';
 

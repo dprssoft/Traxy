@@ -1,4 +1,4 @@
-﻿import { getDb } from '$lib/db/index';
+import { getDb } from '$lib/db/index';
 
 export interface SearchPrefs {
 	/** AniList wins over TMDB for anime/TV overlap (e.g. Jujutsu Kaisen won't show as TV) */
@@ -7,6 +7,8 @@ export interface SearchPrefs {
 	anilistWinsManga: boolean;
 	/** Suppress OpenLibrary volume entries (e.g. "Gantz Volume 1") when AniList has the series */
 	suppressMangaVolumes: boolean;
+	/** Include Flashpoint Archive in game searches */
+	flashpointEnabled: boolean;
 }
 
 const SETTINGS_KEY = 'search_prefs';
@@ -15,6 +17,7 @@ const defaults: SearchPrefs = {
 	anilistWinsAnime: true,
 	anilistWinsManga: true,
 	suppressMangaVolumes: true,
+	flashpointEnabled: false,
 };
 
 function createSearchPrefsStore() {
