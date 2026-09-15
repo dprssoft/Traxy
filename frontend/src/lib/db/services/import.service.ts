@@ -53,7 +53,7 @@ export async function importFromMal(xmlText: string): Promise<{ success: number;
 			// or we can mark it as 'anilist' and use the MAL ID as externalId (which might break details fetching).
 			// Better approach: use 'manual' and externalId = malId
 			
-			await upsertMedia({
+			const media = await upsertMedia({
 				id: mediaId,
 				source: 'manual',
 				externalId: `mal-${malId}`,
@@ -62,7 +62,7 @@ export async function importFromMal(xmlText: string): Promise<{ success: number;
 			});
 
 			await upsertTracking({
-				mediaId: mediaId,
+				mediaId: media.id,
 				status: mapMalStatus(myStatus || '6'),
 				score: myScore > 0 ? myScore : undefined,
 				currentEpisode: myWatched,
@@ -145,10 +145,8 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 						const details = await getAnilistDetails(anilistId);
 						if (!details) { failed++; continue; }
 
-						const mediaId = crypto.randomUUID();
-						
-						await upsertMedia({
-							id: mediaId,
+						const media = await upsertMedia({
+							id: crypto.randomUUID(),
 							source: details.source,
 							externalId: details.externalId,
 							type: details.type,
@@ -162,7 +160,7 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 						});
 
 						await upsertTracking({
-							mediaId: mediaId,
+							mediaId: media.id,
 							status: mapAnilistStatus(entry.status),
 							score: entry.score > 0 ? entry.score : undefined,
 							currentEpisode: type === 'ANIME' ? entry.progress : undefined,
@@ -227,10 +225,8 @@ export async function importFromTmdb(apiKey: string, sessionId: string): Promise
 						const details = await getTmdbDetails(item.id.toString(), ep.type);
 						if (!details) { failed++; continue; }
 
-						const mediaId = crypto.randomUUID();
-
-						await upsertMedia({
-							id: mediaId,
+						const media = await upsertMedia({
+							id: crypto.randomUUID(),
 							source: details.source,
 							externalId: details.externalId,
 							type: details.type,
@@ -242,10 +238,8 @@ export async function importFromTmdb(apiKey: string, sessionId: string): Promise
 							totalSeasons: details.totalSeasons,
 						});
 
-						const score = item.rating ? (item.rating / 2) : undefined; // TMDB uses 1-10, we use 1-10? Wait, Traxy schema says score is 1-10. So item.rating is 1-10. Let's use item.rating directly.
-
 						await upsertTracking({
-							mediaId: mediaId,
+							mediaId: media.id,
 							status: ep.status,
 							score: item.rating ? item.rating : undefined,
 						});
