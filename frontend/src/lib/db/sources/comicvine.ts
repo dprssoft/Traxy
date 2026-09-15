@@ -1,6 +1,6 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { fetchJson, parseYear, withCache } from '../fetchUtils';
-import { getCached, setCache } from '../apiCache';
+import { setCache } from '../apiCache';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
 import { Capacitor } from '@capacitor/core';
 
@@ -124,19 +124,13 @@ export async function discoverComicVineNew(forceRefresh = false): Promise<Search
 			await setCache(cacheKey, result);
 			return result;
 		}
-		
-		const cached = await getCached<SearchResult[]>(cacheKey);
-		if (cached) return cached;
-		
-		const result = await fetcher();
-		await setCache(cacheKey, result);
-		return result;
+		return await withCache(cacheKey, fetcher);
 	} catch {
 		return [];
 	}
 }
 
-/** 
+/**
  * Proxy for Trending: ComicVine volumes sorted by count_of_issues descending.
  */
 export async function discoverComicVineTrending(forceRefresh = false): Promise<SearchResult[]> {
@@ -161,19 +155,13 @@ export async function discoverComicVineTrending(forceRefresh = false): Promise<S
 			await setCache(cacheKey, result);
 			return result;
 		}
-		
-		const cached = await getCached<SearchResult[]>(cacheKey);
-		if (cached) return cached;
-		
-		const result = await fetcher();
-		await setCache(cacheKey, result);
-		return result;
+		return await withCache(cacheKey, fetcher);
 	} catch {
 		return [];
 	}
 }
 
-/** 
+/**
  * Proxy for Top Rated: same as Trending, ComicVine volumes sorted by count_of_issues descending.
  */
 export async function discoverComicVineTopRated(forceRefresh = false): Promise<SearchResult[]> {

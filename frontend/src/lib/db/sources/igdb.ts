@@ -4,7 +4,7 @@
 // Note: IGDB API blocks CORS in browser context.
 // Capacitor bypasses this natively. For web dev, a proxy is needed.
 import type { SearchResult } from '$lib/types/mediaTypes';
-import { withCache } from '../fetchUtils';
+import { withCache, fetchJson } from '../fetchUtils';
 import { setCache } from '../apiCache';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
 import { Capacitor } from '@capacitor/core';
@@ -67,15 +67,12 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 	}
 
 	const url = getTwitchTokenUrl();
-	const res = await fetch(
+	const data = await fetchJson<{ access_token: string; expires_in: number }>(
 		`${url}?client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}&grant_type=client_credentials`,
+		6000,
+		undefined,
 		{ method: 'POST' },
 	);
-	if (!res.ok) {
-		const text = await res.text().catch(() => '');
-		throw new Error(`Twitch token error: HTTP ${res.status} ${text}`);
-	}
-	const data = await res.json();
 
 	const cached: CachedToken = {
 		token: data.access_token,
@@ -113,20 +110,12 @@ async function igdbFetch(
 	body: string,
 ): Promise<IgdbGame[]> {
 	const url = `${getIgdbApiUrl()}/${endpoint}`;
-	const res = await fetch(url, {
-		method: 'POST',
-		headers: {
-			'Client-ID': clientId,
-			Authorization: `Bearer ${token}`,
-			'Content-Type': 'text/plain',
-		},
-		body,
-	});
-	if (!res.ok) {
-		const text = await res.text().catch(() => '');
-		throw new Error(`IGDB error: HTTP ${res.status} ${text}`);
-	}
-	return res.json();
+	return fetchJson<IgdbGame[]>(
+		url,
+		6000,
+		{ 'Client-ID': clientId, Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
+		{ method: 'POST', body },
+	);
 }
 
 function mapGame(item: IgdbGame): SearchResult {

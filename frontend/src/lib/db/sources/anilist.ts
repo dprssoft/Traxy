@@ -1,5 +1,10 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
-import { getCached, setCache } from '../apiCache';
+import { setCache } from '../apiCache';
+import { withCache, fetchJson } from '../fetchUtils';
+
+// GraphQL calls are observed slower than TMDB's CDN-backed REST API — 8s gives AniList
+// enough room without holding up a whole catalogue category row as long as the old 15s did.
+const ANILIST_TIMEOUT_MS = 8000;
 
 const BASE_URL = 'https://graphql.anilist.co';
 
@@ -140,7 +145,10 @@ function mapAnilistItem(item: any): SearchResult {
 		title: displayTitle,
 		originalTitle: origTitle && origTitle !== displayTitle ? origTitle : undefined,
 		year: item.startDate?.year || undefined,
-		posterUrl: item.coverImage?.extraLarge || undefined,
+		// Discover queries request the smaller `large` cover (right-sized for a poster
+		// card); search/detail queries still request `extraLarge`, so this mapper — shared
+		// by all three — falls back to whichever the query actually returned.
+		posterUrl: item.coverImage?.large || item.coverImage?.extraLarge || undefined,
 		description: item.description?.replace(/<[^>]*>?/gm, '') || undefined,
 		author: extractAnilistAuthor(item),
 		country: mapAnilistCountry(item.countryOfOrigin),
@@ -224,31 +232,16 @@ export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Pro
 	if (!query.trim()) return [];
 
 	const cacheKey = `anilist:search:${type}:${query}`;
-	const cached = await getCached<SearchResult[]>(cacheKey);
-	if (cached) return cached;
-
 	try {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 15000);
-		const res = await fetch(BASE_URL, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json',
-			},
-			body: JSON.stringify({
-				query: SEARCH_QUERY,
-				variables: { query, type },
-			}),
-			signal: controller.signal
+		return await withCache(cacheKey, async () => {
+			const data = await fetchJson<{ data: { Page: { media: unknown[] } } }>(
+				BASE_URL,
+				ANILIST_TIMEOUT_MS,
+				{ 'Content-Type': 'application/json', Accept: 'application/json' },
+				{ method: 'POST', body: JSON.stringify({ query: SEARCH_QUERY, variables: { query, type } }) },
+			);
+			return data.data.Page.media.map(mapAnilistItem);
 		});
-		clearTimeout(timeout);
-		if (!res.ok) return [];
-		const data = await res.json();
-
-		const results = data.data.Page.media.map(mapAnilistItem);
-		await setCache(cacheKey, results);
-		return results;
 	} catch {
 		return [];
 	}
@@ -256,40 +249,26 @@ export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Pro
 
 export async function getAnilistDetails(id: number): Promise<SearchResult | null> {
 	const cacheKey = `anilist:detail:${id}`;
-	const cached = await getCached<SearchResult>(cacheKey);
-	if (cached) return cached;
-
 	try {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 15000);
-		const res = await fetch(BASE_URL, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json',
-			},
-			body: JSON.stringify({
-				query: DETAIL_QUERY,
-				variables: { id },
-			}),
-			signal: controller.signal
-		});
-		clearTimeout(timeout);
-		if (!res.ok) return null;
-		const data = await res.json();
+		return await withCache(cacheKey, async () => {
+			const data = await fetchJson<{ data: { Media: unknown } }>(
+				BASE_URL,
+				ANILIST_TIMEOUT_MS,
+				{ 'Content-Type': 'application/json', Accept: 'application/json' },
+				{ method: 'POST', body: JSON.stringify({ query: DETAIL_QUERY, variables: { id } }) },
+			);
+			const result = mapAnilistItem(data.data.Media);
 
-		const result = mapAnilistItem(data.data.Media);
-		
-		if (result.type === 'anime') {
-			const seasonData = await getAnilistSeasonChain(id);
-			if (seasonData) {
-				result.seasonData = seasonData;
-				result.totalSeasons = seasonData.length;
+			if (result.type === 'anime') {
+				const seasonData = await getAnilistSeasonChain(id);
+				if (seasonData) {
+					result.seasonData = seasonData;
+					result.totalSeasons = seasonData.length;
+				}
 			}
-		}
 
-		await setCache(cacheKey, result);
-		return result;
+			return result;
+		});
 	} catch {
 		return null;
 	}
@@ -309,7 +288,7 @@ query ($type: MediaType, $sort: [MediaSort], $status: MediaStatus, $page: Int, $
       episodes
       chapters
       volumes
-      coverImage { extraLarge }
+      coverImage { large }
       startDate { year month }
       endDate { year month }
       description
@@ -338,8 +317,6 @@ async function discoverAnilist(
 	const cacheKey = `anilist:discover:${mediaType}:${sort.join(',')}:${status ?? 'any'}:${page}`;
 
 	const fetcher = async (): Promise<SearchResult[]> => {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 15000);
 		const variables: Record<string, unknown> = {
 			type: mediaType,
 			sort,
@@ -348,15 +325,12 @@ async function discoverAnilist(
 		};
 		if (status) variables.status = status;
 
-		const res = await fetch(BASE_URL, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			body: JSON.stringify({ query: DISCOVER_QUERY, variables }),
-			signal: controller.signal,
-		});
-		clearTimeout(timeout);
-		if (!res.ok) return [];
-		const data = await res.json();
+		const data = await fetchJson<{ data: { Page: { media: unknown[] } } }>(
+			BASE_URL,
+			ANILIST_TIMEOUT_MS,
+			{ 'Content-Type': 'application/json', Accept: 'application/json' },
+			{ method: 'POST', body: JSON.stringify({ query: DISCOVER_QUERY, variables }) },
+		);
 
 		return (data.data?.Page?.media ?? []).map(mapAnilistItem);
 	};
@@ -367,12 +341,7 @@ async function discoverAnilist(
 			await setCache(cacheKey, result);
 			return result;
 		}
-		const cached = await getCached<SearchResult[]>(cacheKey);
-		if (cached) return cached;
-
-		const result = await fetcher();
-		await setCache(cacheKey, result);
-		return result;
+		return await withCache(cacheKey, fetcher);
 	} catch {
 		return [];
 	}
@@ -412,20 +381,18 @@ export async function discoverAnilistRandom(
 	const randomPage = Math.floor(Math.random() * 50) + 1;
 	// Don't cache random results so they vary per visit
 	try {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 15000);
-		const res = await fetch(BASE_URL, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			body: JSON.stringify({
-				query: DISCOVER_QUERY,
-				variables: { type: mediaType, sort: ['POPULARITY_DESC'], page: randomPage, perPage: 10 },
-			}),
-			signal: controller.signal,
-		});
-		clearTimeout(timeout);
-		if (!res.ok) return [];
-		const data = await res.json();
+		const data = await fetchJson<{ data: { Page: { media: unknown[] } } }>(
+			BASE_URL,
+			ANILIST_TIMEOUT_MS,
+			{ 'Content-Type': 'application/json', Accept: 'application/json' },
+			{
+				method: 'POST',
+				body: JSON.stringify({
+					query: DISCOVER_QUERY,
+					variables: { type: mediaType, sort: ['POPULARITY_DESC'], page: randomPage, perPage: 10 },
+				}),
+			},
+		);
 		const items: SearchResult[] = (data.data?.Page?.media ?? []).map(mapAnilistItem);
 		// Shuffle the results for extra randomness
 		for (let i = items.length - 1; i > 0; i--) {

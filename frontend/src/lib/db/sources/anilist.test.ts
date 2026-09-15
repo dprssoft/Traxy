@@ -1,0 +1,61 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { discoverAnilistTrending, getAnilistDetails } from './anilist';
+
+vi.mock('../apiCache', () => ({
+	getCached: vi.fn(async () => null),
+	setCache: vi.fn(async () => {}),
+}));
+
+function anilistItem(overrides: Record<string, unknown> = {}) {
+	return {
+		id: 1,
+		title: { romaji: 'Test', english: 'Test', native: 'Test' },
+		type: 'ANIME',
+		format: 'TV',
+		status: 'FINISHED',
+		episodes: 12,
+		chapters: null,
+		volumes: null,
+		startDate: { year: 2020 },
+		endDate: { year: 2020 },
+		description: null,
+		countryOfOrigin: 'JP',
+		genres: [],
+		duration: null,
+		staff: { edges: [] },
+		coverImage: {},
+		...overrides,
+	};
+}
+
+describe('anilist posterUrl mapping', () => {
+	beforeEach(() => {
+		vi.stubGlobal('fetch', vi.fn());
+	});
+
+	it('discover results use the smaller "large" cover requested by DISCOVER_QUERY', async () => {
+		(fetch as any).mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				data: { Page: { media: [anilistItem({ coverImage: { large: 'https://example.com/large.jpg' } })] } },
+			}),
+		});
+
+		const [result] = await discoverAnilistTrending('ANIME');
+
+		expect(result.posterUrl).toBe('https://example.com/large.jpg');
+	});
+
+	it('detail results fall back to "extraLarge" (DETAIL_QUERY does not request "large")', async () => {
+		(fetch as any).mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				data: { Media: anilistItem({ coverImage: { extraLarge: 'https://example.com/xl.jpg' } }) },
+			}),
+		});
+
+		const result = await getAnilistDetails(1);
+
+		expect(result?.posterUrl).toBe('https://example.com/xl.jpg');
+	});
+});

@@ -4,16 +4,23 @@ import { getCached, setCache } from './apiCache';
  * Fetches a URL and returns the parsed JSON response.
  * Automatically aborts after `timeoutMs` milliseconds.
  * Throws on non-2xx status or network/timeout error.
+ * `init` merges over the default GET request — pass `{ method: 'POST', body }` etc. for
+ * non-GET calls (used by GraphQL/Apicalypse-style POST-with-body sources).
  */
 export async function fetchJson<T>(
 	url: string,
 	timeoutMs = 4000,
 	headers?: Record<string, string>,
+	init?: RequestInit,
 ): Promise<T> {
 	const controller = new AbortController();
 	const id = setTimeout(() => controller.abort(), timeoutMs);
 	try {
-		const res = await fetch(url, { signal: controller.signal, headers });
+		const res = await fetch(url, {
+			...init,
+			signal: controller.signal,
+			headers: { ...headers, ...(init?.headers as Record<string, string> | undefined) },
+		});
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		return res.json() as Promise<T>;
 	} finally {
