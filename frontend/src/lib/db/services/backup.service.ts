@@ -2,7 +2,7 @@ import { getDb } from '../index';
 
 export async function exportDatabaseJson(): Promise<string> {
 	const db = getDb();
-	const tables = ['LocalMedia', 'TrackingStatus', 'WatchCycle', 'ActivityLog', 'CustomCollection', 'CollectionItem'];
+	const tables = ['Media', 'TrackingStatus', 'WatchCycle', 'ActivityLog', 'Collection', 'CollectionItem', 'Goal'];
 	
 	const exportData: Record<string, any[]> = {};
 
@@ -30,7 +30,7 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 		// SQLite foreign keys might complain, so we delete in reverse dependency order or just disable foreign keys
 		// Note: capacitor-sqlite disables PRAGMA foreign_keys by default unless explicitly turned on.
 		
-		const tables = ['ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'CustomCollection', 'LocalMedia'];
+		const tables = ['Goal', 'ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'Collection', 'Media'];
 		
 		for (const table of tables) {
 			await db.run(`DELETE FROM ${table}`);
@@ -59,7 +59,7 @@ export async function clearMediaCache(): Promise<void> {
 
 export async function resetAllUserData(): Promise<void> {
 	const db = getDb();
-	const tables = ['ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'CustomCollection', 'LocalMedia', 'ApiCache', 'AppSettings'];
+	const tables = ['ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'Collection', 'Media', 'ApiCache', 'AppSettings', 'Goal'];
 	for (const table of tables) {
 		await db.run(`DELETE FROM ${table}`);
 	}
