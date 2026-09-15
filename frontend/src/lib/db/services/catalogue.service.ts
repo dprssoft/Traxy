@@ -66,7 +66,7 @@ import {
 	discoverIgdbNew,
 	discoverIgdbTopRated,
 	discoverIgdbRandom,
-} from '$lib/db/sources/rawg';
+} from '$lib/db/sources/igdb';
 
 // OpenLibrary
 import {
@@ -291,13 +291,20 @@ export async function getCatalogueFromCache(
 
 /**
  * Batch fast-path: warms all requested categories from SQLite in a SINGLE query.
- * Returns a map of category → results (only categories with cache hits are present).
+ * Returns a map of category → results (only categories with cache hits are present),
+ * plus a `complete` map marking which categories had every one of their source cache
+ * keys hit — only those are safe to promote into the in-memory cache (see
+ * `getCacheKeysForTypeAndCategory`; a partial hit means some sources still need a
+ * live fetch, so the category as a whole isn't fully warm yet).
  * Use this on page mount to avoid N separate round-trips.
  */
 export async function getCatalogueCacheBatch(
 	type: MediaType | 'all',
 	categories: DiscoverCategory[],
-): Promise<Partial<Record<DiscoverCategory, SearchResult[]>>> {
+): Promise<{
+	data: Partial<Record<DiscoverCategory, SearchResult[]>>;
+	complete: Partial<Record<DiscoverCategory, boolean>>;
+}> {
 	// Collect all cache keys across all categories
 	const keysByCat = new Map<DiscoverCategory, string[]>();
 	const allKeys: string[] = [];
@@ -309,18 +316,20 @@ export async function getCatalogueCacheBatch(
 		}
 	}
 
-	if (allKeys.length === 0) return {};
+	if (allKeys.length === 0) return { data: {}, complete: {} };
 
 	// Single DB round-trip for all keys
 	const batch = await getCachedBatch<SearchResult[]>(allKeys);
 
-	const out: Partial<Record<DiscoverCategory, SearchResult[]>> = {};
+	const data: Partial<Record<DiscoverCategory, SearchResult[]>> = {};
+	const complete: Partial<Record<DiscoverCategory, boolean>> = {};
 	for (const [cat, keys] of keysByCat) {
 		const hits = keys.map((k) => batch.get(k)).filter((v): v is SearchResult[] => v != null && v.length > 0);
+		complete[cat] = hits.length === keys.length;
 		if (hits.length === 0) continue;
-		out[cat] = type === 'all' ? interleaveBySource(hits.flat()) : hits[0];
+		data[cat] = type === 'all' ? interleaveBySource(hits.flat()) : hits[0];
 	}
-	return out;
+	return { data, complete };
 }
 
 /**
@@ -384,7 +393,7 @@ export async function discoverMedia(
  * Run up to `limit` async tasks concurrently from `fns`, resolving when all finish.
  * Avoids saturating the browser's per-host connection pool (max 6).
  */
-async function pooled<T>(fns: (() => Promise<T>)[], limit = 4): Promise<PromiseSettledResult<T>[]> {
+export async function pooled<T>(fns: (() => Promise<T>)[], limit = 4): Promise<PromiseSettledResult<T>[]> {
 	const results: PromiseSettledResult<T>[] = [];
 	const queue = [...fns];
 
@@ -402,6 +411,42 @@ async function pooled<T>(fns: (() => Promise<T>)[], limit = 4): Promise<PromiseS
 	const workers = Array.from({ length: Math.min(limit, fns.length) }, run);
 	await Promise.all(workers);
 	return results;
+}
+
+/**
+ * Fetch multiple categories concurrently, bounded at `limit` categories in flight at once.
+ * Each category's own `discoverMedia` call may itself fan out to several sources (see
+ * `discoverAll`'s `pooled(fns, 4)`), so this bounds the *other* axis of concurrency —
+ * without it, N categories running at once each spawning their own pool of 4 can add up to
+ * a much larger burst of simultaneous requests than intended (e.g. 4 categories × 4 sources
+ * = 16 for "All types"). Reuses the same `pooled()` limiter so there's one concurrency
+ * policy, not two.
+ */
+export async function discoverCategoriesPooled(
+	type: MediaType | 'all',
+	categories: DiscoverCategory[],
+	forceRefresh: boolean,
+	limit = 2,
+): Promise<{ cat: DiscoverCategory; data: SearchResult[]; error: boolean }[]> {
+	// Errors are caught per-category *inside* each task (rather than left to `pooled`'s
+	// own try/catch) so a failure always resolves with its originating category attached
+	// — `pooled`'s PromiseSettledResult rejection reason has no way to carry that back.
+	// Every task below always resolves (never throws), so `pooled` never produces a
+	// 'rejected' entry here; that branch is unreachable but TypeScript still needs it
+	// handled, so it's filtered out rather than papered over with a guessed category.
+	const settled = await pooled(
+		categories.map((cat) => async () => {
+			try {
+				return { cat, data: await discoverMedia(type, cat, forceRefresh), error: false };
+			} catch {
+				return { cat, data: [] as SearchResult[], error: true };
+			}
+		}),
+		limit,
+	);
+	return settled
+		.filter((r): r is PromiseFulfilledResult<{ cat: DiscoverCategory; data: SearchResult[]; error: boolean }> => r.status === 'fulfilled')
+		.map((r) => r.value);
 }
 
 /** When "All" is selected, fetch from all major sources and merge — max 4 concurrent. */

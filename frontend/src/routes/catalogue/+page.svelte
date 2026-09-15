@@ -6,16 +6,18 @@
 	import { searchState } from '$lib/stores/search.svelte';
 	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
 	import { getTmdbDetails } from '$lib/db/sources/tmdb';
-	import { getRawgDetails } from '$lib/db/sources/rawg';
+	import { getIgdbDetails } from '$lib/db/sources/igdb';
 	import { getAnilistDetails } from '$lib/db/sources/anilist';
 	import { getComicVineDetails } from '$lib/db/sources/comicvine';
 	import { getOpenLibraryDetails } from '$lib/db/sources/openlibrary';
 	import {
 		discoverMedia,
+		discoverCategoriesPooled,
 		CATEGORIES,
 		recordVisitedMedia,
 		getCatalogueCacheBatch,
 		getMemoryCacheBatch,
+		setMemoryCache,
 		type DiscoverCategory,
 	} from '$lib/db/services/catalogue.service';
 	import type { SearchResult } from '$lib/types/mediaTypes';
@@ -100,15 +102,15 @@
 	async function handleTouchEnd() {
 		if (touchStartY === 0) return;
 		const pullDist = touchCurrentY - touchStartY;
-		
-		if (pullDist > PULL_THRESHOLD) {
+
+		if (pullDist > PULL_THRESHOLD && !isRefreshing) {
 			isPulling = true;
 			await loadAllCategories(true);
 			isPulling = false;
 		} else {
 			isPulling = false;
 		}
-		
+
 		touchStartY = 0;
 		touchCurrentY = 0;
 	}
@@ -155,7 +157,27 @@
 		};
 	});
 
+	// Shared in-flight guard: pull-to-refresh, the manual Refresh button, the 15-min
+	// silent auto-refresh timer, and type-switching can all trigger a reload — without
+	// this, rapid/overlapping triggers would stack concurrent full request waves. A
+	// caller that arrives while a load is already running joins that same load instead
+	// of starting a new one.
+	let inFlight: Promise<void> | null = null;
+	let isRefreshing = $state(false);
+
 	async function loadAllCategories(forceRefresh = false, silent = false) {
+		if (inFlight) return inFlight;
+		isRefreshing = true;
+		inFlight = runLoadAllCategories(forceRefresh, silent);
+		try {
+			await inFlight;
+		} finally {
+			inFlight = null;
+			isRefreshing = false;
+		}
+	}
+
+	async function runLoadAllCategories(forceRefresh: boolean, silent: boolean) {
 		for (const cat of CATEGORIES) {
 			categoryError[cat.id] = false;
 		}
@@ -176,12 +198,16 @@
 			// For the ones not in memory, try SQLite cache batch
 			const missingCats = CATEGORIES.filter((c) => categoryLoading[c.id]).map((c) => c.id);
 			if (missingCats.length > 0) {
-				const cached = await getCatalogueCacheBatch(selectedType, missingCats);
+				const { data: cached, complete } = await getCatalogueCacheBatch(selectedType, missingCats);
 				for (const cat of missingCats) {
 					const hit = cached[cat];
 					if (hit && hit.length > 0) {
 						categoryData[cat] = hit;
 						categoryLoading[cat] = false;
+						// Only promote a fully-warm category into the in-memory cache — a
+						// partial hit still needs discoverMedia() below to backfill the
+						// sources that weren't cached, so it must not short-circuit there.
+						if (complete[cat]) setMemoryCache(selectedType, cat, hit);
 					}
 				}
 			}
@@ -202,21 +228,39 @@
 			if (!silent || forceRefresh) categoryLoading['trending'] = false;
 		}
 
-		// ── Wave 2: Remaining categories in parallel ──────────────────────────────
-		const remainingCats = CATEGORIES.filter((c) => c.id !== 'trending');
-		await Promise.allSettled(
-			remainingCats.map(async (cat) => {
-				try {
-					const data = await discoverMedia(selectedType, cat.id, forceRefresh);
-					categoryData[cat.id] = data;
-				} catch {
-					if (!categoryData[cat.id]?.length) categoryData[cat.id] = [];
-					categoryError[cat.id] = true;
-				} finally {
-					if (!silent || forceRefresh) categoryLoading[cat.id] = false;
-				}
-			}),
+		// ── Wave 2: Remaining categories, bounded concurrency ─────────────────────
+		// 'visited' is synchronous localStorage/local-DB, not network-bound, so it runs
+		// on its own rather than taking a slot in the network-fetch pool below.
+		const visitedPromise = (async () => {
+			try {
+				const data = await discoverMedia(selectedType, 'visited', forceRefresh);
+				categoryData['visited'] = data;
+			} catch {
+				if (!categoryData['visited']?.length) categoryData['visited'] = [];
+				categoryError['visited'] = true;
+			} finally {
+				if (!silent || forceRefresh) categoryLoading['visited'] = false;
+			}
+		})();
+
+		const pooledCats = CATEGORIES.filter((c) => c.id !== 'trending' && c.id !== 'visited').map(
+			(c) => c.id,
 		);
+		const results = await discoverCategoriesPooled(selectedType, pooledCats, forceRefresh);
+		for (const { cat, data, error } of results) {
+			if (error) {
+				// Keep whatever was already showing rather than blanking the row on a
+				// transient failure (e.g. a silent refresh) — only fall back to empty if
+				// there was nothing to keep.
+				if (!categoryData[cat]?.length) categoryData[cat] = [];
+				categoryError[cat] = true;
+			} else {
+				categoryData[cat] = data;
+			}
+			if (!silent || forceRefresh) categoryLoading[cat] = false;
+		}
+
+		await visitedPromise;
 	}
 
 	function onTypeSelect(type: MediaType | 'all') {
@@ -253,8 +297,8 @@
 
 		if (item.source === 'tmdb')
 			fullDetails = await getTmdbDetails(item.externalId, item.type as 'film' | 'tv');
-		else if (item.source === 'rawg' || item.source === 'igdb')
-			fullDetails = await getRawgDetails(item.externalId);
+		else if (item.source === 'igdb')
+			fullDetails = await getIgdbDetails(item.externalId);
 		else if (item.source === 'anilist')
 			fullDetails = await getAnilistDetails(parseInt(item.externalId));
 		else if (item.source === 'comicvine')
@@ -388,10 +432,11 @@
 		<button
 			type="button"
 			onclick={() => loadAllCategories(true)}
-			class="h-10 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer shrink-0 border bg-[#131627] text-slate-400 hover:text-white hover:bg-[#1a1e35] border-white/[0.08] hover:border-indigo-500/30 flex items-center gap-2"
+			disabled={isRefreshing}
+			class="h-10 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer shrink-0 border bg-[#131627] text-slate-400 hover:text-white hover:bg-[#1a1e35] border-white/[0.08] hover:border-indigo-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 			title="Refresh"
 		>
-			<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+			<svg class="w-4 h-4 {isRefreshing ? 'animate-spin' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
 			</svg>
 			<span class="hidden sm:inline">Refresh</span>
