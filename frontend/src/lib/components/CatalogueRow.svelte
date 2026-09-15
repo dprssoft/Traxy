@@ -2,6 +2,7 @@
 	import type { SearchResult } from '$lib/types/mediaTypes';
 	import CataloguePosterCard from './CataloguePosterCard.svelte';
 	import Shimmer from '$lib/components/ui/Shimmer.svelte';
+	import { onEnterView } from '$lib/utils/onEnterView';
 
 	interface Props {
 		title: string;
@@ -22,6 +23,28 @@
 	}: Props = $props();
 
 	let scrollEl = $state<HTMLElement | null>(null);
+
+	// Cap mounted cards instead of rendering the full (up to ~120-item, for "All types")
+	// result list at once — a "load more on scroll" batch reveal, same IntersectionObserver
+	// idiom InfiniteScrollSentinel already uses for the main feed's vertical infinite scroll,
+	// just axis-flipped for this row's horizontal scroll.
+	const BATCH_SIZE = 24;
+	let visibleCount = $state(BATCH_SIZE);
+
+	// New category data (refresh, type switch, etc.) replaces `items` wholesale — reset the
+	// reveal window rather than keeping a stale count from the previous array.
+	$effect(() => {
+		const _ = items; // establishes the reactive dependency this effect resets on
+		visibleCount = BATCH_SIZE;
+	});
+
+	const visibleItems = $derived(items.slice(0, visibleCount));
+
+	function revealMore() {
+		if (visibleCount < items.length) {
+			visibleCount = Math.min(visibleCount + BATCH_SIZE, items.length);
+		}
+	}
 
 	function scrollLeft() {
 		scrollEl?.scrollBy({ left: -320, behavior: 'smooth' });
@@ -90,11 +113,17 @@
 			bind:this={scrollEl}
 			class="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 px-1 scrollbar-hide"
 		>
-			{#each items as item (item.externalId + item.source)}
+			{#each visibleItems as item (item.externalId + item.source)}
 				<div class="snap-start">
 					<CataloguePosterCard {item} onclick={() => onItemClick(item)} />
 				</div>
 			{/each}
+			{#if visibleCount < items.length}
+				<div
+					use:onEnterView={{ callback: revealMore, options: { rootMargin: '0px 400px 0px 0px' } }}
+					class="w-px h-full flex-shrink-0"
+				></div>
+			{/if}
 		</div>
 	{/if}
 </section>
