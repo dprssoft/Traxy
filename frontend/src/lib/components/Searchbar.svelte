@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { searchState, addRecentSearch, loadRecentSearches, getTypeColor } from '$lib/stores/search.svelte';
 	import { searchTmdb, getTmdbDetails } from '$lib/db/sources/tmdb';
-	import { searchRawg, getRawgDetails } from '$lib/db/sources/rawg';
+	import { searchIgdb, getIgdbDetails } from '$lib/db/sources/igdb';
 	import { searchAnilist, getAnilistDetails } from '$lib/db/sources/anilist';
 	import { searchComicVine, getComicVineDetails } from '$lib/db/sources/comicvine';
 	import { searchOpenLibrary, getOpenLibraryDetails } from '$lib/db/sources/openlibrary';
@@ -91,7 +91,7 @@
 			// Always include AniList when the filter could include anime or manga,
 			// so the deduplicator has enough context to suppress TMDB/OL duplicates.
 			if (t === 'all' || t === 'film' || t === 'tv') promises.push(searchTmdb(q));
-			if (t === 'all' || t === 'game') promises.push(searchRawg(q));
+			if (t === 'all' || t === 'game') promises.push(searchIgdb(q));
 			if ((t === 'all' || t === 'game') && searchPrefsStore.current.flashpointEnabled) {
 				promises.push(searchFlashpoint(q));
 			}
@@ -159,7 +159,7 @@
 		let fullDetails: SearchResult | null = item;
 		
 		if (item.source === 'tmdb') fullDetails = await getTmdbDetails(item.externalId, item.type as 'film' | 'tv');
-		else if (item.source === 'rawg' || item.source === 'igdb') fullDetails = await getRawgDetails(item.externalId);
+		else if (item.source === 'igdb') fullDetails = await getIgdbDetails(item.externalId);
 		else if (item.source === 'anilist') fullDetails = await getAnilistDetails(parseInt(item.externalId));
 		else if (item.source === 'comicvine') fullDetails = await getComicVineDetails(item.externalId);
 		else if (item.source === 'openlibrary') fullDetails = await getOpenLibraryDetails(item.externalId);

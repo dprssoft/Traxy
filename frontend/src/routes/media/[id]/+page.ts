@@ -59,7 +59,7 @@ export const load: PageLoad = async ({ params }) => {
 		try {
 			if (media.source === 'igdb') {
 				// Direct IGDB lookup using the stored game ID
-				const { fetchIgdbTimeToBeat } = await import('$lib/db/sources/rawg');
+				const { fetchIgdbTimeToBeat } = await import('$lib/db/sources/igdb');
 				const ttb = await fetchIgdbTimeToBeat(media.externalId);
 				if (ttb) {
 					await updateMediaMeta(params.id, { timeToBeat: JSON.stringify(ttb) });
@@ -69,7 +69,7 @@ export const load: PageLoad = async ({ params }) => {
 				}
 			} else {
 				// Non-IGDB source: search IGDB by title
-				const { fetchIgdbTimeToBeatByTitle } = await import('$lib/db/sources/rawg');
+				const { fetchIgdbTimeToBeatByTitle } = await import('$lib/db/sources/igdb');
 				const ttb = await fetchIgdbTimeToBeatByTitle(media.title);
 				if (ttb) {
 					await updateMediaMeta(params.id, { timeToBeat: JSON.stringify(ttb) });
