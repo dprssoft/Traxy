@@ -7,7 +7,7 @@ import type {
 import type { TrackingStatusType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { logActivity } from './activity.service';
-import { getMediaById } from './media.service';
+import { getMediaById, rowToMedia, MEDIA_COLUMNS } from './media.service';
 import { createCycle, closeCycle } from './cycle.service';
 import { handleProgressDecrement } from './activity.service';
 import type { ActivityPayload } from '$lib/types/activityTypes';
@@ -113,14 +113,51 @@ export async function getAllTracking(): Promise<LocalTrackingStatus[]> {
 	return result.values.map(rowToTracking);
 }
 
-/** Fetch tracking records joined with their media, for the My List page. */
+// Column names in the order the JOIN below selects them — used to split each joined row
+// back into its TrackingStatus and Media halves. `t.id` is aliased to avoid colliding with
+// `m.id` (the only column name shared by both tables) when the driver returns named rows.
+const TRACKING_COLUMNS = [
+	'id', 'mediaId', 'status', 'score', 'note',
+	'currentEpisode', 'currentSeason', 'currentChapter', 'currentVolume',
+	'currentPage', 'currentIssue', 'hoursPlayed', 'completionTier',
+	'createdAt', 'updatedAt',
+];
+
+/**
+ * Fetch tracking records joined with their media, for the My List page.
+ * A single SQL JOIN, rather than one getMediaById() call per tracking row, to avoid an
+ * N+1 query pattern. Rows whose mediaId has no matching Media record (a data-integrity
+ * problem, not an expected case) are skipped with a warning instead of silently dropped.
+ */
 export async function getTrackingWithMedia(): Promise<TrackingListItem[]> {
-	const tracking = await getAllTracking();
+	const db = getDb();
+	const result = await db.query(
+		`SELECT
+			t.id as trackingId, t.mediaId, t.status, t.score, t.note,
+			t.currentEpisode, t.currentSeason, t.currentChapter, t.currentVolume,
+			t.currentPage, t.currentIssue, t.hoursPlayed, t.completionTier,
+			t.createdAt, t.updatedAt,
+			m.id, m.source, m.externalId, m.type, m.title, m.year, m.posterUrl,
+			m.description, m.originalTitle, m.serializationYears, m.author, m.country,
+			m.genres, m.releaseStatus, m.totalEpisodes, m.totalSeasons,
+			m.totalVolumes, m.totalChapters, m.platforms, m.totalPages, m.seasonData,
+			m.timeToBeat, m.runtimeMinutes
+		FROM TrackingStatus t
+		JOIN Media m ON t.mediaId = m.id
+		ORDER BY t.updatedAt DESC`,
+	);
+	if (!result.values) return [];
+
 	const items: TrackingListItem[] = [];
-	for (const t of tracking) {
-		const media = await getMediaById(t.mediaId);
-		if (!media) continue;
-		items.push({ media, tracking: t });
+	for (const row of result.values) {
+		const values = Array.isArray(row) ? row : Object.values(row as Record<string, unknown>);
+		if (values.length !== TRACKING_COLUMNS.length + MEDIA_COLUMNS.length) {
+			console.error('getTrackingWithMedia: unexpected joined row shape', row);
+			continue;
+		}
+		const tracking = rowToTracking(values.slice(0, TRACKING_COLUMNS.length));
+		const media = rowToMedia(values.slice(TRACKING_COLUMNS.length));
+		items.push({ media, tracking });
 	}
 	return items;
 }
@@ -259,6 +296,12 @@ export async function updateProgress(
 	field: keyof LocalTrackingStatus,
 	value: number | string,
 ): Promise<void> {
+	// `field` is interpolated directly into the SQL below, so it must be restricted to the
+	// known progress columns — never widened to arbitrary LocalTrackingStatus keys (e.g. 'id').
+	if (!(field in PROGRESS_EVENT_MAP)) {
+		throw new Error(`updateProgress: unsupported field "${String(field)}"`);
+	}
+
 	const db = getDb();
 	const prev = await getTracking(mediaId);
 	const media = await getMediaById(mediaId);

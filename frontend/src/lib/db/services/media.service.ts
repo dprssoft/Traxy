@@ -4,14 +4,14 @@ import type { MediaSource, MediaType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 
 // Column names in the order defined in CREATE TABLE — used for positional→named conversion
-const MEDIA_COLUMNS = [
+export const MEDIA_COLUMNS = [
 	'id', 'source', 'externalId', 'type', 'title', 'year', 'posterUrl', 'description',
 	'originalTitle', 'serializationYears', 'author', 'country', 'genres', 'releaseStatus',
 	'totalEpisodes', 'totalSeasons', 'totalVolumes', 'totalChapters',
 	'platforms', 'totalPages', 'seasonData', 'timeToBeat', 'runtimeMinutes',
 ];
 
-function rowToMedia(row: any): LocalMedia {
+export function rowToMedia(row: any): LocalMedia {
 	// capacitor-community/sqlite may return rows as arrays (positional) or objects (named).
 	// Normalise to a plain object keyed by column name so we never rely on ordering.
 	let r: Record<string, any>;
