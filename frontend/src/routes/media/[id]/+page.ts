@@ -8,7 +8,9 @@ import { getAnilistDetails } from '$lib/db/sources/anilist';
 import { getAppSettingBool } from '$lib/db/services/settings.service';
 import { fetchWikidataEnrichment } from '$lib/db/sources/wikipedia';
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ params, parent }) => {
+	// Layout load runs initDb(); page loads run in parallel unless we wait for it.
+	await parent();
 	let media = await getMediaById(params.id);
 	if (!media) {
 		error(404, 'Media not found');
