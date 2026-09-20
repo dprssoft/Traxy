@@ -4,7 +4,7 @@
 	import type { MediaType } from '$lib/db/schema';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import TrackingTab from '$lib/components/TrackingTab.svelte';
-	import { setTrackingTypeFilterPrefs } from '$lib/db/services/settings.service';
+	import { setAppSetting, setTrackingTypeFilterPrefs } from '$lib/db/services/settings.service';
 	import { dndzone } from 'svelte-dnd-action';
 	import { Button, Toggle } from '$lib/components/ui';
 
@@ -29,6 +29,13 @@
 
 	const allTypes = Object.keys(MEDIA_TYPE_LABELS) as MediaType[];
 	const trackedTypes = $derived(new Set(data.trackingList.map(t => t.media.type)));
+
+	let view = $derived(data.view);
+
+	function toggleView() {
+		view = view === 'list' ? 'grid' : 'list';
+		setAppSetting('tracking_view', view);
+	}
 
 	let editing = $state(false);
 	let typeOrder = $state<MediaType[]>([]);
@@ -103,14 +110,30 @@
 			<h1 class="text-3xl font-extrabold text-white tracking-tight">My List</h1>
 		</div>
 		
-		<select 
-			bind:value={currentSort}
-			class="bg-[#121422] border border-white/[0.08] text-white text-xs font-semibold rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 block p-2.5 cursor-pointer shadow-inner"
-		>
-			<option value="updatedDesc">Recently updated</option>
-			<option value="scoreDesc">Highest score</option>
-			<option value="titleAsc">By title (A-Z)</option>
-		</select>
+		<div class="flex items-center gap-2">
+			<select 
+				bind:value={currentSort}
+				class="bg-[#121422] border border-white/[0.08] text-white text-xs font-semibold rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 block p-2.5 cursor-pointer shadow-inner"
+			>
+				<option value="updatedDesc">Recently updated</option>
+				<option value="scoreDesc">Highest score</option>
+				<option value="titleAsc">By title (A-Z)</option>
+			</select>
+			<button
+				type="button"
+				onclick={toggleView}
+				aria-label={view === 'list' ? 'Switch to grid view' : 'Switch to list view'}
+				class="p-2.5 rounded-xl bg-[#121422] border border-white/[0.08] text-slate-300 hover:text-white cursor-pointer transition-colors"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					{#if view === 'list'}
+						<rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect>
+					{:else}
+						<line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
+					{/if}
+				</svg>
+			</button>
+		</div>
 	</div>
 
 	<!-- Status Tabs -->
@@ -188,9 +211,9 @@
 			</a>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+		<div class="grid {view === 'grid' ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'} gap-3 sm:gap-4">
 			{#each filteredList as item (item.tracking.id)}
-				<TrackingTab {item} />
+				<TrackingTab {item} compact={view === 'grid'} />
 			{/each}
 		</div>
 	{/if}

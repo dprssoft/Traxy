@@ -6,14 +6,15 @@
 
 	interface Props {
 		item: TrackingListItem;
+		compact?: boolean;
 	}
 
-	let { item }: Props = $props();
+	let { item, compact = false }: Props = $props();
 </script>
 
-<Card padding="none" class="overflow-hidden flex h-32 sm:h-36 group hover:border-indigo-500/30 transition-all duration-200">
+<Card padding="none" class="overflow-hidden flex {compact ? 'h-28' : 'h-32 sm:h-36'} group hover:border-indigo-500/30 transition-all duration-200">
 	<!-- Poster -->
-	<a href={`/media/${item.media.id}`} class="w-24 h-full shrink-0 overflow-hidden bg-slate-900">
+	<a href={`/media/${item.media.id}`} class="{compact ? 'w-16' : 'w-24'} h-full shrink-0 overflow-hidden bg-slate-900">
 		{#if item.media.posterUrl}
 			<img src={item.media.posterUrl} alt={item.media.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
 		{:else}
@@ -24,12 +25,12 @@
 	</a>
 
 	<!-- Info -->
-	<div class="p-3 sm:p-4 flex-1 flex flex-col min-w-0">
+	<div class="{compact ? 'p-2.5' : 'p-3 sm:p-4'} flex-1 flex flex-col min-w-0">
 		<div class="flex items-baseline gap-2 min-w-0">
 			<a href={`/media/${item.media.id}`} class="text-white font-bold text-base leading-tight truncate group-hover:text-indigo-400 transition-colors">
 				{item.media.title}
 			</a>
-			{#if item.media.originalTitle && item.media.originalTitle !== item.media.title}
+			{#if !compact && item.media.originalTitle && item.media.originalTitle !== item.media.title}
 				<span class="hidden sm:block text-[11px] text-slate-500 truncate">{item.media.originalTitle}</span>
 			{/if}
 			{#if item.media.year}
