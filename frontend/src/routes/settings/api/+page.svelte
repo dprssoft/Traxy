@@ -58,13 +58,7 @@
 				<label for="igdbClientId" class="block text-xs font-medium text-slate-400 mb-1.5">
 					Client ID
 				</label>
-				<input
-					type="text"
-					id="igdbClientId"
-					bind:value={igdbClientId}
-					placeholder="Twitch Client ID"
-					class={inputClass}
-				/>
+				<SecretInput id="igdbClientId" bind:value={igdbClientId} placeholder="Twitch Client ID" class={inputClass} />
 			</div>
 			<div>
 				<label for="igdbClientSecret" class="block text-xs font-medium text-slate-400 mb-1.5">
