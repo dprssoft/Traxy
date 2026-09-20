@@ -6,7 +6,6 @@
 	import TrackingTab from '$lib/components/TrackingTab.svelte';
 	import { setTrackingTypeFilterPrefs } from '$lib/db/services/settings.service';
 	import { Button, Select } from '$lib/components/ui';
-	import MalImport from '$lib/components/MalImport.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -94,7 +93,6 @@
 	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 		<div class="flex items-center gap-4">
 			<h1 class="text-3xl font-extrabold text-white tracking-tight">My List</h1>
-			<MalImport />
 		</div>
 		
 		<select 
