@@ -4,7 +4,8 @@
 	import type { MediaType } from '$lib/db/schema';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import TrackingTab from '$lib/components/TrackingTab.svelte';
-	import { Select } from '$lib/components/ui';
+	import { setTrackingTypeFilterPrefs } from '$lib/db/services/settings.service';
+	import { Button, Select } from '$lib/components/ui';
 	import MalImport from '$lib/components/MalImport.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -26,10 +27,37 @@
 	type SortOption = 'updatedDesc' | 'scoreDesc' | 'titleAsc';
 	let currentSort = $state<SortOption>('updatedDesc');
 
-	// All media types that exist in the user's list
+	const allTypes = Object.keys(MEDIA_TYPE_LABELS) as MediaType[];
+	const trackedTypes = $derived(new Set(data.trackingList.map(t => t.media.type)));
+
+	let editing = $state(false);
+	let typeOrder = $state<MediaType[]>([]);
+	let showUntracked = $state(false);
+
+	$effect.pre(() => {
+		const saved = data.typePrefs.order as MediaType[];
+		typeOrder = [...saved.filter(t => allTypes.includes(t)), ...allTypes.filter(t => !saved.includes(t))];
+		showUntracked = data.typePrefs.showUntracked;
+	});
+
+	// Chips: ordered types; untracked ones only when enabled (always all in edit mode)
 	const availableTypes = $derived(
-		Array.from(new Set(data.trackingList.map(t => t.media.type)))
+		typeOrder.filter(t => editing || showUntracked || trackedTypes.has(t))
 	);
+
+	function savePrefs() {
+		setTrackingTypeFilterPrefs({ order: typeOrder, showUntracked });
+	}
+
+	function moveType(type: MediaType, delta: -1 | 1) {
+		const i = typeOrder.indexOf(type);
+		const j = i + delta;
+		if (j < 0 || j >= typeOrder.length) return;
+		const next = [...typeOrder];
+		[next[i], next[j]] = [next[j], next[i]];
+		typeOrder = next;
+		savePrefs();
+	}
 
 	// Let's Play only exists for games
 	const tabs = $derived(activeType === 'game' ? [...baseTabs, letsPlayTab] : baseTabs);
@@ -104,24 +132,43 @@
 	</div>
 
 	<!-- Type Filters -->
-	{#if availableTypes.length > 0}
-		<div class="flex flex-wrap gap-1.5">
-			<button
-				class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === 'all' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'}"
-				onclick={() => activeType = 'all'}
-			>
-				All types
-			</button>
-			{#each availableTypes as type (type)}
+	<div class="space-y-2">
+		<div class="flex items-start justify-between gap-3">
+			<div class="flex flex-wrap gap-1.5">
 				<button
-					class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === type ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'}"
-					onclick={() => activeType = type}
+					class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === 'all' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'}"
+					onclick={() => activeType = 'all'}
 				>
-					{MEDIA_TYPE_LABELS[type] ?? type}
+					All types
 				</button>
-			{/each}
+				{#each availableTypes as type (type)}
+					<div class="flex items-center">
+						{#if editing}
+							<button class="px-1 text-slate-400 hover:text-white cursor-pointer" aria-label="Move left" onclick={() => moveType(type, -1)}>‹</button>
+						{/if}
+						<button
+							class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === type ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'} {editing && !trackedTypes.has(type) ? 'opacity-50' : ''}"
+							onclick={() => activeType = type}
+						>
+							{MEDIA_TYPE_LABELS[type] ?? type}
+						</button>
+						{#if editing}
+							<button class="px-1 text-slate-400 hover:text-white cursor-pointer" aria-label="Move right" onclick={() => moveType(type, 1)}>›</button>
+						{/if}
+					</div>
+				{/each}
+			</div>
+			<Button variant="ghost" size="sm" onclick={() => (editing = !editing)}>
+				{editing ? 'Done' : 'Edit'}
+			</Button>
 		</div>
-	{/if}
+		{#if editing}
+			<label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+				<input type="checkbox" bind:checked={showUntracked} onchange={savePrefs} />
+				Show untracked types
+			</label>
+		{/if}
+	</div>
 
 	<!-- List Grid -->
 	{#if filteredList.length === 0}

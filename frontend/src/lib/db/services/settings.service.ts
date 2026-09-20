@@ -41,3 +41,26 @@ export async function setAppSetting(key: string, value: string): Promise<void> {
 export async function setAppSettingBool(key: string, value: boolean): Promise<void> {
 	await setAppSetting(key, value ? 'true' : 'false');
 }
+
+export interface TrackingTypeFilterPrefs {
+	/** Media types in the user's preferred chip order (may be partial). */
+	order: string[];
+	/** Show chips for types that have no tracked items. */
+	showUntracked: boolean;
+}
+
+const TRACKING_TYPE_FILTERS_KEY = 'tracking_type_filters';
+
+export async function getTrackingTypeFilterPrefs(): Promise<TrackingTypeFilterPrefs> {
+	const fallback = { order: [], showUntracked: false };
+	try {
+		const raw = await getAppSetting(TRACKING_TYPE_FILTERS_KEY);
+		return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
+	} catch {
+		return fallback;
+	}
+}
+
+export async function setTrackingTypeFilterPrefs(prefs: TrackingTypeFilterPrefs): Promise<void> {
+	await setAppSetting(TRACKING_TYPE_FILTERS_KEY, JSON.stringify(prefs));
+}
