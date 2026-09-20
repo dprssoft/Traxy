@@ -21,6 +21,15 @@
 
 	type StatusTab = typeof baseTabs[number]['id'] | typeof letsPlayTab.id;
 
+	// Local copy so status changes from cards move items between tabs immediately
+	let items = $derived(data.trackingList);
+
+	function handleTrackingChanged(id: string, t: TrackingListItem['tracking'] | null) {
+		items = t
+			? items.map(i => (i.media.id === id ? { ...i, tracking: t } : i))
+			: items.filter(i => i.media.id !== id);
+	}
+
 	let activeTab = $state<StatusTab>('in_progress');
 	let activeType = $state<MediaType | 'all'>('all');
 	
@@ -28,7 +37,7 @@
 	let currentSort = $state<SortOption>('updatedDesc');
 
 	const allTypes = Object.keys(MEDIA_TYPE_LABELS) as MediaType[];
-	const trackedTypes = $derived(new Set(data.trackingList.map(t => t.media.type)));
+	const trackedTypes = $derived(new Set(items.map(t => t.media.type)));
 
 	let view = $derived(data.view);
 
@@ -81,12 +90,12 @@
 	});
 
 	const typeList = $derived(
-		data.trackingList.filter(t => activeType === 'all' || t.media.type === activeType)
+		items.filter(t => activeType === 'all' || t.media.type === activeType)
 	);
 	const countFor = (id: StatusTab) => typeList.filter(t => t.tracking.status === id).length;
 
 	const filteredList = $derived(
-		data.trackingList
+		items
 			.filter(item => item.tracking.status === activeTab)
 			.filter(item => activeType === 'all' || item.media.type === activeType)
 			.sort((a, b) => {
@@ -213,7 +222,7 @@
 	{:else}
 		<div class="grid {view === 'grid' ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'} gap-3 sm:gap-4">
 			{#each filteredList as item (item.tracking.id)}
-				<TrackingTab {item} compact={view === 'grid'} />
+				<TrackingTab {item} compact={view === 'grid'} onTrackingChanged={(t) => handleTrackingChanged(item.media.id, t)} />
 			{/each}
 		</div>
 	{/if}

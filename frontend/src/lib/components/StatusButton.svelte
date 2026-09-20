@@ -9,13 +9,39 @@
 		media: LocalMedia;
 		tracking: LocalTrackingStatus | null;
 		onTrackingChanged?: (t: LocalTrackingStatus | null) => void;
-		/** 'default' = auto-width (original behaviour); 'full' = full-width pill CTA */
-		variant?: 'default' | 'full';
+		/** 'default' = auto-width (original behaviour); 'full' = full-width pill CTA; 'compact' = small chip for list cards */
+		variant?: 'default' | 'full' | 'compact';
 	}
 
 	let { media, tracking, onTrackingChanged, variant = 'default' }: Props = $props();
 
 	let isOpen = $state(false);
+	let buttonEl = $state<HTMLButtonElement>();
+	let menuStyle = $state('');
+
+	const MENU_WIDTH = 208;
+	const MENU_MAX_HEIGHT = 340;
+
+	// Menu is portaled to <body> so parent overflow/transform/stacking can't clip or bury it.
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return { destroy: () => node.remove() };
+	}
+
+	function toggleMenu() {
+		if (isOpen || !buttonEl) {
+			isOpen = false;
+			return;
+		}
+		const r = buttonEl.getBoundingClientRect();
+		const left = Math.max(8, Math.min(r.left, window.innerWidth - MENU_WIDTH - 8));
+		const openUp = window.innerHeight - r.bottom < MENU_MAX_HEIGHT && r.top > window.innerHeight - r.bottom;
+		const vertical = openUp
+			? `bottom:${window.innerHeight - r.top + 6}px;max-height:${r.top - 14}px`
+			: `top:${r.bottom + 6}px;max-height:${window.innerHeight - r.bottom - 14}px`;
+		menuStyle = `left:${left}px;width:${MENU_WIDTH}px;${vertical}`;
+		isOpen = true;
+	}
 	let isUpdating = $state(false);
 
 	const group = $derived(getMediaTypeGroup(media.type));
@@ -84,10 +110,11 @@
 
 <div class="relative">
 	<button
-		onclick={() => isOpen = !isOpen}
+		bind:this={buttonEl}
+		onclick={toggleMenu}
 		disabled={isUpdating}
-		class="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer text-sm active:scale-95
-			{variant === 'full' ? 'w-full' : 'w-full sm:w-auto min-w-[160px]'}"
+		class="flex items-center justify-between {variant === 'compact' ? 'px-2.5 py-1 text-xs gap-1' : 'px-4 py-2.5 text-sm'} bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer active:scale-95
+			{variant === 'full' ? 'w-full' : variant === 'compact' ? 'w-auto max-w-full' : 'w-full sm:w-auto min-w-[160px]'}"
 	>
 		{#if isUpdating}
 			<span class="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto"></span>
@@ -102,8 +129,9 @@
 	{#if isOpen}
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="fixed inset-0 z-40" onclick={() => isOpen = false}></div>
-		<div class="absolute top-full left-0 mt-1.5 w-52 bg-[#141727]/95 backdrop-blur-xl border border-white/[0.1] rounded-2xl shadow-2xl z-50 overflow-hidden py-1.5 space-y-0.5">
+		<div use:portal>
+			<div class="fixed inset-0 z-[100]" onclick={() => isOpen = false}></div>
+			<div style={menuStyle} class="fixed bg-[#141727] border border-white/[0.1] rounded-2xl shadow-2xl z-[101] overflow-y-auto py-1.5 space-y-0.5">
 			{#each options as opt (opt.value)}
 				<button
 					class="w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer {tracking?.status === opt.value ? 'bg-indigo-600/20 text-indigo-400 font-bold' : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'}"
@@ -132,6 +160,7 @@
 					<span>🗑️</span> Remove from list
 				</button>
 			{/if}
+			</div>
 		</div>
 	{/if}
 </div>

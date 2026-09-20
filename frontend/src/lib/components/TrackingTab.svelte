@@ -7,9 +7,10 @@
 	interface Props {
 		item: TrackingListItem;
 		compact?: boolean;
+		onTrackingChanged?: (t: TrackingListItem['tracking'] | null) => void;
 	}
 
-	let { item, compact = false }: Props = $props();
+	let { item, compact = false, onTrackingChanged }: Props = $props();
 </script>
 
 <Card padding="none" class="overflow-hidden flex {compact ? 'h-28' : 'h-32 sm:h-36'} group hover:border-indigo-500/30 transition-all duration-200">
@@ -44,8 +45,8 @@
 			</Badge>
 		</div>
 
-		<div class="mt-auto scale-90 origin-left">
-			<StatusButton media={item.media} tracking={item.tracking} onTrackingChanged={() => {}} />
+		<div class="mt-auto">
+			<StatusButton media={item.media} tracking={item.tracking} variant="compact" {onTrackingChanged} />
 		</div>
 	</div>
 </Card>
