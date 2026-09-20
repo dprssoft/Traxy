@@ -53,7 +53,10 @@
 
 	function toggleEditing() {
 		editing = !editing;
-		if (editing) dndItems = typeOrder.map(id => ({ id }));
+		if (editing) {
+			activeType = 'all';
+			dndItems = typeOrder.map(id => ({ id }));
+		}
 	}
 
 	function handleDnd(e: CustomEvent<{ items: { id: MediaType }[] }>, final: boolean) {
