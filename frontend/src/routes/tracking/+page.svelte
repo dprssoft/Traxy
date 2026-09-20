@@ -4,20 +4,21 @@
 	import type { MediaType } from '$lib/db/schema';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import TrackingTab from '$lib/components/TrackingTab.svelte';
+	import { Select } from '$lib/components/ui';
 	import MalImport from '$lib/components/MalImport.svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	const tabs = [
+	const baseTabs = [
 		{ id: 'in_progress', label: 'In Progress' },
 		{ id: 'planned', label: 'Planned' },
 		{ id: 'completed', label: 'Completed' },
-		{ id: 'watched_letsplay', label: 'Let\'s Play' },
 		{ id: 'paused', label: 'Paused' },
 		{ id: 'dropped', label: 'Dropped' },
 	] as const;
+	const letsPlayTab = { id: 'watched_letsplay', label: 'Let\'s Play' } as const;
 
-	type StatusTab = typeof tabs[number]['id'];
+	type StatusTab = typeof baseTabs[number]['id'] | typeof letsPlayTab.id;
 
 	let activeTab = $state<StatusTab>('in_progress');
 	let activeType = $state<MediaType | 'all'>('all');
@@ -29,6 +30,18 @@
 	const availableTypes = $derived(
 		Array.from(new Set(data.trackingList.map(t => t.media.type)))
 	);
+
+	// Let's Play only exists for games
+	const tabs = $derived(activeType === 'game' ? [...baseTabs, letsPlayTab] : baseTabs);
+
+	$effect(() => {
+		if (!tabs.some(t => t.id === activeTab)) activeTab = 'in_progress';
+	});
+
+	const typeList = $derived(
+		data.trackingList.filter(t => activeType === 'all' || t.media.type === activeType)
+	);
+	const countFor = (id: StatusTab) => typeList.filter(t => t.tracking.status === id).length;
 
 	const filteredList = $derived(
 		data.trackingList
@@ -66,9 +79,17 @@
 		</select>
 	</div>
 
-	<!-- Status Tabs -->
-	<div class="flex overflow-x-auto gap-2 border-b border-white/[0.06] pb-3 scrollbar-hide">
-		{#each tabs as tab}
+	<!-- Status Tabs (mobile: dropdown) -->
+	<Select
+		class="md:hidden"
+		value={activeTab}
+		options={tabs.map(t => ({ value: t.id, label: `${t.label} (${countFor(t.id)})` }))}
+		onchange={(v) => (activeTab = v as StatusTab)}
+	/>
+
+	<!-- Status Tabs (desktop) -->
+	<div class="hidden md:flex gap-2 border-b border-white/[0.06] pb-3">
+		{#each tabs as tab (tab.id)}
 			{@const active = activeTab === tab.id}
 			<button
 				class="flex items-center gap-2 px-4 py-2 text-xs font-bold whitespace-nowrap rounded-xl transition-all cursor-pointer {active ? 'text-white bg-indigo-600 shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'}"
@@ -76,7 +97,7 @@
 			>
 				{tab.label}
 				<span class="text-[10px] px-1.5 py-0.5 rounded-full {active ? 'bg-white/20 text-white' : 'bg-[#181b2e] text-slate-400'} font-bold">
-					{data.trackingList.filter(t => t.tracking.status === tab.id).length}
+					{countFor(tab.id)}
 				</span>
 			</button>
 		{/each}
@@ -91,7 +112,7 @@
 			>
 				All types
 			</button>
-			{#each availableTypes as type}
+			{#each availableTypes as type (type)}
 				<button
 					class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === type ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'}"
 					onclick={() => activeType = type}
@@ -112,7 +133,7 @@
 			</a>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 			{#each filteredList as item (item.tracking.id)}
 				<TrackingTab {item} />
 			{/each}
