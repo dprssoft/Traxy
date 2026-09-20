@@ -27,7 +27,7 @@ services:
       retries: 3
 
   web:
-    image: track-list-web
+    image: traxy-web
     build:
       context: ./frontend
       dockerfile: Dockerfile

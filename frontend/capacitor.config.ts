@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.yourname.tracklist',
-  appName: 'Track List',
+  appName: 'Traxy',
   webDir: 'build',
   plugins: {
     CapacitorHttp: { enabled: true },

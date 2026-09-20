@@ -93,7 +93,7 @@ if [ -n "$TARGET_DEVICE" ]; then
     echo "📲 Installing APK to device (${TARGET_DEVICE})..."
     adb -s "$TARGET_DEVICE" install -r "${APK_PATH}"
     echo ""
-    echo "🚀 Launching Track List on device..."
+    echo "🚀 Launching Traxy on device..."
     adb -s "$TARGET_DEVICE" shell monkey -p com.yourname.tracklist -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
     echo "✅ Installation complete!"
     if command -v notify-send >/dev/null 2>&1; then
