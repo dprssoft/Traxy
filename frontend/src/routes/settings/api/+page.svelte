@@ -3,6 +3,7 @@
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import SecretInput from '$lib/components/ui/SecretInput.svelte';
 
 	const inputClass =
 		'w-full bg-[#0a0b12] border border-white/[0.1] rounded-xl p-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors text-sm';
@@ -39,13 +40,7 @@
 			<label for="tmdbKey" class="block text-xs font-medium text-slate-400 mb-1.5">
 				TMDB API Key (v3 auth)
 			</label>
-			<input
-				type="password"
-				id="tmdbKey"
-				bind:value={tmdbKey}
-				placeholder="Leave blank to use built-in default"
-				class={inputClass}
-			/>
+			<SecretInput id="tmdbKey" bind:value={tmdbKey} placeholder="Leave blank to use built-in default" class={inputClass} />
 		</div>
 	</div>
 
@@ -75,13 +70,7 @@
 				<label for="igdbClientSecret" class="block text-xs font-medium text-slate-400 mb-1.5">
 					Client Secret
 				</label>
-				<input
-					type="password"
-					id="igdbClientSecret"
-					bind:value={igdbClientSecret}
-					placeholder="Twitch Client Secret"
-					class={inputClass}
-				/>
+				<SecretInput id="igdbClientSecret" bind:value={igdbClientSecret} placeholder="Twitch Client Secret" class={inputClass} />
 			</div>
 		</div>
 		<p class="text-[11px] text-slate-500">
@@ -106,13 +95,7 @@
 			<label for="comicvineKey" class="block text-xs font-medium text-slate-400 mb-1.5">
 				ComicVine API Key
 			</label>
-			<input
-				type="password"
-				id="comicvineKey"
-				bind:value={comicvineKey}
-				placeholder="Leave blank to use built-in default"
-				class={inputClass}
-			/>
+			<SecretInput id="comicvineKey" bind:value={comicvineKey} placeholder="Leave blank to use built-in default" class={inputClass} />
 		</div>
 	</div>
 
