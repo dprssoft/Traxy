@@ -5,7 +5,8 @@
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import TrackingTab from '$lib/components/TrackingTab.svelte';
 	import { setTrackingTypeFilterPrefs } from '$lib/db/services/settings.service';
-	import { Button } from '$lib/components/ui';
+	import { dndzone } from 'svelte-dnd-action';
+	import { Button, Toggle } from '$lib/components/ui';
 
 	let { data }: { data: PageData } = $props();
 
@@ -48,13 +49,17 @@
 		setTrackingTypeFilterPrefs({ order: typeOrder, showUntracked });
 	}
 
-	function moveType(type: MediaType, delta: -1 | 1) {
-		const i = typeOrder.indexOf(type);
-		const j = i + delta;
-		if (j < 0 || j >= typeOrder.length) return;
-		const next = [...typeOrder];
-		[next[i], next[j]] = [next[j], next[i]];
-		typeOrder = next;
+	let dndItems = $state<{ id: MediaType }[]>([]);
+
+	function toggleEditing() {
+		editing = !editing;
+		if (editing) dndItems = typeOrder.map(id => ({ id }));
+	}
+
+	function handleDnd(e: CustomEvent<{ items: { id: MediaType }[] }>, final: boolean) {
+		dndItems = e.detail.items;
+		if (!final) return;
+		typeOrder = dndItems.map(i => i.id);
 		savePrefs();
 	}
 
@@ -122,41 +127,51 @@
 	</div>
 
 	<!-- Type Filters -->
-	<div class="space-y-2">
+	<div class="space-y-3">
 		<div class="flex items-start justify-between gap-3">
-			<div class="flex flex-wrap gap-1.5">
+			<div class="flex flex-wrap gap-1.5 items-center">
 				<button
 					class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === 'all' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'}"
 					onclick={() => activeType = 'all'}
 				>
 					All types
 				</button>
-				{#each availableTypes as type (type)}
-					<div class="flex items-center">
-						{#if editing}
-							<button class="px-1 text-slate-400 hover:text-white cursor-pointer" aria-label="Move left" onclick={() => moveType(type, -1)}>‹</button>
-						{/if}
+				{#if editing}
+					<div
+						class="flex flex-wrap gap-1.5"
+						use:dndzone={{ items: dndItems, flipDurationMs: 150, dropTargetStyle: {} }}
+						onconsider={(e) => handleDnd(e, false)}
+						onfinalize={(e) => handleDnd(e, true)}
+					>
+						{#each dndItems as item (item.id)}
+							<div
+								class="px-3 py-1 rounded-full text-xs font-semibold bg-[#121422] border border-dashed border-white/[0.15] cursor-grab active:cursor-grabbing select-none touch-none {trackedTypes.has(item.id) ? 'text-slate-200' : 'text-slate-500'}"
+							>
+								{MEDIA_TYPE_LABELS[item.id] ?? item.id}
+							</div>
+						{/each}
+					</div>
+				{:else}
+					{#each availableTypes as type (type)}
 						<button
-							class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === type ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'} {editing && !trackedTypes.has(type) ? 'opacity-50' : ''}"
+							class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {activeType === type ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm shadow-indigo-500/10' : 'bg-[#121422] border border-white/[0.06] text-slate-400 hover:text-slate-200'}"
 							onclick={() => activeType = type}
 						>
 							{MEDIA_TYPE_LABELS[type] ?? type}
 						</button>
-						{#if editing}
-							<button class="px-1 text-slate-400 hover:text-white cursor-pointer" aria-label="Move right" onclick={() => moveType(type, 1)}>›</button>
-						{/if}
-					</div>
-				{/each}
+					{/each}
+				{/if}
 			</div>
-			<Button variant="ghost" size="sm" onclick={() => (editing = !editing)}>
+			<Button variant="ghost" size="sm" onclick={toggleEditing}>
 				{editing ? 'Done' : 'Edit'}
 			</Button>
 		</div>
 		{#if editing}
-			<label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-				<input type="checkbox" bind:checked={showUntracked} onchange={savePrefs} />
-				Show untracked types
-			</label>
+			<div class="flex items-center gap-3 text-xs text-slate-300">
+				<Toggle bind:checked={showUntracked} onchange={savePrefs} label="Show untracked types" />
+				<span>Show untracked types</span>
+			</div>
+			<p class="text-[11px] text-slate-500">Drag types to reorder them.</p>
 		{/if}
 	</div>
 
