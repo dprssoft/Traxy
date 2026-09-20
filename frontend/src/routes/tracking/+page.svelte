@@ -5,7 +5,7 @@
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import TrackingTab from '$lib/components/TrackingTab.svelte';
 	import { setTrackingTypeFilterPrefs } from '$lib/db/services/settings.service';
-	import { Button, Select } from '$lib/components/ui';
+	import { Button } from '$lib/components/ui';
 
 	let { data }: { data: PageData } = $props();
 
@@ -90,7 +90,7 @@
 </script>
 
 <div class="space-y-6">
-	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+	<div class="flex flex-row justify-between items-center gap-4">
 		<div class="flex items-center gap-4">
 			<h1 class="text-3xl font-extrabold text-white tracking-tight">My List</h1>
 		</div>
@@ -105,20 +105,12 @@
 		</select>
 	</div>
 
-	<!-- Status Tabs (mobile: dropdown) -->
-	<Select
-		class="md:hidden"
-		value={activeTab}
-		options={tabs.map(t => ({ value: t.id, label: `${t.label} (${countFor(t.id)})` }))}
-		onchange={(v) => (activeTab = v as StatusTab)}
-	/>
-
-	<!-- Status Tabs (desktop) -->
-	<div class="hidden md:flex gap-2 border-b border-white/[0.06] pb-3">
+	<!-- Status Tabs -->
+	<div class="flex overflow-x-auto gap-1 sm:gap-2 border-b border-white/[0.06] pb-3 scrollbar-hide">
 		{#each tabs as tab (tab.id)}
 			{@const active = activeTab === tab.id}
 			<button
-				class="flex items-center gap-2 px-4 py-2 text-xs font-bold whitespace-nowrap rounded-xl transition-all cursor-pointer {active ? 'text-white bg-indigo-600 shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'}"
+				class="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs font-bold whitespace-nowrap rounded-xl transition-all cursor-pointer {active ? 'text-white bg-indigo-600 shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'}"
 				onclick={() => activeTab = tab.id}
 			>
 				{tab.label}
