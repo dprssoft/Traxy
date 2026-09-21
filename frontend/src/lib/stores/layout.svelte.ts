@@ -97,6 +97,10 @@ class LayoutState {
 	mobileMenuOpen = $state(false);
 	bottomNavItems = $state<NavItem[]>(defaultBottomNavItems);
 
+	setBottomNavItems = (items: NavItem[]) => {
+		this.bottomNavItems = items;
+	};
+
 	constructor() {
 		if (typeof window !== 'undefined') {
 			try {
@@ -173,3 +177,5 @@ class LayoutState {
 
 export const layoutStore = new LayoutState();
 export const navItems = defaultBottomNavItems;
+/** Every shortcut a user can put in the bottom bar. */
+export const bottomNavCatalogue = drawerNavItems;

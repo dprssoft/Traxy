@@ -64,3 +64,37 @@ export async function getTrackingTypeFilterPrefs(): Promise<TrackingTypeFilterPr
 export async function setTrackingTypeFilterPrefs(prefs: TrackingTypeFilterPrefs): Promise<void> {
 	await setAppSetting(TRACKING_TYPE_FILTERS_KEY, JSON.stringify(prefs));
 }
+
+export interface BottomNavPrefs {
+	/** Feature flag: when false the default bottom bar is shown. */
+	enabled: boolean;
+	/** Shortcut ids (nav hrefs) in bar order; null = defaults. */
+	ids: string[] | null;
+}
+
+const BOTTOM_NAV_FLAG = 'feat_custom_bottom_nav';
+const BOTTOM_NAV_ITEMS_KEY = 'bottom_nav_items';
+
+export async function getBottomNavPrefs(): Promise<BottomNavPrefs> {
+	const enabled = await getAppSettingBool(BOTTOM_NAV_FLAG, true);
+	try {
+		const raw = await getAppSetting(BOTTOM_NAV_ITEMS_KEY);
+		const ids = raw ? JSON.parse(raw) : null;
+		return { enabled, ids: Array.isArray(ids) ? ids : null };
+	} catch {
+		return { enabled, ids: null };
+	}
+}
+
+export async function setBottomNavIds(ids: string[] | null): Promise<void> {
+	const db = getDb();
+	if (ids === null) {
+		await db.run('DELETE FROM AppSettings WHERE key = ?', [BOTTOM_NAV_ITEMS_KEY]);
+	} else {
+		await setAppSetting(BOTTOM_NAV_ITEMS_KEY, JSON.stringify(ids));
+	}
+}
+
+export async function setBottomNavEnabled(enabled: boolean): Promise<void> {
+	await setAppSettingBool(BOTTOM_NAV_FLAG, enabled);
+}
