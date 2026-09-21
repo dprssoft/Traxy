@@ -9,15 +9,25 @@
 	import MobileNavDrawer from '$lib/components/MobileNavDrawer.svelte';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
-	import { layoutStore } from '$lib/stores/layout';
+	import { layoutStore, bottomNavCatalogue, defaultBottomNavItems } from '$lib/stores/layout';
+	import { resolveBottomNavItems } from '$lib/utils/bottomNav';
 	import { App } from '@capacitor/app';
 	import { Capacitor } from '@capacitor/core';
 	import { page } from '$app/stores';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	const isMirrored = $derived(layoutStore.topbarMirrored);
 	const isMediaPage = $derived($page.url.pathname.startsWith('/media'));
+
+	$effect.pre(() => {
+		const prefs = data.bottomNav;
+		layoutStore.setBottomNavItems(
+			prefs?.enabled
+				? resolveBottomNavItems(prefs.ids, bottomNavCatalogue, defaultBottomNavItems)
+				: defaultBottomNavItems,
+		);
+	});
 
 	beforeNavigate(({ from }) => {
 		const p = from?.url?.pathname ?? null;

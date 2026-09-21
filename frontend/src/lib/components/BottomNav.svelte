@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { navItems } from '$lib/stores/layout';
+	import { layoutStore } from '$lib/stores/layout';
 </script>
 
 <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#0a0b12]/95 backdrop-blur-2xl border-t border-white/[0.08] flex justify-around items-center px-2 py-2 z-40 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl">
-	{#each navItems as item}
+	{#each layoutStore.bottomNavItems as item (item.href)}
 		{@const isActive = item.match($page.url.pathname)}
 		<a 
 			href={item.href} 
