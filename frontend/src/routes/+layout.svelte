@@ -22,6 +22,7 @@
 
 	$effect.pre(() => {
 		const prefs = data.bottomNav;
+		layoutStore.setBottomNavEnabled(prefs?.enabled ?? true);
 		layoutStore.setBottomNavItems(
 			prefs?.enabled
 				? resolveBottomNavItems(prefs.ids, bottomNavCatalogue, defaultBottomNavItems)

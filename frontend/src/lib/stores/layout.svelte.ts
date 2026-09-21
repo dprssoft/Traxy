@@ -97,8 +97,14 @@ class LayoutState {
 	mobileMenuOpen = $state(false);
 	bottomNavItems = $state<NavItem[]>(defaultBottomNavItems);
 
+	bottomNavEnabled = $state(true);
+
 	setBottomNavItems = (items: NavItem[]) => {
 		this.bottomNavItems = items;
+	};
+
+	setBottomNavEnabled = (enabled: boolean) => {
+		this.bottomNavEnabled = enabled;
 	};
 
 	constructor() {
