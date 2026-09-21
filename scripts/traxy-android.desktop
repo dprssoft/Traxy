@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Traxy Android
+Comment=Connect phone over wireless ADB, build and install Traxy
+Exec=/home/yni/Projects/Traxy/scripts/traxy-android.sh
+Icon=phone
+Terminal=true
+Categories=Development;
