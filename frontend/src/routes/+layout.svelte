@@ -7,6 +7,7 @@
 	import Topbar from '$lib/components/Topbar.svelte';
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import MobileNavDrawer from '$lib/components/MobileNavDrawer.svelte';
+	import ContentFilterPrompt from '$lib/components/ContentFilterPrompt.svelte';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
 	import { layoutStore, bottomNavCatalogue, defaultBottomNavItems } from '$lib/stores/layout';
@@ -89,3 +90,6 @@
 	<!-- Mobile Bottom Navigation -->
 	<BottomNav />
 </div>
+
+<!-- First-launch adult content filter question -->
+<ContentFilterPrompt />
