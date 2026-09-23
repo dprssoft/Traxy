@@ -61,7 +61,8 @@ export const initDb = async () => {
         totalPages INTEGER,
         seasonData TEXT,
         timeToBeat TEXT,
-        runtimeMinutes INTEGER
+        runtimeMinutes INTEGER,
+        isAdult INTEGER
     );
     CREATE TABLE IF NOT EXISTS TrackingStatus (
         id TEXT PRIMARY KEY,
@@ -147,6 +148,7 @@ export const initDb = async () => {
         'totalVolumes INTEGER',
         'totalChapters INTEGER',
         'runtimeMinutes INTEGER',
+        'isAdult INTEGER',
     ];
     for (const col of newColumns) {
         try {

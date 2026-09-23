@@ -31,6 +31,8 @@ export interface LocalMedia {
 	totalPages?: number;
 	seasonData?: MediaSeasonData[];
 	runtimeMinutes?: number;
+	/** Adult (18+) content, as flagged by the provider or keyword heuristics. */
+	isAdult?: boolean;
 }
 
 /**
@@ -61,4 +63,6 @@ export interface SearchResult {
 	timeToBeat?: string;
 	seasonData?: MediaSeasonData[];
 	runtimeMinutes?: number;
+	/** Adult (18+) content, as flagged by the provider or keyword heuristics. */
+	isAdult?: boolean;
 }

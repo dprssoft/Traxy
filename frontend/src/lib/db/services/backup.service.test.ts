@@ -21,12 +21,14 @@ const REAL_TABLES = [
 const STALE_TABLE_NAMES = ['LocalMedia', 'CustomCollection'];
 
 let executedQueries: { type: 'query' | 'run'; sql: string; values?: any[] }[] = [];
+// Rows returned for `PRAGMA table_info(...)` — one entry per column in the live table.
+let tableColumns: unknown[] = [];
 
 vi.mock('../index', () => ({
 	getDb: () => ({
 		query: vi.fn(async (sql: string, values: any[] = []) => {
 			executedQueries.push({ type: 'query', sql, values });
-			return { values: [] };
+			return { values: sql.startsWith('PRAGMA table_info') ? tableColumns : [] };
 		}),
 		run: vi.fn(async (sql: string, values: any[] = []) => {
 			executedQueries.push({ type: 'run', sql, values });
@@ -38,6 +40,7 @@ vi.mock('../index', () => ({
 describe('backup.service', () => {
 	beforeEach(() => {
 		executedQueries = [];
+		tableColumns = [];
 	});
 
 	describe('exportDatabaseJson', () => {
@@ -99,6 +102,21 @@ describe('backup.service', () => {
 					(q) => q.type === 'run' && q.sql.startsWith('INSERT INTO Goal'),
 				),
 			).toBe(true);
+		});
+
+		it('pads rows from older backups that predate newly added columns', async () => {
+			tableColumns = new Array(6).fill({});
+			const backup = {
+				data: {
+					...Object.fromEntries(REAL_TABLES.map((t) => [t, []])),
+					Goal: [['goal-1', 'game', 10, 2026, '2026-01-01T00:00:00.000Z']],
+				},
+			};
+			await importDatabaseJson(JSON.stringify(backup));
+
+			const insert = executedQueries.find((q) => q.sql.startsWith('INSERT INTO Goal'));
+			expect(insert?.values).toHaveLength(6);
+			expect(insert?.values?.[5]).toBeNull();
 		});
 	});
 

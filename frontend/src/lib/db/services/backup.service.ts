@@ -39,8 +39,11 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 			if (rows.length === 0) continue;
 
 			// Insert rows dynamically. This assumes rows are arrays of values in the correct column order.
-			// The export gives arrays of arrays for values.
+			// The export gives arrays of arrays for values. Backups made before a column was added have
+			// shorter rows — pad them with NULLs so the positional INSERT still matches the table.
+			const columnCount = (await db.query(`PRAGMA table_info(${table})`)).values?.length ?? 0;
 			for (const row of rows) {
+				while (row.length < columnCount) row.push(null);
 				const placeholders = row.map(() => '?').join(', ');
 				await db.run(`INSERT INTO ${table} VALUES (${placeholders})`, row);
 			}

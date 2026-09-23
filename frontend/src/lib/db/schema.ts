@@ -68,6 +68,7 @@ export interface Media {
   seasonData?: string; // JSON array of MediaSeasonData
   timeToBeat?: string; // JSON string
   runtimeMinutes?: number; // Film / anime-movie runtime in minutes
+  isAdult?: number; // 1 = adult (18+) content flagged by the provider
 }
 
 export interface TrackingStatus {

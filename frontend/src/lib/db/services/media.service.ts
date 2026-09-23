@@ -9,6 +9,7 @@ export const MEDIA_COLUMNS = [
 	'originalTitle', 'serializationYears', 'author', 'country', 'genres', 'releaseStatus',
 	'totalEpisodes', 'totalSeasons', 'totalVolumes', 'totalChapters',
 	'platforms', 'totalPages', 'seasonData', 'timeToBeat', 'runtimeMinutes',
+	'isAdult',
 ];
 
 export function rowToMedia(row: any): LocalMedia {
@@ -48,6 +49,7 @@ export function rowToMedia(row: any): LocalMedia {
 		seasonData: r.seasonData ? JSON.parse(r.seasonData) : undefined,
 		timeToBeat: r.timeToBeat ?? undefined,
 		runtimeMinutes: r.runtimeMinutes ?? undefined,
+		isAdult: r.isAdult == null ? undefined : Boolean(r.isAdult),
 	};
 }
 
@@ -77,6 +79,7 @@ export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }
 		if (!existing.seasonData && data.seasonData) patch.seasonData = data.seasonData;
 		if (!existing.timeToBeat && data.timeToBeat) patch.timeToBeat = data.timeToBeat;
 		if (!existing.runtimeMinutes && data.runtimeMinutes) patch.runtimeMinutes = data.runtimeMinutes;
+		if (data.isAdult !== undefined && existing.isAdult !== data.isAdult) patch.isAdult = data.isAdult;
 		if ((!existing.platforms || existing.platforms.length === 0) && data.platforms?.length) patch.platforms = data.platforms;
 
 		if (Object.keys(patch).length > 0) {
@@ -92,8 +95,8 @@ export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }
 			(id, source, externalId, type, title, year, posterUrl, description,
 			 originalTitle, serializationYears, author, country, genres, releaseStatus,
 			 totalEpisodes, totalSeasons, totalVolumes, totalChapters,
-			 platforms, totalPages, seasonData, timeToBeat, runtimeMinutes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			 platforms, totalPages, seasonData, timeToBeat, runtimeMinutes, isAdult)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			id,
 			data.source,
@@ -118,6 +121,7 @@ export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }
 			data.seasonData ? JSON.stringify(data.seasonData) : null,
 			data.timeToBeat ?? null,
 			data.runtimeMinutes ?? null,
+			data.isAdult === undefined ? null : Number(data.isAdult),
 		],
 	);
 	return { ...data, id };
@@ -189,6 +193,11 @@ export async function updateMediaMeta(id: string, patch: Partial<LocalMedia>): P
 	if (patch.seasonData !== undefined) {
 		updates.push('seasonData = ?');
 		values.push(patch.seasonData ? JSON.stringify(patch.seasonData) : null);
+	}
+
+	if (patch.isAdult !== undefined) {
+		updates.push('isAdult = ?');
+		values.push(Number(patch.isAdult));
 	}
 
 	if (patch.genres !== undefined) {

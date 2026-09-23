@@ -180,6 +180,7 @@
 			totalEpisodes: fullDetails.totalEpisodes,
 			totalSeasons: fullDetails.totalSeasons,
 			totalPages: fullDetails.totalPages,
+			isAdult: fullDetails.isAdult ?? item.isAdult,
 		});
 
 		// 4. Navigate

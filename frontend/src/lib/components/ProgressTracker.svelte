@@ -91,6 +91,7 @@
 				totalSeasons: fullDetails.totalSeasons,
 				totalPages: fullDetails.totalPages,
 				seasonData: fullDetails.seasonData,
+				isAdult: fullDetails.isAdult,
 			});
 			goto(`/media/${inserted.id}`);
 		} finally {

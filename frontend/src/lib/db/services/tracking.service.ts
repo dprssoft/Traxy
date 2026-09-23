@@ -141,7 +141,7 @@ export async function getTrackingWithMedia(): Promise<TrackingListItem[]> {
 			m.description, m.originalTitle, m.serializationYears, m.author, m.country,
 			m.genres, m.releaseStatus, m.totalEpisodes, m.totalSeasons,
 			m.totalVolumes, m.totalChapters, m.platforms, m.totalPages, m.seasonData,
-			m.timeToBeat, m.runtimeMinutes
+			m.timeToBeat, m.runtimeMinutes, m.isAdult
 		FROM TrackingStatus t
 		JOIN Media m ON t.mediaId = m.id
 		ORDER BY t.updatedAt DESC`,
