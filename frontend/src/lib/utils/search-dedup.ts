@@ -48,7 +48,7 @@ export function normalizeTitle(title: string): string {
  */
 export function deduplicateResults(
 	results: SearchResult[],
-	prefs: SearchPrefs = { anilistWinsAnime: true, anilistWinsManga: true, suppressMangaVolumes: true },
+	prefs: SearchPrefs = { anilistWinsAnime: true, anilistWinsManga: true, suppressMangaVolumes: true, flashpointEnabled: false },
 ): SearchResult[] {
 	// Build separate sets for anime and manga/manhwa/manhua covered by AniList.
 	const anilistAnime = new Set<string>();
