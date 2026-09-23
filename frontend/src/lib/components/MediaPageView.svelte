@@ -14,7 +14,7 @@
 	import { getDb } from '$lib/db/index';
 	import { DEFAULT_COLLECTION_NAME } from '$lib/constants';
 	import { v4 as uuidv4 } from 'uuid';
-	import { MarqueeText } from '$lib/components/ui';
+	import { MarqueeText, SensitiveContent } from '$lib/components/ui';
 
 	interface Props {
 		media: LocalMedia;
@@ -423,11 +423,13 @@
 			<!-- Media Poster (or backup image) -->
 			<div class="w-full aspect-[2/3] rounded-2xl overflow-hidden bg-[#16192b] border border-white/[0.08] shadow-xl relative">
 				{#if media.posterUrl}
-					<img
-						src={media.posterUrl}
-						alt={media.title}
-						class="w-full h-full object-cover"
-					/>
+					<SensitiveContent isAdult={media.isAdult} revealable class="w-full h-full">
+						<img
+							src={media.posterUrl}
+							alt={media.title}
+							class="w-full h-full object-cover"
+						/>
+					</SensitiveContent>
 				{:else}
 					<!-- Backup / Placeholder image -->
 					<div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-[#1b1f35] to-[#101322]">

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { TrackingListItem } from '$lib/types/trackingTypes';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
-	import { Badge, Card } from '$lib/components/ui';
+	import { Badge, Card, SensitiveContent } from '$lib/components/ui';
 	import StatusButton from './StatusButton.svelte';
 
 	interface Props {
@@ -17,7 +17,9 @@
 	<!-- Poster -->
 	<a href={`/media/${item.media.id}`} class="{compact ? 'w-16' : 'w-24'} h-full shrink-0 overflow-hidden bg-slate-900">
 		{#if item.media.posterUrl}
-			<img src={item.media.posterUrl} alt={item.media.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+			<SensitiveContent isAdult={item.media.isAdult} class="w-full h-full">
+				<img src={item.media.posterUrl} alt={item.media.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+			</SensitiveContent>
 		{:else}
 			<div class="w-full h-full bg-[#181b2e] flex items-center justify-center">
 				<span class="text-slate-500 font-bold text-lg">{item.media.title.substring(0, 2)}</span>

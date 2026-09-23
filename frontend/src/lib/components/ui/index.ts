@@ -14,3 +14,4 @@ export { default as EmptyState } from './EmptyState.svelte';
 export { default as Shimmer } from './Shimmer.svelte';
 export { default as MarqueeText } from './MarqueeText.svelte';
 export { default as SecretInput } from './SecretInput.svelte';
+export { default as SensitiveContent } from './SensitiveContent.svelte';

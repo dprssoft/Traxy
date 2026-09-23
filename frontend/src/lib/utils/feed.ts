@@ -83,6 +83,7 @@ export function groupConsecutiveProgress(
 				mediaId: cur.mediaId,
 				mediaTitle: cur.mediaTitle,
 				mediaPosterUrl: cur.mediaPosterUrl,
+				mediaIsAdult: cur.mediaIsAdult,
 				mediaType: cur.mediaType,
 				eventType: cur.eventType!,
 				category: cur.category ?? 'user_action',

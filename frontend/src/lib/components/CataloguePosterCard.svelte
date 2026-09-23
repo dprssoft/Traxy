@@ -2,6 +2,7 @@
 	import type { SearchResult } from '$lib/types/mediaTypes';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import { getTypeColor } from '$lib/stores/search.svelte';
+	import SensitiveContent from '$lib/components/ui/SensitiveContent.svelte';
 
 	interface Props {
 		item: SearchResult;
@@ -21,12 +22,14 @@
 		class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-[#181b2e] border border-white/[0.08] shadow-lg group-hover:shadow-indigo-500/20 group-hover:border-indigo-500/30 transition-all duration-300 group-hover:scale-[1.04]"
 	>
 		{#if item.posterUrl}
-			<img
-				src={item.posterUrl}
-				alt={item.title}
-				class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-				loading="lazy"
-			/>
+			<SensitiveContent isAdult={item.isAdult} class="w-full h-full">
+				<img
+					src={item.posterUrl}
+					alt={item.title}
+					class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+					loading="lazy"
+				/>
+			</SensitiveContent>
 		{:else}
 			<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1a1d2e] to-[#121422]">
 				<span class="text-2xl sm:text-3xl font-black text-slate-600">{item.title.substring(0, 2)}</span>

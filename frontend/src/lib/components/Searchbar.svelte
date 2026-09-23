@@ -13,6 +13,7 @@
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
+	import SensitiveContent from '$lib/components/ui/SensitiveContent.svelte';
 	import type { SearchResult } from '$lib/types/mediaTypes';
 	import type { MediaType } from '$lib/db/schema';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
@@ -294,7 +295,9 @@
 							onclick={() => onResultClick(item)}
 						>
 							{#if item.posterUrl}
-								<img src={item.posterUrl} alt={item.title} class="w-12 h-16 object-cover rounded-lg shadow bg-slate-800 shrink-0 group-hover:scale-105 transition-transform" />
+								<SensitiveContent isAdult={item.isAdult} badge={false} class="w-12 h-16 rounded-lg shrink-0">
+									<img src={item.posterUrl} alt={item.title} class="w-12 h-16 object-cover rounded-lg shadow bg-slate-800 shrink-0 group-hover:scale-105 transition-transform" />
+								</SensitiveContent>
 							{:else}
 								<div class="w-12 h-16 bg-[#181b2e] rounded-lg border border-white/[0.06] flex items-center justify-center shrink-0">
 									<span class="text-slate-500 text-xs font-bold text-center leading-tight">{item.title.substring(0, 2)}</span>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { FeedItem, ActivityItem, GroupedActivityItem } from '$lib/types/activityTypes';
 	import { isGrouped } from '$lib/types/activityTypes';
+	import { SensitiveContent } from '$lib/components/ui';
 	import { getMediaTypeGroup, STATUS_LABELS_BY_GROUP, MEDIA_TYPE_LABELS } from '$lib/constants';
 
 	interface Props {
@@ -377,11 +378,17 @@
 		<!-- 2. Entry Image: Media poster or System image -->
 		<div class="relative shrink-0">
 			{#if imageKind === 'poster' && posterUrl}
-				<img
-					src={posterUrl}
-					alt={title}
-					class="w-13 h-13 sm:w-15 sm:h-15 object-cover rounded-xl shadow-md bg-slate-900 border border-white/[0.08] group-hover:scale-105 transition-transform"
-				/>
+				<SensitiveContent
+					isAdult={activity.mediaIsAdult}
+					badge={false}
+					class="w-13 h-13 sm:w-15 sm:h-15 rounded-xl"
+				>
+					<img
+						src={posterUrl}
+						alt={title}
+						class="w-13 h-13 sm:w-15 sm:h-15 object-cover rounded-xl shadow-md bg-slate-900 border border-white/[0.08] group-hover:scale-105 transition-transform"
+					/>
+				</SensitiveContent>
 			{:else}
 				<div
 					class="w-13 h-13 sm:w-15 sm:h-15 rounded-xl border flex items-center justify-center shadow-inner group-hover:brightness-110 transition-all {systemBgClass()}"

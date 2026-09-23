@@ -31,12 +31,16 @@ function getCategoryForEventType(eventType: ActivityItem['eventType']): Activity
 	return 'user_action';
 }
 
+// ActivityLog columns plus the linked media's adult flag, so feed posters can be blurred.
+const ACTIVITY_SELECT = 'SELECT a.*, m.isAdult AS mediaIsAdult FROM ActivityLog a LEFT JOIN Media m ON m.id = a.mediaId';
+
 function rowToItem(row: any): ActivityItem {
-	let id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt;
+	let id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult;
 	if (Array.isArray(row)) {
-		[id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt] = row;
+		[id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult] =
+			row;
 	} else {
-		({ id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt } =
+		({ id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult } =
 			row);
 	}
 	const parsedPayload = payload
@@ -51,6 +55,7 @@ function rowToItem(row: any): ActivityItem {
 		mediaId: mediaId ?? undefined,
 		mediaTitle: mediaTitle ?? undefined,
 		mediaPosterUrl: mediaPosterUrl ?? undefined,
+		mediaIsAdult: mediaIsAdult == null ? undefined : Boolean(mediaIsAdult),
 		mediaType: mediaType ? (mediaType as ActivityItem['mediaType']) : undefined,
 		eventType: evt,
 		category,
@@ -131,7 +136,7 @@ export async function logActivity(
 export async function getActivityFeed(limit = 20, offset = 0): Promise<ActivityItem[]> {
 	const db = getDb();
 	const result = await db.query(
-		'SELECT * FROM ActivityLog ORDER BY occurredAt DESC, rowid DESC LIMIT ? OFFSET ?',
+		`${ACTIVITY_SELECT} ORDER BY a.occurredAt DESC, a.rowid DESC LIMIT ? OFFSET ?`,
 		[limit, offset],
 	);
 	if (!result.values) return [];
@@ -142,7 +147,7 @@ export async function getActivityFeed(limit = 20, offset = 0): Promise<ActivityI
 export async function getActivityForMedia(mediaId: string): Promise<ActivityItem[]> {
 	const db = getDb();
 	const result = await db.query(
-		'SELECT * FROM ActivityLog WHERE mediaId = ? ORDER BY occurredAt DESC, rowid DESC',
+		`${ACTIVITY_SELECT} WHERE a.mediaId = ? ORDER BY a.occurredAt DESC, a.rowid DESC`,
 		[mediaId],
 	);
 	if (!result.values) return [];

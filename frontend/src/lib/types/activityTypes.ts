@@ -37,6 +37,8 @@ export interface ActivityItem {
 	mediaId?: string;
 	mediaTitle?: string;
 	mediaPosterUrl?: string;
+	/** Adult flag of the linked media (joined at read time, not stored in ActivityLog). */
+	mediaIsAdult?: boolean;
 	mediaType?: MediaType;
 	eventType: ActivityEventType;
 	category?: ActivityCategory;
@@ -64,6 +66,8 @@ export interface GroupedActivityItem {
 	mediaId?: string;
 	mediaTitle?: string;
 	mediaPosterUrl?: string;
+	/** Adult flag of the linked media (joined at read time, not stored in ActivityLog). */
+	mediaIsAdult?: boolean;
 	mediaType?: MediaType;
 	eventType: ActivityEventType; // always episode_watched | chapter_read
 	category: ActivityCategory;
