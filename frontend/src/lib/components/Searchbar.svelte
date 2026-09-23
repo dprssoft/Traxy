@@ -11,6 +11,8 @@
 	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
 	import { deduplicateResults } from '$lib/utils/search-dedup';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
+	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
+	import { applyContentFilter } from '$lib/utils/contentFilter';
 	import type { SearchResult } from '$lib/types/mediaTypes';
 	import type { MediaType } from '$lib/db/schema';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
@@ -19,6 +21,7 @@
 	let isFocused = $state(false);
 	let isLoading = $state(false);
 	let results = $state<SearchResult[]>([]);
+	const visibleResults = $derived(applyContentFilter(results, contentFilterStore.effectiveMode));
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	let currentSearchId = 0;
 
@@ -282,10 +285,10 @@
 					{:else}
 						<div class="p-8 text-center text-slate-500 text-sm">Type a title to search</div>
 					{/if}
-				{:else if results.length === 0}
+				{:else if visibleResults.length === 0}
 					<div class="p-8 text-center text-slate-500 text-sm">Nothing found</div>
 				{:else}
-					{#each results as item}
+					{#each visibleResults as item}
 						<button 
 							class="w-full flex gap-3 p-2.5 hover:bg-white/[0.06] rounded-xl text-left items-start transition-all cursor-pointer group"
 							onclick={() => onResultClick(item)}

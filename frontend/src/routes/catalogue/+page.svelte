@@ -3,6 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import CatalogueRow from '$lib/components/CatalogueRow.svelte';
+	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
+	import { applyContentFilter } from '$lib/utils/contentFilter';
 	import { searchState } from '$lib/stores/search.svelte';
 	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
 	import { getTmdbDetails } from '$lib/db/sources/tmdb';
@@ -449,7 +451,7 @@
 		{#each CATEGORIES as cat (cat.id)}
 			<CatalogueRow
 				title={cat.id === 'top_rated' && selectedType === 'book' ? 'Popular This Year' : cat.label}
-				items={categoryData[cat.id]}
+				items={applyContentFilter(categoryData[cat.id], contentFilterStore.effectiveMode)}
 				loading={categoryLoading[cat.id]}
 				error={categoryError[cat.id]}
 				{onItemClick}

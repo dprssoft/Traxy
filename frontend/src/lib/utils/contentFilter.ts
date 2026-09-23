@@ -32,3 +32,19 @@ const ADULT_KEYWORD_RE = new RegExp(
 export function hasAdultKeywords(...texts: (string | undefined | null)[]): boolean {
 	return texts.some((t) => !!t && ADULT_KEYWORD_RE.test(t));
 }
+
+/** How adult content is treated: removed, shown blurred, or shown as-is. */
+export type ContentFilterMode = 'hide' | 'blur' | 'show';
+
+/** Drop adult items in 'hide' mode; 'blur' and 'show' keep the list intact. */
+export function applyContentFilter<T extends { isAdult?: boolean }>(
+	items: T[],
+	mode: ContentFilterMode,
+): T[] {
+	return mode === 'hide' ? items.filter((i) => !i.isAdult) : items;
+}
+
+/** Whether an item's artwork should be blurred: adult content while the filter is on. */
+export function shouldBlurAdult(item: { isAdult?: boolean }, mode: ContentFilterMode): boolean {
+	return !!item.isAdult && mode !== 'show';
+}

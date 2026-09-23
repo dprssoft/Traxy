@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hasAdultKeywords } from './contentFilter';
+import { applyContentFilter, hasAdultKeywords, shouldBlurAdult } from './contentFilter';
 
 describe('hasAdultKeywords', () => {
 	it.each([
@@ -27,5 +27,34 @@ describe('hasAdultKeywords', () => {
 	it('checks every text and ignores missing ones', () => {
 		expect(hasAdultKeywords(undefined, null, '', 'Romance', 'Erotica')).toBe(true);
 		expect(hasAdultKeywords(undefined, null)).toBe(false);
+	});
+});
+
+describe('applyContentFilter', () => {
+	const items = [
+		{ title: 'Safe', isAdult: false },
+		{ title: 'Adult', isAdult: true },
+		{ title: 'Unknown' },
+	];
+
+	it('drops adult items in hide mode and keeps unflagged ones', () => {
+		expect(applyContentFilter(items, 'hide').map((i) => i.title)).toEqual(['Safe', 'Unknown']);
+	});
+
+	it.each(['blur', 'show'] as const)('keeps every item in %s mode', (mode) => {
+		expect(applyContentFilter(items, mode)).toEqual(items);
+	});
+});
+
+describe('shouldBlurAdult', () => {
+	it('blurs adult items while the filter is on', () => {
+		expect(shouldBlurAdult({ isAdult: true }, 'blur')).toBe(true);
+		expect(shouldBlurAdult({ isAdult: true }, 'hide')).toBe(true);
+	});
+
+	it('never blurs with the filter off or for non-adult items', () => {
+		expect(shouldBlurAdult({ isAdult: true }, 'show')).toBe(false);
+		expect(shouldBlurAdult({ isAdult: false }, 'blur')).toBe(false);
+		expect(shouldBlurAdult({}, 'hide')).toBe(false);
 	});
 });

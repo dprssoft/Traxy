@@ -1,7 +1,5 @@
 import type { AdultFilterMode, ContentFilterPrefs } from '$lib/db/services/settings.service';
-
-/** What the UI does with adult content right now: 'show' when the filter is off. */
-export type ContentFilterEffectiveMode = AdultFilterMode | 'show';
+import type { ContentFilterMode } from '$lib/utils/contentFilter';
 
 class ContentFilterState {
 	enabled = $state(true);
@@ -9,7 +7,8 @@ class ContentFilterState {
 	/** Whether the first-launch prompt has been answered. */
 	asked = $state(true);
 
-	get effectiveMode(): ContentFilterEffectiveMode {
+	/** What the UI does with adult content right now: 'show' when the filter is off. */
+	get effectiveMode(): ContentFilterMode {
 		return this.enabled ? this.mode : 'show';
 	}
 
