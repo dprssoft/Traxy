@@ -1,12 +1,20 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { setCache } from '../apiCache';
 import { withCache, fetchJson } from '../fetchUtils';
+import { hasAdultKeywords } from '$lib/utils/contentFilter';
 
 const BASE_URL = 'https://openlibrary.org';
 const IMAGE_BASE = 'https://covers.openlibrary.org/b/id';
 // Down from the original 15s — long enough for OpenLibrary's public API without holding up
 // a whole catalogue category row as long as the old timeout did.
 const OPENLIBRARY_TIMEOUT_MS = 8000;
+// search.json only returns `subject` when asked for it explicitly.
+const SEARCH_FIELDS = 'key,title,first_publish_year,cover_i,subject';
+
+/** Open Library has no adult flag — fall back to keywords in the subject tags. */
+function subjectsAreAdult(subjects?: string[]): boolean {
+	return hasAdultKeywords(...(subjects ?? []));
+}
 
 export async function searchOpenLibrary(query: string): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
@@ -15,7 +23,7 @@ export async function searchOpenLibrary(query: string): Promise<SearchResult[]> 
 	try {
 		return await withCache(cacheKey, async () => {
 			const data = await fetchJson<{ docs: unknown[] }>(
-				`${BASE_URL}/search.json?q=${encodeURIComponent(query)}&limit=10`,
+				`${BASE_URL}/search.json?q=${encodeURIComponent(query)}&limit=10&fields=${SEARCH_FIELDS}`,
 				OPENLIBRARY_TIMEOUT_MS,
 			);
 
@@ -26,6 +34,7 @@ export async function searchOpenLibrary(query: string): Promise<SearchResult[]> 
 				title: item.title,
 				year: item.first_publish_year,
 				posterUrl: item.cover_i ? `${IMAGE_BASE}/${item.cover_i}-M.jpg` : undefined,
+				isAdult: subjectsAreAdult(item.subject),
 				// authors: item.author_name ? item.author_name.join(', ') : undefined, // future enhancement
 			}));
 		});
@@ -40,6 +49,7 @@ interface OpenLibraryWorkDetail {
 	first_publish_date?: string;
 	covers?: number[];
 	description?: string | { value?: string };
+	subjects?: string[];
 }
 
 export async function getOpenLibraryDetails(id: string): Promise<SearchResult | null> {
@@ -61,6 +71,7 @@ export async function getOpenLibraryDetails(id: string): Promise<SearchResult | 
 				year: item.first_publish_date ? parseInt(item.first_publish_date.split(' ')[2] || item.first_publish_date) : undefined,
 				posterUrl: item.covers && item.covers.length > 0 ? `${IMAGE_BASE}/${item.covers[0]}-M.jpg` : undefined,
 				description: description || undefined,
+				isAdult: subjectsAreAdult(item.subjects),
 			};
 
 			return result;
@@ -108,7 +119,7 @@ export async function discoverOpenLibraryNew(forceRefresh = false): Promise<Sear
 	const cacheKey = 'openlibrary:discover:new';
 	const fetcher = async (): Promise<SearchResult[]> => {
 		const data = await fetchJson<{ docs: unknown[] }>(
-			`${BASE_URL}/search.json?sort=new&limit=20&has_fulltext=false`,
+			`${BASE_URL}/search.json?sort=new&limit=20&has_fulltext=false&fields=${SEARCH_FIELDS}`,
 			OPENLIBRARY_TIMEOUT_MS,
 		);
 
@@ -119,6 +130,7 @@ export async function discoverOpenLibraryNew(forceRefresh = false): Promise<Sear
 			title: item.title,
 			year: item.first_publish_year,
 			posterUrl: item.cover_i ? `${IMAGE_BASE}/${item.cover_i}-M.jpg` : undefined,
+			isAdult: subjectsAreAdult(item.subject),
 		}));
 	};
 

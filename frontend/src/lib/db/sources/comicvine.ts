@@ -3,6 +3,7 @@ import { fetchJson, parseYear, withCache } from '../fetchUtils';
 import { setCache } from '../apiCache';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
 import { Capacitor } from '@capacitor/core';
+import { hasAdultKeywords } from '$lib/utils/contentFilter';
 
 // Note: Comic Vine blocks standard CORS browser fetch.
 // Capacitor bypasses this natively. For web dev, a proxy is configured in vite.config.ts.
@@ -54,6 +55,8 @@ function mapVolume(item: ComicVineVolume): SearchResult {
 		country: undefined,
 		totalChapters: item.count_of_issues ?? undefined,
 		releaseStatus: item.count_of_issues ? 'Published' : undefined,
+		// ComicVine has no adult flag — fall back to keywords in the title and blurbs.
+		isAdult: hasAdultKeywords(item.name, item.deck, item.description),
 	};
 }
 

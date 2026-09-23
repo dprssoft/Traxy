@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { discoverOpenLibraryTrending } from './openlibrary';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { discoverOpenLibraryTrending, searchOpenLibrary } from './openlibrary';
 
 vi.mock('../apiCache', () => ({
 	getCached: vi.fn(async () => null),
@@ -46,5 +46,32 @@ describe('discoverOpenLibraryTrending', () => {
 
 		expect(getCached).not.toHaveBeenCalled();
 		expect(fetch).toHaveBeenCalled();
+	});
+});
+
+describe('searchOpenLibrary adult flag', () => {
+	beforeEach(async () => {
+		vi.stubGlobal('fetch', vi.fn());
+		const { getCached } = await import('../apiCache');
+		(getCached as Mock).mockReset().mockResolvedValue(null);
+	});
+
+	it('requests subjects and flags books with adult subject tags', async () => {
+		(fetch as Mock).mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				docs: [
+					{ key: '/works/OL1W', title: 'Shades', subject: ['Romance', 'Fiction, erotica'] },
+					{ key: '/works/OL2W', title: 'Affairs', subject: ['Adultery'] },
+					{ key: '/works/OL3W', title: 'No Subjects' },
+				],
+			}),
+		});
+
+		const results = await searchOpenLibrary('shades');
+
+		expect(results.map((r) => r.isAdult)).toEqual([true, false, false]);
+		expect((fetch as Mock).mock.calls[0][0]).toContain('fields=');
+		expect((fetch as Mock).mock.calls[0][0]).toContain('subject');
 	});
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { discoverAnilistTrending, getAnilistDetails } from './anilist';
 
 vi.mock('../apiCache', () => ({
@@ -57,5 +57,26 @@ describe('anilist posterUrl mapping', () => {
 		const result = await getAnilistDetails(1);
 
 		expect(result?.posterUrl).toBe('https://example.com/xl.jpg');
+	});
+
+	it('flags adult media from the isAdult field or the Hentai genre', async () => {
+		(fetch as Mock).mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				data: {
+					Page: {
+						media: [
+							anilistItem({ id: 1, isAdult: true }),
+							anilistItem({ id: 2, isAdult: false, genres: ['Hentai'] }),
+							anilistItem({ id: 3, isAdult: false, genres: ['Action'] }),
+						],
+					},
+				},
+			}),
+		});
+
+		const results = await discoverAnilistTrending('ANIME');
+
+		expect(results.map((r) => r.isAdult)).toEqual([true, true, false]);
 	});
 });

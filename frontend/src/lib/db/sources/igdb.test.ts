@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { discoverIgdbTrending } from './igdb';
 
 vi.mock('../apiCache', () => ({
@@ -41,6 +41,26 @@ describe('discoverIgdbTrending', () => {
 		]);
 		expect(fetch).toHaveBeenCalledTimes(2);
 		expect((fetch as any).mock.calls[0][0]).toContain('oauth2/token');
+	});
+
+	it('requests themes and flags games with the Erotic theme as adult', async () => {
+		(fetch as Mock).mockImplementation(async (url: string) =>
+			url.includes('oauth2/token')
+				? { ok: true, json: async () => ({ access_token: 'tok', expires_in: 7200 }) }
+				: {
+						ok: true,
+						json: async () => [
+							{ id: 1, name: 'Adult Game', themes: [1, 42] },
+							{ id: 2, name: 'Safe Game', themes: [1] },
+							{ id: 3, name: 'No Themes' },
+						],
+					},
+		);
+
+		const results = await discoverIgdbTrending();
+
+		expect(results.map((r) => r.isAdult)).toEqual([true, false, false]);
+		expect((fetch as Mock).mock.calls[1][1].body).toContain('themes');
 	});
 
 	it('returns [] without ever calling fetch when no IGDB credentials are configured', async () => {

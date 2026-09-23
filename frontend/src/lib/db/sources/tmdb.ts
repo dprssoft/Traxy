@@ -16,6 +16,7 @@ interface TmdbSearchItem {
 	first_air_date?: string;
 	poster_path?: string | null;
 	overview?: string;
+	adult?: boolean;
 }
 
 interface TmdbSearchResponse {
@@ -43,6 +44,7 @@ interface TmdbItemDetails {
 	};
 	created_by?: { name: string }[];
 	runtime?: number;
+	adult?: boolean;
 }
 
 function posterUrl(path?: string | null): string | undefined {
@@ -76,7 +78,7 @@ export async function searchTmdb(query: string, language = 'en-US'): Promise<Sea
 	try {
 		return await withCache(`tmdb:search:${language}:${query}`, async () => {
 			const data = await fetchJson<TmdbSearchResponse>(
-				`${BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=${language}&page=1`,
+				`${BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=${language}&page=1&include_adult=true`,
 			);
 			return data.results
 				.filter((item) => item.media_type === 'movie' || item.media_type === 'tv')
@@ -89,6 +91,7 @@ export async function searchTmdb(query: string, language = 'en-US'): Promise<Sea
 						year: parseYear(item.release_date ?? item.first_air_date),
 						posterUrl: posterUrl(item.poster_path),
 						description: item.overview || undefined,
+						isAdult: item.adult === true,
 					}),
 				);
 		});
@@ -156,6 +159,7 @@ export async function getTmdbDetails(
 							}))
 					: undefined,
 				runtimeMinutes: type === 'film' ? (data.runtime ?? undefined) : undefined,
+				isAdult: data.adult === true,
 			};
 		});
 	} catch {
@@ -201,6 +205,7 @@ export async function discoverTmdbTrending(
 					year: parseYear(item.release_date ?? item.first_air_date),
 					posterUrl: posterUrl(item.poster_path),
 					description: item.overview || undefined,
+					isAdult: item.adult === true,
 				}),
 			);
 	};
@@ -251,6 +256,7 @@ export async function discoverTmdbNew(
 				year: parseYear(item.release_date ?? item.first_air_date),
 				posterUrl: posterUrl(item.poster_path),
 				description: item.overview || undefined,
+				isAdult: item.adult === true,
 			}),
 		);
 	};
@@ -296,6 +302,7 @@ export async function discoverTmdbTopRated(
 				year: parseYear(item.release_date ?? item.first_air_date),
 				posterUrl: posterUrl(item.poster_path),
 				description: item.overview || undefined,
+				isAdult: item.adult === true,
 			}),
 		);
 	};

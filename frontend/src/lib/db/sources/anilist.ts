@@ -26,6 +26,7 @@ query ($query: String, $type: MediaType) {
       description
       countryOfOrigin
       genres
+      isAdult
       duration
       staff(sort: RELEVANCE, perPage: 5) {
         edges {
@@ -75,6 +76,7 @@ query ($id: Int) {
     description
     countryOfOrigin
     genres
+    isAdult
     duration
     staff(sort: RELEVANCE, perPage: 5) {
       edges {
@@ -153,6 +155,7 @@ function mapAnilistItem(item: any): SearchResult {
 		author: extractAnilistAuthor(item),
 		country: mapAnilistCountry(item.countryOfOrigin),
 		genres: item.genres?.length > 0 ? item.genres : undefined,
+		isAdult: item.isAdult === true || item.genres?.includes('Hentai') === true,
 		releaseStatus: mapAnilistStatus(item.status),
 		totalEpisodes: item.episodes || undefined,
 		totalSeasons: undefined, // AniList doesn't do seasons the same way
@@ -294,6 +297,7 @@ query ($type: MediaType, $sort: [MediaSort], $status: MediaStatus, $page: Int, $
       description
       countryOfOrigin
       genres
+      isAdult
       duration
       staff(sort: RELEVANCE, perPage: 3) {
         edges {

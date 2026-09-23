@@ -153,6 +153,9 @@ export const initDb = async () => {
     for (const col of newColumns) {
         try {
             await db.execute(`ALTER TABLE Media ADD COLUMN ${col};`);
+            // Cached provider responses predate adult-content flags — drop them once so
+            // results get re-fetched with `isAdult` set.
+            if (col.startsWith('isAdult')) await db.execute('DELETE FROM ApiCache;');
         } catch {
             // Ignore if column already exists
         }

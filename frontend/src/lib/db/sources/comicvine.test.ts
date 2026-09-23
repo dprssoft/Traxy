@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { discoverComicVineNew } from './comicvine';
 
 vi.mock('../apiCache', () => ({
@@ -37,6 +37,23 @@ describe('discoverComicVineNew', () => {
 		expect(result[0]).toMatchObject({ externalId: '1', source: 'comicvine', title: 'New Comic', year: 2022 });
 		const { setCache } = await import('../apiCache');
 		expect(setCache).toHaveBeenCalledWith('comicvine:discover:new', result);
+	});
+
+	it('flags volumes whose title or blurbs contain adult keywords', async () => {
+		(fetch as Mock).mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				results: [
+					{ id: 1, name: 'Night Tales', deck: 'An erotic anthology' },
+					{ id: 2, name: 'Hero', description: '<p>For <b>adults only</b>.</p>' },
+					{ id: 3, name: 'Batman', deck: 'The Dark Knight returns' },
+				],
+			}),
+		});
+
+		const results = await discoverComicVineNew();
+
+		expect(results.map((r) => r.isAdult)).toEqual([true, true, false]);
 	});
 
 	it('bypasses the cache and re-fetches when forceRefresh is true', async () => {

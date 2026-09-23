@@ -6,6 +6,7 @@
 
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { withCache } from '../fetchUtils';
+import { hasAdultKeywords } from '$lib/utils/contentFilter';
 
 const API_BASE = 'https://db-api.unstable.life/search';
 const IMAGE_BASE = 'https://infinity.unstable.life/Flashpoint/Data/Images';
@@ -14,6 +15,8 @@ const SEARCH_FIELDS = 'id,title,alternateTitles,developer,publisher,platform,rel
 // The API returns matches in id order, not by relevance — fetch a wide set and rank locally.
 const SEARCH_FETCH_LIMIT = 1000;
 const SEARCH_RESULT_LIMIT = 20;
+// Flashpoint tags that mark adult entries (the API's own `filter=true` hides these server-side).
+const ADULT_TAGS = new Set(['Adult', 'Sexual Content', 'Nudity']);
 
 // ── Raw API types ─────────────────────────────────────────────────────────────
 
@@ -58,6 +61,11 @@ function relevance(g: FpGame, q: string): number {
 	return 3;
 }
 
+function isAdultGame(g: FpGame): boolean {
+	const tags = g.tags ?? [];
+	return tags.some((t) => ADULT_TAGS.has(t)) || hasAdultKeywords(g.title, ...tags);
+}
+
 function mapGame(g: FpGame): SearchResult {
 	return {
 		externalId: g.id,
@@ -71,6 +79,7 @@ function mapGame(g: FpGame): SearchResult {
 		author: [g.developer, g.publisher].filter(Boolean).join(' / ') || undefined,
 		platforms: splitList(g.platform),
 		genres: (g.tags ?? []).filter((t) => t !== 'Auto-zipped'),
+		isAdult: isAdultGame(g),
 	};
 }
 
@@ -88,7 +97,8 @@ export async function searchFlashpoint(query: string): Promise<SearchResult[]> {
 			const url = new URL(API_BASE);
 			url.searchParams.set('title', query.trim());
 			url.searchParams.set('library', 'arcade');
-			url.searchParams.set('filter', 'true'); // hide extreme / broken entries
+			// Unfiltered: adult entries are flagged via `isAdult` and hidden by the content filter.
+			url.searchParams.set('filter', 'false');
 			url.searchParams.set('fields', SEARCH_FIELDS);
 			url.searchParams.set('limit', String(SEARCH_FETCH_LIMIT));
 
@@ -97,11 +107,20 @@ export async function searchFlashpoint(query: string): Promise<SearchResult[]> {
 
 			const games: FpGame[] = await res.json();
 			const q = query.trim().toLowerCase();
-			return games
+			const ranked = games
 				.map((g) => ({ g, rank: relevance(g, q) }))
 				.sort((a, b) => a.rank - b.rank || a.g.title.localeCompare(b.g.title))
-				.slice(0, SEARCH_RESULT_LIMIT)
 				.map(({ g }) => mapGame(g));
+			// Keep adult entries in their ranked place, but still fill SEARCH_RESULT_LIMIT
+			// non-adult slots so hiding them doesn't leave the list short.
+			const results: SearchResult[] = [];
+			let safe = 0;
+			for (const r of ranked) {
+				if (safe >= SEARCH_RESULT_LIMIT) break;
+				results.push(r);
+				if (!r.isAdult) safe++;
+			}
+			return results;
 		});
 	} catch (err) {
 		console.error('[flashpoint] search failed', err);

@@ -46,7 +46,11 @@ interface IgdbGame {
 	first_release_date?: number; // Unix timestamp (seconds)
 	platforms?: IgdbPlatform[];
 	summary?: string;
+	themes?: number[]; // theme ids
 }
+
+/** IGDB theme id for "Erotic". */
+const IGDB_THEME_EROTIC = 42;
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -128,6 +132,7 @@ function mapGame(item: IgdbGame): SearchResult {
 		posterUrl: coverUrl(item.cover),
 		description: item.summary || undefined,
 		platforms: item.platforms?.map((p) => p.name) ?? [],
+		isAdult: item.themes?.includes(IGDB_THEME_EROTIC) === true,
 	};
 }
 
@@ -145,7 +150,7 @@ export async function searchIgdb(query: string): Promise<SearchResult[]> {
 				creds.clientId,
 				token,
 				'games',
-				`fields name, cover.url, first_release_date, platforms.name, summary;
+				`fields name, cover.url, first_release_date, platforms.name, summary, themes;
 			search "${query.replace(/"/g, '')}";
 			where version_parent = null;
 			limit 15;`,
@@ -168,7 +173,7 @@ export async function getIgdbDetails(id: string): Promise<SearchResult | null> {
 				creds.clientId,
 				token,
 				'games',
-				`fields name, cover.url, first_release_date, platforms.name, summary;
+				`fields name, cover.url, first_release_date, platforms.name, summary, themes;
 			where id = ${id};
 			limit 1;`,
 			);
@@ -193,7 +198,7 @@ export async function discoverIgdbTrending(forceRefresh = false): Promise<Search
 			creds.clientId,
 			token,
 			'games',
-			`fields name, cover.url, first_release_date, platforms.name, summary;
+			`fields name, cover.url, first_release_date, platforms.name, summary, themes;
 		sort hypes desc;
 		where hypes > 0 & version_parent = null;
 		limit 20;`,
@@ -227,7 +232,7 @@ export async function discoverIgdbNew(forceRefresh = false): Promise<SearchResul
 			creds.clientId,
 			token,
 			'games',
-			`fields name, cover.url, first_release_date, platforms.name, summary;
+			`fields name, cover.url, first_release_date, platforms.name, summary, themes;
 		sort first_release_date desc;
 		where first_release_date < ${nowUnix} & first_release_date != null & version_parent = null;
 		limit 20;`,
@@ -259,7 +264,7 @@ export async function discoverIgdbTopRated(forceRefresh = false): Promise<Search
 			creds.clientId,
 			token,
 			'games',
-			`fields name, cover.url, first_release_date, platforms.name, summary;
+			`fields name, cover.url, first_release_date, platforms.name, summary, themes;
 		sort total_rating desc;
 		where total_rating_count > 50 & version_parent = null;
 		limit 20;`,
@@ -295,7 +300,7 @@ export async function discoverIgdbRandom(): Promise<SearchResult[]> {
 			creds.clientId,
 			token,
 			'games',
-			`fields name, cover.url, first_release_date, platforms.name, summary;
+			`fields name, cover.url, first_release_date, platforms.name, summary, themes;
 		sort rating_count desc;
 		where rating_count > 10 & version_parent = null & cover != null;
 		limit 20;
