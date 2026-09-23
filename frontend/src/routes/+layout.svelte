@@ -11,6 +11,7 @@
 	import { previousPath } from '$lib/stores/breadcrumb';
 	import { layoutStore, bottomNavCatalogue, defaultBottomNavItems } from '$lib/stores/layout';
 	import { resolveBottomNavItems } from '$lib/utils/bottomNav';
+	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { App } from '@capacitor/app';
 	import { Capacitor } from '@capacitor/core';
 	import { page } from '$app/stores';
@@ -28,6 +29,10 @@
 				? resolveBottomNavItems(prefs.ids, bottomNavCatalogue, defaultBottomNavItems)
 				: defaultBottomNavItems,
 		);
+	});
+
+	$effect.pre(() => {
+		if (data.contentFilter) contentFilterStore.setPrefs(data.contentFilter);
 	});
 
 	beforeNavigate(({ from }) => {

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { Capacitor } from '@capacitor/core';
 import { initDb } from '$lib/db';
-import { getBottomNavPrefs } from '$lib/db/services/settings.service';
+import { getBottomNavPrefs, getContentFilterPrefs } from '$lib/db/services/settings.service';
 
 // Client-side layout load — no auth, no cookies.
 // SSR is disabled (adapter-static, ssr: false), so this runs only in the browser.
@@ -31,7 +31,10 @@ export const load = async () => {
 			await initJeepSqliteWeb();
 		}
 		await initDb();
-		return { bottomNav: await getBottomNavPrefs().catch(() => null) };
+		return {
+			bottomNav: await getBottomNavPrefs().catch(() => null),
+			contentFilter: await getContentFilterPrefs().catch(() => null),
+		};
 	}
-	return { bottomNav: null };
+	return { bottomNav: null, contentFilter: null };
 };

@@ -98,3 +98,35 @@ export async function setBottomNavIds(ids: string[] | null): Promise<void> {
 export async function setBottomNavEnabled(enabled: boolean): Promise<void> {
 	await setAppSettingBool(BOTTOM_NAV_FLAG, enabled);
 }
+
+export type AdultFilterMode = 'hide' | 'blur';
+
+export interface ContentFilterPrefs {
+	/** Feature flag: when false, adult content is shown unfiltered. */
+	enabled: boolean;
+	/** How adult content is treated while the filter is on. */
+	mode: AdultFilterMode;
+	/** False until the user has answered the first-launch prompt (flag never written). */
+	asked: boolean;
+}
+
+const ADULT_FILTER_FLAG = 'feat_adult_filter';
+const ADULT_FILTER_MODE_KEY = 'adult_filter_mode';
+
+export async function getContentFilterPrefs(): Promise<ContentFilterPrefs> {
+	const flag = await getAppSetting(ADULT_FILTER_FLAG);
+	const mode = await getAppSetting(ADULT_FILTER_MODE_KEY);
+	return {
+		enabled: flag === null ? true : flag === 'true' || flag === '1',
+		mode: mode === 'blur' ? 'blur' : 'hide',
+		asked: flag !== null,
+	};
+}
+
+export async function setContentFilterEnabled(enabled: boolean): Promise<void> {
+	await setAppSettingBool(ADULT_FILTER_FLAG, enabled);
+}
+
+export async function setContentFilterMode(mode: AdultFilterMode): Promise<void> {
+	await setAppSetting(ADULT_FILTER_MODE_KEY, mode);
+}
