@@ -9,6 +9,7 @@
 		{ id: 'search', label: 'Search', icon: '🔍', desc: 'Deduplication & source priority', href: '/settings/search' },
 		{ id: 'data', label: 'Data & Backup', icon: '💾', desc: 'Export & restore your data', href: '/settings/data' },
 		{ id: 'import', label: 'Import', icon: '📥', desc: 'Import from external trackers', href: '/settings/import' },
+		{ id: 'content', label: 'Content Filter', icon: '🔞', desc: 'Adult content visibility', href: '/settings/content' },
 		{ id: 'navigation', label: 'Navigation', icon: '🧭', desc: 'Bottom bar shortcuts', href: '/settings/navigation' },
 		{ id: 'appearance', label: 'Appearance', icon: '🎨', desc: 'Theme, language & display', href: '/settings/appearance' },
 		{ id: 'about', label: 'About', icon: 'ℹ️', desc: 'App info & license', href: '/settings/about' },
