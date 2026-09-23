@@ -9,18 +9,24 @@
 	import { setBottomNavIds, setBottomNavEnabled } from '$lib/db/services/settings.service';
 
 	const enabled = $derived(layoutStore.bottomNavEnabled);
-	let bar = $state<NavItem[]>([...layoutStore.bottomNavItems]);
+	type DndItem = { id: string; item: NavItem };
+
+	// dndzone needs an `id` on every item, and consider/finalize items must be stored as-is so the
+	// library's shadow placeholder item survives mid-drag.
+	let dndItems = $state<DndItem[]>(toDnd(layoutStore.bottomNavItems));
+	const bar = $derived(dndItems.map((d) => d.item));
 
 	const available = $derived(bottomNavCatalogue.filter((n) => !bar.some((b) => b.href === n.href)));
 	const isFull = $derived(bar.length >= BOTTOM_NAV_MAX);
 	const canRemove = $derived(bar.length > BOTTOM_NAV_MIN);
 	const hasSettings = $derived(bar.some((b) => b.href === '/settings'));
 
-	// dndzone needs an `id` on every item
-	const dndItems = $derived(bar.map((item) => ({ id: item.href, item })));
+	function toDnd(items: NavItem[]): DndItem[] {
+		return items.map((item) => ({ id: item.href, item }));
+	}
 
 	function commit(next: NavItem[]) {
-		bar = next;
+		dndItems = toDnd(next);
 		layoutStore.setBottomNavItems(next);
 		setBottomNavIds(next.map((n) => n.href));
 	}
@@ -33,16 +39,16 @@
 		if (canRemove) commit(bar.filter((b) => b.href !== item.href));
 	}
 
-	function onConsider(e: CustomEvent<{ items: { id: string; item: NavItem }[] }>) {
-		bar = e.detail.items.map((i) => i.item);
+	function onConsider(e: CustomEvent<{ items: DndItem[] }>) {
+		dndItems = e.detail.items;
 	}
 
-	function onFinalize(e: CustomEvent<{ items: { id: string; item: NavItem }[] }>) {
-		commit(e.detail.items.map((i) => i.item));
+	function onFinalize(e: CustomEvent<{ items: DndItem[] }>) {
+		commit(e.detail.items.map((d) => d.item));
 	}
 
 	async function reset() {
-		bar = [...defaultBottomNavItems];
+		dndItems = toDnd(defaultBottomNavItems);
 		layoutStore.setBottomNavItems(defaultBottomNavItems);
 		await setBottomNavIds(null);
 	}
