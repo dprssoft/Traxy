@@ -14,12 +14,19 @@ let db: SQLiteDBConnection;
 
 /**
  * Flush in-memory SQLite to IndexedDB on web. No-op on native (disk writes are immediate).
- * Call after any write that must survive a page refresh.
+ * Called automatically after every db.run / db.executeSet on web via the write wrapper below.
  */
 export async function saveDbToStore(): Promise<void> {
 	if (Capacitor.getPlatform() === 'web' && sqlite) {
 		await sqlite.saveToStore(DB_NAME);
 	}
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSave(): void {
+	if (Capacitor.getPlatform() !== 'web' || !sqlite) return;
+	if (saveTimer) clearTimeout(saveTimer);
+	saveTimer = setTimeout(() => saveDbToStore(), 800);
 }
 
 /**
@@ -58,6 +65,25 @@ export const initDb = async () => {
 	}
 
 	await db.open();
+
+	// On web, monkey-patch write methods so every db.run / db.executeSet schedules
+	// a debounced saveToStore. This ensures data survives F5 without requiring every
+	// service to remember to flush explicitly.
+	if (Capacitor.getPlatform() === 'web') {
+		const origRun = db.run.bind(db);
+		const origExecSet = db.executeSet.bind(db);
+		db.run = async (...args: Parameters<typeof db.run>) => {
+			const r = await origRun(...args);
+			scheduleSave();
+			return r;
+		};
+		db.executeSet = async (...args: Parameters<typeof db.executeSet>) => {
+			const r = await origExecSet(...args);
+			scheduleSave();
+			return r;
+		};
+	}
+
 	await applySchema(db);
 };
 

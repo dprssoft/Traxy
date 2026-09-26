@@ -2,7 +2,7 @@
  * Service for reading/writing AppSettings key-value pairs.
  * Wraps the AppSettings table in the local SQLite database.
  */
-import { getDb, saveDbToStore } from '../index';
+import { getDb } from '../index';
 
 /**
  * Get a setting value by key. Returns null if not found.
@@ -30,7 +30,6 @@ export async function getAppSettingBool(key: string, defaultValue = false): Prom
 export async function setAppSetting(key: string, value: string): Promise<void> {
 	const db = getDb();
 	await db.run('INSERT OR REPLACE INTO AppSettings (key, value) VALUES (?, ?)', [key, value]);
-	await saveDbToStore();
 }
 
 /**
