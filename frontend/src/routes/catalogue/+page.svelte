@@ -5,6 +5,8 @@
 	import CatalogueRow from '$lib/components/CatalogueRow.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
+	import { collapseAnimeSeasons } from '$lib/utils/search-dedup';
+	import { animeSeasonsStore } from '$lib/stores/animeSeasons.svelte';
 	import { searchState } from '$lib/stores/search.svelte';
 	import { addMediaFromResult } from '$lib/db/services/media.service';
 	import {
@@ -408,7 +410,12 @@
 		{#each CATEGORIES as cat (cat.id)}
 			<CatalogueRow
 				title={cat.id === 'top_rated' && selectedType === 'book' ? 'Popular This Year' : cat.label}
-				items={applyContentFilter(categoryData[cat.id], contentFilterStore.effectiveMode)}
+				items={applyContentFilter(
+					animeSeasonsStore.mergeEnabled
+						? collapseAnimeSeasons(categoryData[cat.id])
+						: categoryData[cat.id],
+					contentFilterStore.effectiveMode,
+				)}
 				loading={categoryLoading[cat.id]}
 				error={categoryError[cat.id]}
 				{onItemClick}

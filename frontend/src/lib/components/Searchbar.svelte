@@ -9,7 +9,8 @@
 	import { searchOpenLibrary } from '$lib/db/sources/openlibrary';
 	import { searchFlashpoint } from '$lib/db/sources/flashpoint';
 	import { addMediaFromResult } from '$lib/db/services/media.service';
-	import { deduplicateResults } from '$lib/utils/search-dedup';
+	import { collapseAnimeSeasons, deduplicateResults } from '$lib/utils/search-dedup';
+	import { animeSeasonsStore } from '$lib/stores/animeSeasons.svelte';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
@@ -22,7 +23,12 @@
 	let isFocused = $state(false);
 	let isLoading = $state(false);
 	let results = $state<SearchResult[]>([]);
-	const visibleResults = $derived(applyContentFilter(results, contentFilterStore.effectiveMode));
+	const visibleResults = $derived(
+		applyContentFilter(
+			animeSeasonsStore.mergeEnabled ? collapseAnimeSeasons(results) : results,
+			contentFilterStore.effectiveMode,
+		),
+	);
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	let currentSearchId = 0;
 

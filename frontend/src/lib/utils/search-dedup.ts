@@ -109,3 +109,54 @@ export function deduplicateResults(
 
 	return deduped;
 }
+
+/**
+ * Collapse AniList anime seasons that are linked as prequel/sequel within the same result
+ * set into one entry — the earliest season present — at the position of the first one.
+ * Used when anime seasons are merged into one media item per series.
+ */
+export function collapseAnimeSeasons(results: SearchResult[]): SearchResult[] {
+	const keyOf = (r: SearchResult) =>
+		r.source === 'anilist' && r.type === 'anime' ? r.externalId : null;
+
+	const parent = new Map<string, string>();
+	const find = (id: string): string => {
+		while (parent.get(id) !== id) id = parent.get(id)!;
+		return id;
+	};
+	for (const r of results) {
+		const key = keyOf(r);
+		if (key) parent.set(key, key);
+	}
+	for (const r of results) {
+		const key = keyOf(r);
+		if (!key) continue;
+		for (const link of r.seriesLinks ?? []) {
+			if (parent.has(link)) parent.set(find(link), find(key));
+		}
+	}
+
+	const earliest = new Map<string, SearchResult>();
+	for (const r of results) {
+		const key = keyOf(r);
+		if (!key) continue;
+		const group = find(key);
+		const current = earliest.get(group);
+		if (!current || (r.year ?? Infinity) < (current.year ?? Infinity)) earliest.set(group, r);
+	}
+
+	const emitted = new Set<string>();
+	const collapsed: SearchResult[] = [];
+	for (const r of results) {
+		const key = keyOf(r);
+		if (!key) {
+			collapsed.push(r);
+			continue;
+		}
+		const group = find(key);
+		if (emitted.has(group)) continue;
+		emitted.add(group);
+		collapsed.push(earliest.get(group)!);
+	}
+	return collapsed;
+}
