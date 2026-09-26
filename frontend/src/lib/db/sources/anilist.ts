@@ -250,20 +250,24 @@ async function fetchSeriesChain(startId: number): Promise<AnilistSeriesNode[] | 
 	return chain.length > 1 ? chain : undefined;
 }
 
-/** Cached season chain for an anime (see fetchSeriesChain). Undefined when standalone or unreachable. */
-export async function getAnilistSeriesChain(id: number): Promise<AnilistSeriesNode[] | undefined> {
+/**
+ * Cached season chain for an anime (see fetchSeriesChain): null for a standalone entry.
+ * Rejects when AniList can't be reached, so callers can retry later.
+ */
+export async function resolveAnilistSeriesChain(id: number): Promise<AnilistSeriesNode[] | null> {
 	const key = (memberId: number) => `anilist:chain:v2:${memberId}`;
 	const cached = await getCached<{ chain: AnilistSeriesNode[] | null }>(key(id));
-	if (cached) return cached.chain ?? undefined;
-	try {
-		const chain = await fetchSeriesChain(id);
-		for (const memberId of chain?.map((n) => n.id) ?? [id]) {
-			await setCache(key(memberId), { chain: chain ?? null });
-		}
-		return chain;
-	} catch {
-		return undefined;
+	if (cached) return cached.chain;
+	const chain = (await fetchSeriesChain(id)) ?? null;
+	for (const memberId of chain?.map((n) => n.id) ?? [id]) {
+		await setCache(key(memberId), { chain });
 	}
+	return chain;
+}
+
+/** Season chain for an anime, or undefined when standalone or unreachable. */
+export async function getAnilistSeriesChain(id: number): Promise<AnilistSeriesNode[] | undefined> {
+	return (await resolveAnilistSeriesChain(id).catch(() => null)) ?? undefined;
 }
 
 function chainToSeasonData(chain: AnilistSeriesNode[]): import('$lib/db/schema').MediaSeasonData[] {

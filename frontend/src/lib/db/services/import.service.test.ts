@@ -21,6 +21,15 @@ vi.mock('./activity.service', () => ({
 	logActivity: (entry: any) => mockLogActivity(entry),
 }));
 
+vi.mock('./settings.service', () => ({
+	getAnimeSeriesIds: async () => new Set<string>(),
+	getMergeAnimeSeasonsEnabled: async () => false,
+}));
+
+vi.mock('./animeSeries.service', () => ({
+	mergeAnimeSeasonsInLibrary: vi.fn(),
+}));
+
 const mockGetAnilistDetails = vi.fn();
 vi.mock('../sources/anilist', () => ({
 	getAnilistDetails: (id: number) => mockGetAnilistDetails(id),

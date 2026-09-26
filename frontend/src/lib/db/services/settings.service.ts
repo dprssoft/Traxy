@@ -150,3 +150,24 @@ export async function getMergeAnimeSeasonsEnabled(): Promise<boolean> {
 export async function setMergeAnimeSeasonsEnabled(enabled: boolean): Promise<void> {
 	await setAppSettingBool(MERGE_ANIME_SEASONS_FLAG, enabled);
 }
+
+/** Media IDs already stored as merged anime series (absolute episode tracking). */
+const ANIME_SERIES_IDS_KEY = 'anime_series_ids';
+
+export async function getAnimeSeriesIds(): Promise<Set<string>> {
+	try {
+		return new Set(JSON.parse((await getAppSetting(ANIME_SERIES_IDS_KEY)) ?? '[]'));
+	} catch {
+		return new Set();
+	}
+}
+
+export async function addAnimeSeriesIds(ids: string[]): Promise<void> {
+	const current = await getAnimeSeriesIds();
+	for (const id of ids) current.add(id);
+	await setAppSetting(ANIME_SERIES_IDS_KEY, JSON.stringify([...current]));
+}
+
+export async function clearAnimeSeriesIds(): Promise<void> {
+	await getDb().run('DELETE FROM AppSettings WHERE key = ?', [ANIME_SERIES_IDS_KEY]);
+}

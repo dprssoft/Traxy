@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getTmdbDetails } from '../sources/tmdb';
 import { fetchIgdbTimeToBeat, fetchIgdbTimeToBeatByTitle, getIgdbDetails } from '../sources/igdb';
 import { getAnilistDetails, getAnilistSeriesDetails } from '../sources/anilist';
-import { getMergeAnimeSeasonsEnabled } from './settings.service';
+import { addAnimeSeriesIds, getMergeAnimeSeasonsEnabled } from './settings.service';
 import { getComicVineDetails } from '../sources/comicvine';
 import { getOpenLibraryDetails } from '../sources/openlibrary';
 import { getFlashpointDetails } from '../sources/flashpoint';
@@ -318,8 +318,11 @@ export async function addMediaFromResult(item: SearchResult): Promise<LocalMedia
 	const existing = await getMediaByExternalId(target.source, target.externalId);
 	if (existing) return existing;
 
+	const isSeries = (details?.seasonData?.length ?? 0) > 1;
 	details ??= await fetchProviderDetails(item);
 	if (!details && !item.title) throw new Error(`No details for ${item.source}:${item.externalId}`);
 	const full = details ?? item;
-	return upsertMedia({ ...full, isAdult: full.isAdult ?? item.isAdult });
+	const media = await upsertMedia({ ...full, isAdult: full.isAdult ?? item.isAdult });
+	if (isSeries) await addAnimeSeriesIds([media.id]);
+	return media;
 }

@@ -1,5 +1,7 @@
 import { getDb } from '../index';
 import { upsertMedia } from './media.service';
+import { mergeAnimeSeasonsInLibrary } from './animeSeries.service';
+import { getAnimeSeriesIds, getMergeAnimeSeasonsEnabled } from './settings.service';
 import { upsertTracking } from './tracking.service';
 import { logActivity } from './activity.service';
 import { getAnilistDetails } from '../sources/anilist';
@@ -103,6 +105,7 @@ function mapAnilistStatus(status: string): import('$lib/db/schema').TrackingStat
 export async function importFromAnilist(username: string): Promise<{ success: number; failed: number }> {
 	let success = 0;
 	let failed = 0;
+	const seriesIds = await getAnimeSeriesIds();
 
 	const types = ['ANIME', 'MANGA'];
 
@@ -159,13 +162,17 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 							totalPages: details.totalPages,
 						});
 
-						await upsertTracking({
-							mediaId: media.id,
-							status: mapAnilistStatus(entry.status),
-							score: entry.score > 0 ? entry.score : undefined,
-							currentEpisode: type === 'ANIME' ? entry.progress : undefined,
-							currentChapter: type === 'MANGA' ? entry.progress : undefined,
-						});
+						// A merged anime series tracks episodes across seasons — season-level
+						// progress from AniList would overwrite it, so leave it as is
+						if (!seriesIds.has(media.id)) {
+							await upsertTracking({
+								mediaId: media.id,
+								status: mapAnilistStatus(entry.status),
+								score: entry.score > 0 ? entry.score : undefined,
+								currentEpisode: type === 'ANIME' ? entry.progress : undefined,
+								currentChapter: type === 'MANGA' ? entry.progress : undefined,
+							});
+						}
 
 						success++;
 						// Small delay to avoid rate limits
@@ -189,6 +196,11 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 			eventType: 'anilist_import',
 			payload: { count: success },
 		});
+	}
+
+	// Imported seasons arrive as separate items — fold them into their series
+	if (await getMergeAnimeSeasonsEnabled()) {
+		await mergeAnimeSeasonsInLibrary().catch((err) => console.error('Anime merge failed', err));
 	}
 
 	return { success, failed };
