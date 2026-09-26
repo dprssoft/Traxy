@@ -3,10 +3,66 @@
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Toggle from '$lib/components/ui/Toggle.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import { animeSeasonsStore } from '$lib/stores/animeSeasons.svelte';
+	import { setMergeAnimeSeasonsEnabled } from '$lib/db/services/settings.service';
+	import {
+		hasAnimeMergeBackup,
+		mergeAnimeSeasonsInLibrary,
+		restoreAnimeMergeBackup,
+	} from '$lib/db/services/animeSeries.service';
+
+	let mergeChecked = $state(animeSeasonsStore.mergeEnabled);
+	let merging = $state(false);
+	let mergeProgress = $state('');
+	let hasBackup = $state(false);
 
 	onMount(() => {
 		searchPrefsStore.load();
+		hasAnimeMergeBackup().then((v) => (hasBackup = v));
 	});
+
+	async function toggleMergeSeasons(enabled: boolean) {
+		if (
+			enabled &&
+			!confirm(
+				'Merge anime seasons into one item per series?\n\nTracked seasons are combined: furthest episode, combined status, latest score and all notes. A backup is saved first so you can undo this.',
+			)
+		) {
+			mergeChecked = false;
+			return;
+		}
+		animeSeasonsStore.setMergeEnabled(enabled);
+		await setMergeAnimeSeasonsEnabled(enabled);
+		if (!enabled) return;
+
+		merging = true;
+		try {
+			const { merged, pending } = await mergeAnimeSeasonsInLibrary((done, total) => {
+				mergeProgress = `Merging… ${done}/${total}`;
+			});
+			mergeProgress =
+				`Merged ${merged} series.` +
+				(pending ? ` ${pending} couldn't be reached and will be retried on next launch.` : '');
+			hasBackup = true;
+		} catch (err) {
+			console.error(err);
+			mergeProgress = 'Merge failed — nothing after the failing series was changed.';
+		} finally {
+			merging = false;
+		}
+	}
+
+	async function restoreBackup() {
+		if (!confirm('Restore your library as it was before the last merge? Changes since then are lost.')) {
+			return;
+		}
+		await restoreAnimeMergeBackup();
+		animeSeasonsStore.setMergeEnabled(false);
+		mergeChecked = false;
+		hasBackup = false;
+		mergeProgress = 'Library restored. Anime seasons are separate items again.';
+	}
 
 	interface ToggleSetting {
 		id: string;
@@ -68,5 +124,35 @@
 				<Toggle id={s.id} checked={s.get()} onchange={s.set} label={s.label} />
 			</div>
 		{/each}
+
+		<div class="p-4 rounded-xl bg-[#16192b]/60 border border-white/[0.06] space-y-3">
+			<div class="flex items-start justify-between gap-4">
+				<div class="min-w-0">
+					<label for="pref-merge-seasons" class="text-sm font-semibold text-white cursor-pointer">
+						Merge anime seasons into one item
+					</label>
+					<p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
+						Show and track an anime series (e.g. Tokyo Revengers and its sequels) as one item with
+						seasons, like TV shows. Movies and OVAs stay separate. Turning this off doesn't split
+						merged series again.
+					</p>
+				</div>
+				<Toggle
+					id="pref-merge-seasons"
+					bind:checked={mergeChecked}
+					onchange={toggleMergeSeasons}
+					disabled={merging}
+					label="Merge anime seasons into one item"
+				/>
+			</div>
+			{#if mergeProgress}
+				<p class="text-xs text-slate-300">{mergeProgress}</p>
+			{/if}
+			{#if hasBackup && !merging}
+				<Button variant="secondary" size="sm" onclick={restoreBackup}>
+					Restore pre-merge backup
+				</Button>
+			{/if}
+		</div>
 	</div>
 </div>
