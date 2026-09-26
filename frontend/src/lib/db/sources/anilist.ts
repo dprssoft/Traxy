@@ -1,5 +1,5 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
-import { setCache } from '../apiCache';
+import { getCached, setCache } from '../apiCache';
 import { withCache, fetchJson } from '../fetchUtils';
 
 // GraphQL calls are observed slower than TMDB's CDN-backed REST API — 8s gives AniList
@@ -28,6 +28,12 @@ query ($query: String, $type: MediaType) {
       genres
       isAdult
       duration
+      relations {
+        edges {
+          relationType
+          node { id format }
+        }
+      }
       staff(sort: RELEVANCE, perPage: 5) {
         edges {
           role
@@ -43,21 +49,47 @@ const RELATIONS_QUERY = `
 query ($id: Int) {
   Media(id: $id) {
     id
+    format
+    status
     episodes
     relations {
       edges {
         relationType
-        node {
-          id
-          type
-          format
-          episodes
-        }
+        node { id type format }
       }
     }
   }
 }
 `;
+
+/** Formats that count as a season of a series; movies, OVAs and specials stay separate. */
+const SERIES_FORMATS = new Set(['TV', 'TV_SHORT', 'ONA']);
+
+interface RelationsPayload {
+	type?: string;
+	format?: string;
+	status?: string;
+	episodes?: number | null;
+	relations?: {
+		edges?: { relationType: string; node?: { id: number; type?: string; format?: string } }[];
+	};
+}
+
+/** Prequel/sequel IDs of a series-format anime, from a `relations { edges }` payload. */
+function seriesNeighbours(item: RelationsPayload): { prequel?: number; sequel?: number; links: string[] } {
+	const result: { prequel?: number; sequel?: number; links: string[] } = { links: [] };
+	if (item.type && item.type !== 'ANIME') return result;
+	if (!SERIES_FORMATS.has(item.format ?? '')) return result;
+	for (const edge of item.relations?.edges ?? []) {
+		if (!edge.node || !SERIES_FORMATS.has(edge.node.format ?? '')) continue;
+		if (edge.node.type && edge.node.type !== 'ANIME') continue;
+		if (edge.relationType === 'PREQUEL') result.prequel = edge.node.id;
+		else if (edge.relationType === 'SEQUEL') result.sequel = edge.node.id;
+		else continue;
+		result.links.push(String(edge.node.id));
+	}
+	return result;
+}
 
 const DETAIL_QUERY = `
 query ($id: Int) {
@@ -163,73 +195,84 @@ function mapAnilistItem(item: any): SearchResult {
 		totalChapters: item.chapters || undefined,
 		totalPages: undefined,
 		runtimeMinutes: item.format === 'MOVIE' ? (item.duration || undefined) : undefined,
+		seriesLinks: item.relations ? seriesNeighbours(item).links : undefined,
 	};
 }
 
-async function getAnilistSeasonChain(startId: number): Promise<import('$lib/db/schema').MediaSeasonData[] | undefined> {
-	const visited = new Set<number>();
-	const chain = new Map<number, { episodes: number, prequel?: number, sequel?: number }>();
-
-	async function fetchRelations(id: number) {
-		if (visited.has(id)) return;
-		visited.add(id);
-
-		try {
-			const res = await fetch(BASE_URL, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-				body: JSON.stringify({ query: RELATIONS_QUERY, variables: { id } }),
-			});
-			if (!res.ok) return;
-			const data = await res.json();
-			const media = data?.data?.Media;
-			if (!media) return;
-
-			let prequel: number | undefined;
-			let sequel: number | undefined;
-
-			for (const edge of media.relations?.edges || []) {
-				if (edge.node?.type !== 'ANIME') continue;
-				if (edge.relationType === 'PREQUEL') prequel = edge.node.id;
-				if (edge.relationType === 'SEQUEL') sequel = edge.node.id;
-			}
-
-			chain.set(id, { episodes: media.episodes || 0, prequel, sequel });
-
-			if (prequel && !visited.has(prequel)) await fetchRelations(prequel);
-			if (sequel && !visited.has(sequel)) await fetchRelations(sequel);
-		} catch (e) {
-			// ignore
-		}
-	}
-
-	await fetchRelations(startId);
-	if (chain.size <= 1) return undefined;
-
-	let rootId = startId;
-	while (chain.get(rootId)?.prequel && chain.has(chain.get(rootId)!.prequel!)) {
-		rootId = chain.get(rootId)!.prequel!;
-	}
-
-	const seasonData: import('$lib/db/schema').MediaSeasonData[] = [];
-	let currentId: number | undefined = rootId;
-	let seasonNumber = 1;
-
-	while (currentId && chain.has(currentId)) {
-		const node: { episodes: number; prequel?: number; sequel?: number } = chain.get(currentId)!;
-		seasonData.push({
-			seasonNumber,
-			episodeCount: node.episodes,
-			linkedMediaId: currentId.toString(),
-		});
-		seasonNumber++;
-		const nextId: number | undefined = node.sequel;
-		currentId = nextId;
-	}
-
-	return seasonData.length > 1 ? seasonData : undefined;
+/** One season in a series chain, in airing order. */
+export interface AnilistSeriesNode {
+	id: number;
+	episodes: number;
+	status?: string;
 }
 
+/**
+ * Walk prequel/sequel links (series formats only) from `startId` and return the whole chain
+ * in order, or undefined for a standalone entry. Throws if any step fails, so a chain cut
+ * short by a rate limit is never cached. The result is cached under every member's ID.
+ */
+async function fetchSeriesChain(startId: number): Promise<AnilistSeriesNode[] | undefined> {
+	const nodes = new Map<number, AnilistSeriesNode & { prequel?: number; sequel?: number }>();
+
+	async function visit(id: number): Promise<void> {
+		if (nodes.has(id)) return;
+		const data = await fetchJson<{ data: { Media: RelationsPayload | null } }>(
+			BASE_URL,
+			ANILIST_TIMEOUT_MS,
+			{ 'Content-Type': 'application/json', Accept: 'application/json' },
+			{ method: 'POST', body: JSON.stringify({ query: RELATIONS_QUERY, variables: { id } }) },
+		);
+		const media = data.data?.Media;
+		if (!media) throw new Error(`AniList media ${id} missing`);
+		const { prequel, sequel } = seriesNeighbours({ ...media, type: 'ANIME' });
+		nodes.set(id, { id, episodes: media.episodes || 0, status: media.status, prequel, sequel });
+		if (prequel) await visit(prequel);
+		if (sequel) await visit(sequel);
+	}
+
+	await visit(startId);
+	if (nodes.size <= 1) return undefined;
+
+	let rootId = startId;
+	const seen = new Set<number>([rootId]);
+	for (let prev = nodes.get(rootId)?.prequel; prev && nodes.has(prev) && !seen.has(prev); prev = nodes.get(prev)?.prequel) {
+		rootId = prev;
+		seen.add(prev);
+	}
+
+	const chain: AnilistSeriesNode[] = [];
+	const inChain = new Set<number>();
+	for (let id: number | undefined = rootId; id && nodes.has(id) && !inChain.has(id); id = nodes.get(id)?.sequel) {
+		const { episodes, status } = nodes.get(id)!;
+		chain.push({ id, episodes, status });
+		inChain.add(id);
+	}
+	return chain.length > 1 ? chain : undefined;
+}
+
+/** Cached season chain for an anime (see fetchSeriesChain). Undefined when standalone or unreachable. */
+export async function getAnilistSeriesChain(id: number): Promise<AnilistSeriesNode[] | undefined> {
+	const key = (memberId: number) => `anilist:chain:v2:${memberId}`;
+	const cached = await getCached<{ chain: AnilistSeriesNode[] | null }>(key(id));
+	if (cached) return cached.chain ?? undefined;
+	try {
+		const chain = await fetchSeriesChain(id);
+		for (const memberId of chain?.map((n) => n.id) ?? [id]) {
+			await setCache(key(memberId), { chain: chain ?? null });
+		}
+		return chain;
+	} catch {
+		return undefined;
+	}
+}
+
+function chainToSeasonData(chain: AnilistSeriesNode[]): import('$lib/db/schema').MediaSeasonData[] {
+	return chain.map((node, i) => ({
+		seasonNumber: i + 1,
+		episodeCount: node.episodes,
+		linkedMediaId: String(node.id),
+	}));
+}
 
 export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
@@ -253,28 +296,51 @@ export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Pro
 export async function getAnilistDetails(id: number): Promise<SearchResult | null> {
 	const cacheKey = `anilist:detail:${id}`;
 	try {
-		return await withCache(cacheKey, async () => {
+		const result = await withCache(cacheKey, async () => {
 			const data = await fetchJson<{ data: { Media: unknown } }>(
 				BASE_URL,
 				ANILIST_TIMEOUT_MS,
 				{ 'Content-Type': 'application/json', Accept: 'application/json' },
 				{ method: 'POST', body: JSON.stringify({ query: DETAIL_QUERY, variables: { id } }) },
 			);
-			const result = mapAnilistItem(data.data.Media);
-
-			if (result.type === 'anime') {
-				const seasonData = await getAnilistSeasonChain(id);
-				if (seasonData) {
-					result.seasonData = seasonData;
-					result.totalSeasons = seasonData.length;
-				}
-			}
-
-			return result;
+			return mapAnilistItem(data.data.Media);
 		});
+
+		if (result.type === 'anime') {
+			// Older cache entries carried a chain that also followed movies/OVAs — rebuild it
+			result.seasonData = undefined;
+			result.totalSeasons = undefined;
+			const chain = await getAnilistSeriesChain(id);
+			if (chain) {
+				result.seasonData = chainToSeasonData(chain);
+				result.totalSeasons = chain.length;
+			}
+		}
+		return result;
 	} catch {
 		return null;
 	}
+}
+
+/**
+ * Details for a whole anime series: `id` may be any season. Returns the first season's
+ * details with every season in `seasonData`, episodes summed across seasons (unknown while
+ * any season's count is unknown) and the latest season's release status. Standalone
+ * entries return their own details.
+ */
+export async function getAnilistSeriesDetails(id: number): Promise<SearchResult | null> {
+	const chain = await getAnilistSeriesChain(id);
+	if (!chain) return getAnilistDetails(id);
+
+	const root = await getAnilistDetails(chain[0].id);
+	if (!root) return null;
+	const allKnown = chain.every((n) => n.episodes > 0);
+	return {
+		...root,
+		totalEpisodes: allKnown ? chain.reduce((sum, n) => sum + n.episodes, 0) : undefined,
+		releaseStatus: mapAnilistStatus(chain[chain.length - 1].status) ?? root.releaseStatus,
+		seriesLinks: undefined,
+	};
 }
 
 // ── Discovery / Catalogue endpoints ──────────────────────────────────────────
@@ -299,6 +365,12 @@ query ($type: MediaType, $sort: [MediaSort], $status: MediaStatus, $page: Int, $
       genres
       isAdult
       duration
+      relations {
+        edges {
+          relationType
+          node { id format }
+        }
+      }
       staff(sort: RELEVANCE, perPage: 3) {
         edges {
           role

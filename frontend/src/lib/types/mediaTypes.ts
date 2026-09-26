@@ -76,4 +76,6 @@ export interface SearchResult {
 	runtimeMinutes?: number;
 	/** Adult (18+) content, as flagged by the provider or keyword heuristics. */
 	isAdult?: boolean;
+	/** AniList IDs of this anime's prequel/sequel seasons — used to collapse seasons in results. */
+	seriesLinks?: string[];
 }
