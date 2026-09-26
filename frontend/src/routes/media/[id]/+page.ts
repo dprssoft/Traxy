@@ -5,7 +5,7 @@ import { getTracking } from '$lib/db/services/tracking.service';
 import { getCycles } from '$lib/db/services/cycle.service';
 import { getTmdbDetails } from '$lib/db/sources/tmdb';
 import { getAnilistDetails } from '$lib/db/sources/anilist';
-import { getAppSettingBool } from '$lib/db/services/settings.service';
+import { getAppSettingBool, getWikiEnrichmentEnabled } from '$lib/db/services/settings.service';
 import { fetchWikidataEnrichment } from '$lib/db/sources/wikipedia';
 
 export const load: PageLoad = async ({ params, parent }) => {
@@ -94,7 +94,7 @@ export const load: PageLoad = async ({ params, parent }) => {
 	const hasMissingFields = !media.author || !media.country || !media.releaseStatus;
 	if (hasMissingFields) {
 		try {
-			const enabled = await getAppSettingBool('feat_wikipedia_enrichment', false);
+			const enabled = await getWikiEnrichmentEnabled();
 			if (enabled) {
 				const enrichment = await fetchWikidataEnrichment(media.title, media.type);
 				if (enrichment) {

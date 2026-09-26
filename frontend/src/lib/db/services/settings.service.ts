@@ -130,3 +130,13 @@ export async function setContentFilterEnabled(enabled: boolean): Promise<void> {
 export async function setContentFilterMode(mode: AdultFilterMode): Promise<void> {
 	await setAppSetting(ADULT_FILTER_MODE_KEY, mode);
 }
+
+const WIKI_ENRICHMENT_FLAG = 'feat_wikipedia_enrichment';
+
+export async function getWikiEnrichmentEnabled(): Promise<boolean> {
+	return getAppSettingBool(WIKI_ENRICHMENT_FLAG, false);
+}
+
+export async function setWikiEnrichmentEnabled(enabled: boolean): Promise<void> {
+	await setAppSettingBool(WIKI_ENRICHMENT_FLAG, enabled);
+}

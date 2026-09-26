@@ -6,6 +6,7 @@
 
 	const tabs = [
 		{ id: 'api', label: 'API Integrations', icon: '🔑', desc: 'TMDB, IGDB & ComicVine keys', href: '/settings/api' },
+		{ id: 'integrations', label: 'Integrations', icon: '🧩', desc: 'Wikipedia enrichment', href: '/settings/integrations' },
 		{ id: 'search', label: 'Search', icon: '🔍', desc: 'Deduplication & source priority', href: '/settings/search' },
 		{ id: 'data', label: 'Data & Backup', icon: '💾', desc: 'Export & restore your data', href: '/settings/data' },
 		{ id: 'import', label: 'Import', icon: '📥', desc: 'Import from external trackers', href: '/settings/import' },
