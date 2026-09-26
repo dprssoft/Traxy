@@ -13,7 +13,6 @@
 	import { layoutStore, bottomNavCatalogue, defaultBottomNavItems } from '$lib/stores/layout';
 	import { resolveBottomNavItems } from '$lib/utils/bottomNav';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
-	import { animeSeasonsStore } from '$lib/stores/animeSeasons.svelte';
 	import { App } from '@capacitor/app';
 	import { Capacitor } from '@capacitor/core';
 	import { page } from '$app/stores';
@@ -35,10 +34,6 @@
 
 	$effect.pre(() => {
 		if (data.contentFilter) contentFilterStore.setPrefs(data.contentFilter);
-	});
-
-	$effect.pre(() => {
-		animeSeasonsStore.setMergeEnabled(data.mergeAnimeSeasons);
 	});
 
 	beforeNavigate(({ from }) => {

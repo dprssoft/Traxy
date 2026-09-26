@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collapseAnimeSeasons, normalizeTitle, deduplicateResults } from './search-dedup';
+import { normalizeTitle, deduplicateResults } from './search-dedup';
 import type { SearchResult } from '$lib/types/mediaTypes';
 
 function make(overrides: Partial<SearchResult> & { title: string; source: string; type: string }): SearchResult {
@@ -122,28 +122,5 @@ describe('deduplicateResults', () => {
 		const out = deduplicateResults(raw);
 		// The cultural study should survive; only the AniList series is kept for the series itself.
 		expect(out.some(r => r.source === 'openlibrary')).toBe(true);
-	});
-});
-
-describe('collapseAnimeSeasons', () => {
-	const tr = (externalId: string, year: number, links: string[], title: string) =>
-		make({ source: 'anilist', type: 'anime', externalId, year, seriesLinks: links, title });
-
-	it('keeps one entry per linked series — the earliest season, where the first appeared', () => {
-		const results = [
-			tr('142853', 2023, ['120120', '163329'], 'Tokyo Revengers Season 2'),
-			make({ source: 'tmdb', type: 'tv', externalId: 't1', title: 'Other Show' }),
-			tr('120120', 2021, ['142853'], 'Tokyo Revengers'),
-			tr('163329', 2023, ['142853'], 'Tokyo Revengers Season 2 Part 2'),
-		];
-		expect(collapseAnimeSeasons(results).map((r) => r.title)).toEqual([
-			'Tokyo Revengers',
-			'Other Show',
-		]);
-	});
-
-	it('leaves unlinked anime alone', () => {
-		const results = [tr('1', 2020, ['99'], 'A'), tr('2', 2021, [], 'B')];
-		expect(collapseAnimeSeasons(results)).toEqual(results);
 	});
 });

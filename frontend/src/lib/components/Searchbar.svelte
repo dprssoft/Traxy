@@ -8,9 +8,12 @@
 	import { searchComicVine } from '$lib/db/sources/comicvine';
 	import { searchOpenLibrary } from '$lib/db/sources/openlibrary';
 	import { searchFlashpoint } from '$lib/db/sources/flashpoint';
-	import { addMediaFromResult } from '$lib/db/services/media.service';
-	import { collapseAnimeSeasons, deduplicateResults } from '$lib/utils/search-dedup';
-	import { animeSeasonsStore } from '$lib/stores/animeSeasons.svelte';
+	import {
+		fetchProviderDetails,
+		getMediaByExternalId,
+		upsertMedia,
+	} from '$lib/db/services/media.service';
+	import { deduplicateResults } from '$lib/utils/search-dedup';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
@@ -23,12 +26,7 @@
 	let isFocused = $state(false);
 	let isLoading = $state(false);
 	let results = $state<SearchResult[]>([]);
-	const visibleResults = $derived(
-		applyContentFilter(
-			animeSeasonsStore.mergeEnabled ? collapseAnimeSeasons(results) : results,
-			contentFilterStore.effectiveMode,
-		),
-	);
+	const visibleResults = $derived(applyContentFilter(results, contentFilterStore.effectiveMode));
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	let currentSearchId = 0;
 
@@ -158,10 +156,34 @@
 		closeSearch();
 		query = '';
 		
-		const media = await addMediaFromResult(item);
+		// 1. Check if already in local DB
+		const existing = await getMediaByExternalId(item.source, item.externalId);
+		if (existing) {
+			goto(`/media/${existing.id}`);
+			return;
+		}
+
+		// 2. Fetch full details from source if needed, or just insert
+		const fullDetails: SearchResult = (await fetchProviderDetails(item)) ?? item;
+
+		// 3. Upsert into local DB
+		const inserted = await upsertMedia({
+			id: crypto.randomUUID(),
+			source: fullDetails.source,
+			externalId: fullDetails.externalId,
+			type: fullDetails.type,
+			title: fullDetails.title,
+			year: fullDetails.year,
+			posterUrl: fullDetails.posterUrl,
+			description: fullDetails.description,
+			totalEpisodes: fullDetails.totalEpisodes,
+			totalSeasons: fullDetails.totalSeasons,
+			totalPages: fullDetails.totalPages,
+			isAdult: fullDetails.isAdult ?? item.isAdult,
+		});
 
 		// 4. Navigate
-		goto(`/media/${media.id}`);
+		goto(`/media/${inserted.id}`);
 	}
 </script>
 

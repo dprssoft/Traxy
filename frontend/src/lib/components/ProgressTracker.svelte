@@ -3,8 +3,8 @@
 	import type { LocalTrackingStatus } from '$lib/types/trackingTypes';
 	import { updateProgress, upsertTracking } from '$lib/db/services/tracking.service';
 
-	import { addMediaFromResult } from '$lib/db/services/media.service';
-	import { animeSeasonsStore } from '$lib/stores/animeSeasons.svelte';
+	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
+	import { getAnilistDetails } from '$lib/db/sources/anilist';
 	import { goto } from '$app/navigation';
 
 	interface Props {
@@ -55,14 +55,6 @@
 		updateField(field, next);
 	}
 
-	/** A merged anime series (first season's ID, several seasons): tracked like a TV show. */
-	const isAnimeSeries = $derived(
-		media.type === 'anime' &&
-			animeSeasonsStore.mergeEnabled &&
-			(media.seasonData?.length ?? 0) > 1 &&
-			media.seasonData?.[0]?.linkedMediaId === media.externalId,
-	);
-
 	let currentAnimeSeason = $derived(
 		media.type === 'anime' && media.seasonData
 			? media.seasonData.find((s) => s.linkedMediaId === media.externalId)?.seasonNumber || 1
@@ -78,15 +70,30 @@
 
 		isUpdating = true;
 		try {
-			const next = await addMediaFromResult({
-				source: 'anilist',
-				externalId: nextSeason.linkedMediaId,
-				type: 'anime',
-				title: '',
+			let existing = await getMediaByExternalId('anilist', nextSeason.linkedMediaId);
+			if (existing) {
+				goto(`/media/${existing.id}`);
+				return;
+			}
+			const fullDetails = await getAnilistDetails(parseInt(nextSeason.linkedMediaId));
+			if (!fullDetails) return;
+
+			const inserted = await upsertMedia({
+				id: crypto.randomUUID(),
+				source: fullDetails.source,
+				externalId: fullDetails.externalId,
+				type: fullDetails.type,
+				title: fullDetails.title,
+				year: fullDetails.year,
+				posterUrl: fullDetails.posterUrl,
+				description: fullDetails.description,
+				totalEpisodes: fullDetails.totalEpisodes,
+				totalSeasons: fullDetails.totalSeasons,
+				totalPages: fullDetails.totalPages,
+				seasonData: fullDetails.seasonData,
+				isAdult: fullDetails.isAdult,
 			});
-			goto(`/media/${next.id}`);
-		} catch (err) {
-			console.error(err);
+			goto(`/media/${inserted.id}`);
 		} finally {
 			isUpdating = false;
 		}
@@ -221,7 +228,7 @@
 			</p>
 		
 		{:else if media.type === 'tv' || media.type === 'anime'}
-			{#if media.type === 'tv' || isAnimeSeries}
+			{#if media.type === 'tv'}
 				<div class="flex items-center justify-between p-3 rounded-2xl bg-[#16192b]/60 border border-white/[0.04]">
 					<span class="text-slate-300 text-xs font-semibold">Season {media.totalSeasons ? `/ ${media.totalSeasons}` : ''}</span>
 					<div class="flex items-center gap-2.5">
