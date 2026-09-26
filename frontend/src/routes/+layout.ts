@@ -1,7 +1,11 @@
 import { browser } from '$app/environment';
 import { Capacitor } from '@capacitor/core';
 import { initDb } from '$lib/db';
-import { getBottomNavPrefs, getContentFilterPrefs } from '$lib/db/services/settings.service';
+import {
+	getBottomNavPrefs,
+	getContentFilterPrefs,
+	getMergeAnimeSeasonsEnabled,
+} from '$lib/db/services/settings.service';
 
 // Client-side layout load — no auth, no cookies.
 // SSR is disabled (adapter-static, ssr: false), so this runs only in the browser.
@@ -34,7 +38,8 @@ export const load = async () => {
 		return {
 			bottomNav: await getBottomNavPrefs().catch(() => null),
 			contentFilter: await getContentFilterPrefs().catch(() => null),
+			mergeAnimeSeasons: await getMergeAnimeSeasonsEnabled().catch(() => false),
 		};
 	}
-	return { bottomNav: null, contentFilter: null };
+	return { bottomNav: null, contentFilter: null, mergeAnimeSeasons: false };
 };

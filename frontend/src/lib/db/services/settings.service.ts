@@ -140,3 +140,13 @@ export async function getWikiEnrichmentEnabled(): Promise<boolean> {
 export async function setWikiEnrichmentEnabled(enabled: boolean): Promise<void> {
 	await setAppSettingBool(WIKI_ENRICHMENT_FLAG, enabled);
 }
+
+const MERGE_ANIME_SEASONS_FLAG = 'feat_merge_anime_seasons';
+
+export async function getMergeAnimeSeasonsEnabled(): Promise<boolean> {
+	return getAppSettingBool(MERGE_ANIME_SEASONS_FLAG, false);
+}
+
+export async function setMergeAnimeSeasonsEnabled(enabled: boolean): Promise<void> {
+	await setAppSettingBool(MERGE_ANIME_SEASONS_FLAG, enabled);
+}
