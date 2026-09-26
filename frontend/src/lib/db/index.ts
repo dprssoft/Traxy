@@ -62,7 +62,8 @@ export const initDb = async () => {
         seasonData TEXT,
         timeToBeat TEXT,
         runtimeMinutes INTEGER,
-        isAdult INTEGER
+        isAdult INTEGER,
+        wikiMeta TEXT
     );
     CREATE TABLE IF NOT EXISTS TrackingStatus (
         id TEXT PRIMARY KEY,
@@ -149,6 +150,7 @@ export const initDb = async () => {
         'totalChapters INTEGER',
         'runtimeMinutes INTEGER',
         'isAdult INTEGER',
+        'wikiMeta TEXT',
     ];
     for (const col of newColumns) {
         try {

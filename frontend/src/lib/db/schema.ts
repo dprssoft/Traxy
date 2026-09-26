@@ -69,6 +69,7 @@ export interface Media {
   timeToBeat?: string; // JSON string
   runtimeMinutes?: number; // Film / anime-movie runtime in minutes
   isAdult?: number; // 1 = adult (18+) content flagged by the provider
+  wikiMeta?: string; // JSON WikiMeta: which fields Wikidata filled, and from which entity
 }
 
 export interface TrackingStatus {

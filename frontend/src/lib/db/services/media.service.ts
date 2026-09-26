@@ -1,5 +1,5 @@
 import { getDb } from '../index';
-import type { LocalMedia, SearchResult } from '$lib/types/mediaTypes';
+import type { LocalMedia, MediaMetaPatch, SearchResult } from '$lib/types/mediaTypes';
 import type { MediaSource, MediaType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { getTmdbDetails } from '../sources/tmdb';
@@ -15,7 +15,7 @@ export const MEDIA_COLUMNS = [
 	'originalTitle', 'serializationYears', 'author', 'country', 'genres', 'releaseStatus',
 	'totalEpisodes', 'totalSeasons', 'totalVolumes', 'totalChapters',
 	'platforms', 'totalPages', 'seasonData', 'timeToBeat', 'runtimeMinutes',
-	'isAdult',
+	'isAdult', 'wikiMeta',
 ];
 
 export function rowToMedia(row: any): LocalMedia {
@@ -56,6 +56,7 @@ export function rowToMedia(row: any): LocalMedia {
 		timeToBeat: r.timeToBeat ?? undefined,
 		runtimeMinutes: r.runtimeMinutes ?? undefined,
 		isAdult: r.isAdult == null ? undefined : Boolean(r.isAdult),
+		wikiMeta: r.wikiMeta ? JSON.parse(r.wikiMeta) : undefined,
 	};
 }
 
@@ -171,9 +172,9 @@ export async function searchLocalMedia(query: string): Promise<LocalMedia[]> {
 
 /**
  * Update metadata of an existing media record.
- * Doesn't replace user data, just API metadata fields.
+ * Doesn't replace user data, just API metadata fields. A null value clears the field.
  */
-export async function updateMediaMeta(id: string, patch: Partial<LocalMedia>): Promise<void> {
+export async function updateMediaMeta(id: string, patch: MediaMetaPatch): Promise<void> {
 	const db = getDb();
 	const updates: string[] = [];
 	const values: any[] = [];
@@ -203,7 +204,12 @@ export async function updateMediaMeta(id: string, patch: Partial<LocalMedia>): P
 
 	if (patch.isAdult !== undefined) {
 		updates.push('isAdult = ?');
-		values.push(Number(patch.isAdult));
+		values.push(patch.isAdult === null ? null : Number(patch.isAdult));
+	}
+
+	if (patch.wikiMeta !== undefined) {
+		updates.push('wikiMeta = ?');
+		values.push(patch.wikiMeta ? JSON.stringify(patch.wikiMeta) : null);
 	}
 
 	if (patch.genres !== undefined) {

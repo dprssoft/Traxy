@@ -33,7 +33,17 @@ export interface LocalMedia {
 	runtimeMinutes?: number;
 	/** Adult (18+) content, as flagged by the provider or keyword heuristics. */
 	isAdult?: boolean;
+	/** Which fields Wikidata enrichment filled in, so a wrong match can be undone. */
+	wikiMeta?: WikiMeta;
 }
+
+export interface WikiMeta {
+	wikidataId: string;
+	fields: string[];
+}
+
+/** A metadata patch for updateMediaMeta(): undefined leaves a field alone, null clears it. */
+export type MediaMetaPatch = { [K in keyof LocalMedia]?: LocalMedia[K] | null };
 
 /**
  * Transient result shape returned by source adapters (tmdb, anilist, etc.).
