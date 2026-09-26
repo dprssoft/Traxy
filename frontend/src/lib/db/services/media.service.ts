@@ -244,3 +244,28 @@ export async function fetchProviderDetails(
 			return null;
 	}
 }
+
+/** Metadata fields a provider owns; refreshing overwrites all of them. */
+const PROVIDER_FIELDS = [
+	'title', 'year', 'posterUrl', 'description', 'originalTitle', 'serializationYears',
+	'author', 'country', 'genres', 'releaseStatus', 'totalEpisodes', 'totalSeasons',
+	'totalVolumes', 'totalChapters', 'platforms', 'totalPages', 'seasonData', 'runtimeMinutes',
+	'isAdult',
+] as const;
+
+/**
+ * Re-fetch a media record from its provider and overwrite its metadata, clearing anything
+ * the provider no longer returns — including values filled in by Wikidata enrichment.
+ * Returns false for manual entries or when the provider can't be reached.
+ */
+export async function refreshMediaFromProvider(id: string): Promise<boolean> {
+	const media = await getMediaById(id);
+	if (!media) return false;
+	const details = await fetchProviderDetails(media).catch(() => null);
+	if (!details) return false;
+
+	const patch: Record<string, unknown> = { wikiMeta: null };
+	for (const field of PROVIDER_FIELDS) patch[field] = details[field] ?? null;
+	await updateMediaMeta(id, patch as MediaMetaPatch);
+	return true;
+}

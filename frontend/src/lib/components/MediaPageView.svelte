@@ -10,6 +10,8 @@
 	import { MEDIA_TYPE_LABELS, getStatusLabel } from '$lib/constants';
 	import { updateScore, updateNote, getTracking, upsertTracking } from '$lib/db/services/tracking.service';
 	import { getCycles } from '$lib/db/services/cycle.service';
+	import { refreshMediaFromProvider } from '$lib/db/services/media.service';
+	import { invalidateAll } from '$app/navigation';
 	import { recordVisitedMedia } from '$lib/db/services/catalogue.service';
 	import { getDb } from '$lib/db/index';
 	import { DEFAULT_COLLECTION_NAME } from '$lib/constants';
@@ -48,6 +50,8 @@
 	let isFavorite = $state(false);
 	let favoriteLoading = $state(false);
 	let shareCopied = $state(false);
+	let refreshing = $state(false);
+	let refreshFailed = $state(false);
 
 	// User note (item 14)
 	// eslint-disable-next-line svelte/prefer-writable-derived
@@ -147,6 +151,21 @@
 				shareCopied = true;
 				setTimeout(() => { shareCopied = false; }, 2000);
 			}).catch(() => {});
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Refresh metadata from the provider (then Wikidata re-enriches on reload)
+	// -------------------------------------------------------------------------
+
+	async function handleRefresh() {
+		refreshing = true;
+		const ok = await refreshMediaFromProvider(media.id);
+		if (ok) await invalidateAll();
+		refreshing = false;
+		if (!ok) {
+			refreshFailed = true;
+			setTimeout(() => { refreshFailed = false; }, 2000);
 		}
 	}
 
@@ -398,6 +417,27 @@
 					</svg>
 				{/if}
 			</button>
+
+			<!-- Refresh metadata -->
+			{#if media.source !== 'manual'}
+				<button
+					type="button"
+					onclick={handleRefresh}
+					disabled={refreshing}
+					class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-slate-400 hover:text-white transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+					aria-label="Refresh metadata"
+					title="Refresh metadata"
+				>
+					<svg class="w-5 h-5 {refreshing ? 'animate-spin' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+					</svg>
+					{#if refreshFailed}
+						<span class="absolute -bottom-7 right-0 text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded shadow whitespace-nowrap">
+							Couldn't refresh
+						</span>
+					{/if}
+				</button>
+			{/if}
 
 			<!-- 16. Share (to be implemented) -->
 			<button
