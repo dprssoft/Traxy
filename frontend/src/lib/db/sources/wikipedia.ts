@@ -6,7 +6,7 @@
  * Gated by the `feat_wikipedia_enrichment` flag (Settings → Integrations).
  */
 import type { MediaType } from '$lib/db/schema';
-import { getCached, setCache } from '../apiCache';
+import { fetchJson, withCache } from '../fetchUtils';
 
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 
@@ -85,22 +85,6 @@ const TYPE_KEYWORDS: Record<string, string[]> = {
 	game: ['game', 'video game'],
 };
 
-/**
- * GET a Wikimedia API URL as JSON. Throws on network/HTTP errors so callers can
- * tell "no match" apart from "offline" and avoid caching the latter.
- */
-async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T> {
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), timeoutMs);
-	try {
-		const res = await fetch(url, { signal: controller.signal });
-		if (!res.ok) throw new Error(`Wikimedia API ${res.status}`);
-		return (await res.json()) as T;
-	} finally {
-		clearTimeout(timeout);
-	}
-}
-
 /** Pick `lang`, else the fallback language, from a Wikidata language map. */
 function pickLang(map: LangMap | undefined, lang: string): string | undefined {
 	return map?.[lang]?.value ?? map?.[FALLBACK_LANG]?.value;
@@ -157,7 +141,7 @@ export function pickBestMatch(
 async function findWikidataEntity(title: string, type: MediaType): Promise<string | null> {
 	// Provider titles are English, so search in English regardless of display language
 	const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(title)}&language=${FALLBACK_LANG}&format=json&limit=10&origin=*`;
-	const data = await fetchJson<{ search?: WikidataSearchHit[] }>(url);
+	const data = await fetchJson<{ search?: WikidataSearchHit[] }>(url, 8000);
 	const hit = data.search?.length ? pickBestMatch(data.search, title, type) : null;
 
 	// Fallback: If Wikidata exact search failed to find a good match, use Wikipedia's fuzzy full-text search
@@ -185,13 +169,13 @@ async function fallbackWikipediaSearch(title: string, type: MediaType): Promise<
 	const searchQuery = `${title} ${suffix}`.trim();
 
 	const wikiUrl = `https://${FALLBACK_LANG}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&origin=*`;
-	const wikiData = await fetchJson<{ query?: { search?: { title: string }[] } }>(wikiUrl);
+	const wikiData = await fetchJson<{ query?: { search?: { title: string }[] } }>(wikiUrl, 8000);
 	const topTitle = wikiData.query?.search?.[0]?.title;
 	if (!topTitle) return null;
 
 	// Map Wikipedia title to Wikidata ID
 	const wdUrl = `${WIKIDATA_API}?action=wbgetentities&sites=${FALLBACK_LANG}wiki&titles=${encodeURIComponent(topTitle)}&props=info&format=json&origin=*`;
-	const wdData = await fetchJson<{ entities?: Record<string, unknown> }>(wdUrl);
+	const wdData = await fetchJson<{ entities?: Record<string, unknown> }>(wdUrl, 8000);
 	const entityId = Object.keys(wdData.entities ?? {})[0];
 	return entityId && entityId !== '-1' ? entityId : null;
 }
@@ -206,7 +190,7 @@ async function fetchWikidataEntity(entityId: string, lang: string): Promise<Wiki
 		`&props=claims|labels|descriptions|sitelinks/urls` +
 		`&languages=${langs.join('|')}&sitefilter=${langs.map((l) => `${l}wiki`).join('|')}` +
 		`&format=json&origin=*`;
-	const data = await fetchJson<{ entities?: Record<string, WikidataEntity> }>(url);
+	const data = await fetchJson<{ entities?: Record<string, WikidataEntity> }>(url, 8000);
 	return data.entities?.[entityId] ?? null;
 }
 
@@ -311,8 +295,8 @@ async function buildEnrichment(
  * and returns partial metadata to fill in gaps plus the Wikipedia article URL.
  *
  * `lang` selects the language of labels, descriptions and the article link (falling back
- * to English). Results — including "no match" — are cached in ApiCache; network failures
- * are not, so an offline visit retries next time.
+ * to English). Resolves to null when nothing matches — cached like any result. Rejects on
+ * network failure (not cached), so callers can tell "no match" from "offline".
  */
 export async function fetchWikidataEnrichment(
 	title: string,
@@ -321,15 +305,9 @@ export async function fetchWikidataEnrichment(
 ): Promise<WikipediaEnrichment | null> {
 	// Bump the version when matching changes so stale (possibly wrong) matches are dropped
 	const cacheKey = `wikidata:v2:${lang}:${type}:${title.toLowerCase()}`;
-	const cached = await getCached<{ result: WikipediaEnrichment | null }>(cacheKey);
-	if (cached) return cached.result;
-
-	try {
+	const { result } = await withCache(cacheKey, async () => {
 		const entityId = await findWikidataEntity(title, type);
-		const result = entityId ? await buildEnrichment(entityId, type, lang) : null;
-		await setCache(cacheKey, { result });
-		return result;
-	} catch {
-		return null;
-	}
+		return { result: entityId ? await buildEnrichment(entityId, type, lang) : null };
+	});
+	return result;
 }

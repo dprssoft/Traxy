@@ -85,9 +85,9 @@ describe('fetchWikidataEnrichment', () => {
 		expect(setCache).toHaveBeenCalledWith('wikidata:v2:en:film:dune', { result });
 	});
 
-	it('does not cache when the network fails', async () => {
+	it('rejects without caching when the network fails', async () => {
 		(fetch as Mock).mockRejectedValueOnce(new Error('offline'));
-		expect(await fetchWikidataEnrichment('Dune', 'film')).toBeNull();
+		await expect(fetchWikidataEnrichment('Dune', 'film')).rejects.toThrow('offline');
 		expect(setCache).not.toHaveBeenCalled();
 	});
 });
