@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import Tabs from '$lib/components/ui/Tabs.svelte';
 
 	let { children } = $props();
@@ -92,7 +93,7 @@
 				orientation="vertical"
 				onchange={(id) => {
 					const tab = tabs.find((t) => t.id === id);
-					if (tab) window.location.href = tab.href;
+					if (tab) goto(tab.href);
 				}}
 			/>
 		</div>
