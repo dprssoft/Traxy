@@ -80,3 +80,55 @@ describe('anilist posterUrl mapping', () => {
 		expect(results.map((r) => r.isAdult)).toEqual([true, true, false]);
 	});
 });
+
+describe('anime series chain (Tokyo Revengers)', () => {
+	const edge = (relationType: string, id: number, format = 'TV') => ({
+		relationType,
+		node: { id, type: 'ANIME', format },
+	});
+	const relations: Record<number, unknown> = {
+		120120: { id: 120120, format: 'TV', status: 'FINISHED', episodes: 24, relations: { edges: [edge('SEQUEL', 142853), edge('SPIN_OFF', 132467, 'ONA')] } },
+		142853: { id: 142853, format: 'TV', status: 'FINISHED', episodes: 13, relations: { edges: [edge('PREQUEL', 120120), edge('SEQUEL', 163329)] } },
+		163329: { id: 163329, format: 'TV', status: 'FINISHED', episodes: 13, relations: { edges: [edge('PREQUEL', 142853), edge('SEQUEL', 178083), edge('SEQUEL', 999, 'MOVIE')] } },
+		178083: { id: 178083, format: 'TV', status: 'RELEASING', episodes: null, relations: { edges: [edge('PREQUEL', 163329)] } },
+	};
+
+	beforeEach(async () => {
+		vi.clearAllMocks();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (_url: string, init: { body: string }) => {
+				const { variables } = JSON.parse(init.body);
+				return { ok: true, json: async () => ({ data: { Media: relations[variables.id] } }) };
+			}),
+		);
+	});
+
+	it('walks from any season to the whole TV chain, skipping spin-offs and movies', async () => {
+		const { resolveAnilistSeriesChain } = await import('./anilist');
+		const chain = await resolveAnilistSeriesChain(163329);
+		expect(chain?.map((n) => n.id)).toEqual([120120, 142853, 163329, 178083]);
+		expect(chain?.map((n) => n.episodes)).toEqual([24, 13, 13, 0]);
+	});
+
+	it('does not cache a chain cut short by a failed request', async () => {
+		const { resolveAnilistSeriesChain } = await import('./anilist');
+		const { setCache } = await import('../apiCache');
+		(fetch as Mock).mockImplementation(async (_url: string, init: { body: string }) => {
+			const { variables } = JSON.parse(init.body);
+			if (variables.id === 163329) return { ok: false, status: 429, json: async () => ({}) };
+			return { ok: true, json: async () => ({ data: { Media: relations[variables.id] } }) };
+		});
+		await expect(resolveAnilistSeriesChain(120120)).rejects.toThrow();
+		expect(setCache).not.toHaveBeenCalled();
+	});
+
+	it('returns null for a standalone entry', async () => {
+		const { resolveAnilistSeriesChain } = await import('./anilist');
+		(fetch as Mock).mockResolvedValue({
+			ok: true,
+			json: async () => ({ data: { Media: { id: 5, format: 'MOVIE', episodes: 1, relations: { edges: [] } } } }),
+		});
+		expect(await resolveAnilistSeriesChain(5)).toBeNull();
+	});
+});
