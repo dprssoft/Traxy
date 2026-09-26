@@ -13,6 +13,16 @@ let sqlite: SQLiteConnection;
 let db: SQLiteDBConnection;
 
 /**
+ * Flush in-memory SQLite to IndexedDB on web. No-op on native (disk writes are immediate).
+ * Call after any write that must survive a page refresh.
+ */
+export async function saveDbToStore(): Promise<void> {
+	if (Capacitor.getPlatform() === 'web' && sqlite) {
+		await sqlite.saveToStore(DB_NAME);
+	}
+}
+
+/**
  * Open (or reuse) the on-device database and bring its schema up to date. Must finish before any
  * service runs — the root layout load calls it and page loads wait for the layout. An existing
  * connection is reused rather than recreated.

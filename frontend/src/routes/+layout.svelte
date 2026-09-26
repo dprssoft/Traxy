@@ -20,6 +20,7 @@
 	import { Capacitor } from '@capacitor/core';
 	import { page } from '$app/stores';
 	import { triggerAutosave } from '$lib/services/autosave.service';
+	import { saveDbToStore } from '$lib/db';
 
 	let { children, data } = $props();
 
@@ -68,7 +69,10 @@
 		}
 
 		document.addEventListener('visibilitychange', () => {
-			if (document.visibilityState === 'hidden') triggerAutosave();
+			if (document.visibilityState === 'hidden') {
+				saveDbToStore();
+				triggerAutosave();
+			}
 		});
 
 		const autosaveInterval = setInterval(triggerAutosave, 5 * 60 * 1000);

@@ -1,5 +1,5 @@
 import type { capSQLiteSet } from '@capacitor-community/sqlite';
-import { getDb } from '../index';
+import { getDb, saveDbToStore } from '../index';
 
 // Keys written by the reverted anime season merge — excluded from exports and cleaned up on boot.
 const ANIME_MERGE_BACKUP_KEY = 'anime_merge_backup';
@@ -100,6 +100,7 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 		}
 
 		await db.executeSet(statements, true);
+		await saveDbToStore();
 	} catch (err) {
 		console.error('Import failed', err);
 		throw err;
