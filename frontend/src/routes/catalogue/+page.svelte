@@ -6,11 +6,7 @@
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
 	import { searchState } from '$lib/stores/search.svelte';
-	import {
-		fetchProviderDetails,
-		getMediaByExternalId,
-		upsertMedia,
-	} from '$lib/db/services/media.service';
+	import { addMediaFromResult } from '$lib/db/services/media.service';
 	import {
 		discoverMedia,
 		discoverCategoriesPooled,
@@ -286,36 +282,11 @@
 	async function onItemClick(item: SearchResult) {
 		recordVisitedMedia(item);
 
-		// 1. Check if already in local DB
-		const existing = await getMediaByExternalId(item.source, item.externalId);
-		if (existing) {
-			goto(resolve(`/media/${existing.id}`));
-			return;
-		}
-
-		// 2. Fetch full details from source
-		const fullDetails: SearchResult = (await fetchProviderDetails(item)) ?? item;
-
-		// 3. Upsert into local DB
-		const inserted = await upsertMedia({
-			id: crypto.randomUUID(),
-			source: fullDetails.source,
-			externalId: fullDetails.externalId,
-			type: fullDetails.type,
-			title: fullDetails.title,
-			year: fullDetails.year,
-			posterUrl: fullDetails.posterUrl,
-			description: fullDetails.description,
-			totalEpisodes: fullDetails.totalEpisodes,
-			totalSeasons: fullDetails.totalSeasons,
-			totalPages: fullDetails.totalPages,
-			isAdult: fullDetails.isAdult ?? item.isAdult,
-		});
-
-		recordVisitedMedia(inserted);
+		const media = await addMediaFromResult(item);
+		recordVisitedMedia(media);
 
 		// 4. Navigate
-		goto(resolve(`/media/${inserted.id}`));
+		goto(resolve(`/media/${media.id}`));
 	}
 </script>
 

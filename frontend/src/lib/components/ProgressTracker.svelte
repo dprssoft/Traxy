@@ -3,8 +3,7 @@
 	import type { LocalTrackingStatus } from '$lib/types/trackingTypes';
 	import { updateProgress, upsertTracking } from '$lib/db/services/tracking.service';
 
-	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
-	import { getAnilistDetails } from '$lib/db/sources/anilist';
+	import { addMediaFromResult } from '$lib/db/services/media.service';
 	import { goto } from '$app/navigation';
 
 	interface Props {
@@ -70,30 +69,15 @@
 
 		isUpdating = true;
 		try {
-			let existing = await getMediaByExternalId('anilist', nextSeason.linkedMediaId);
-			if (existing) {
-				goto(`/media/${existing.id}`);
-				return;
-			}
-			const fullDetails = await getAnilistDetails(parseInt(nextSeason.linkedMediaId));
-			if (!fullDetails) return;
-
-			const inserted = await upsertMedia({
-				id: crypto.randomUUID(),
-				source: fullDetails.source,
-				externalId: fullDetails.externalId,
-				type: fullDetails.type,
-				title: fullDetails.title,
-				year: fullDetails.year,
-				posterUrl: fullDetails.posterUrl,
-				description: fullDetails.description,
-				totalEpisodes: fullDetails.totalEpisodes,
-				totalSeasons: fullDetails.totalSeasons,
-				totalPages: fullDetails.totalPages,
-				seasonData: fullDetails.seasonData,
-				isAdult: fullDetails.isAdult,
+			const next = await addMediaFromResult({
+				source: 'anilist',
+				externalId: nextSeason.linkedMediaId,
+				type: 'anime',
+				title: '',
 			});
-			goto(`/media/${inserted.id}`);
+			goto(`/media/${next.id}`);
+		} catch (err) {
+			console.error(err);
 		} finally {
 			isUpdating = false;
 		}

@@ -4,7 +4,8 @@ import type { MediaSource, MediaType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { getTmdbDetails } from '../sources/tmdb';
 import { fetchIgdbTimeToBeat, fetchIgdbTimeToBeatByTitle, getIgdbDetails } from '../sources/igdb';
-import { getAnilistDetails } from '../sources/anilist';
+import { getAnilistDetails, getAnilistSeriesDetails } from '../sources/anilist';
+import { getMergeAnimeSeasonsEnabled } from './settings.service';
 import { getComicVineDetails } from '../sources/comicvine';
 import { getOpenLibraryDetails } from '../sources/openlibrary';
 import { getFlashpointDetails } from '../sources/flashpoint';
@@ -223,6 +224,21 @@ export async function updateMediaMeta(id: string, patch: MediaMetaPatch): Promis
 	await db.run(`UPDATE Media SET ${updates.join(', ')} WHERE id = ?`, values);
 }
 
+/**
+ * AniList details for a stored item: whole-series details when seasons are merged and the
+ * item is the series itself (its first season), otherwise the single entry's details.
+ */
+async function getAnilistItemDetails(
+	item: Pick<SearchResult, 'externalId' | 'type'>,
+): Promise<SearchResult | null> {
+	const id = parseInt(item.externalId);
+	if (item.type === 'anime' && (await getMergeAnimeSeasonsEnabled())) {
+		const series = await getAnilistSeriesDetails(id);
+		if (series?.externalId === item.externalId) return series;
+	}
+	return getAnilistDetails(id);
+}
+
 /** Fetch full details for an item from the provider it came from. Null for manual entries or on failure. */
 export async function fetchProviderDetails(
 	item: Pick<SearchResult, 'source' | 'externalId' | 'type'>,
@@ -233,7 +249,7 @@ export async function fetchProviderDetails(
 		case 'igdb':
 			return getIgdbDetails(item.externalId);
 		case 'anilist':
-			return getAnilistDetails(parseInt(item.externalId));
+			return getAnilistItemDetails(item);
 		case 'comicvine':
 			return getComicVineDetails(item.externalId);
 		case 'openlibrary':
@@ -263,7 +279,7 @@ export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia>
 				if (details?.runtimeMinutes) patch.runtimeMinutes = details.runtimeMinutes;
 			}
 		} else if (media.type === 'anime' && media.source === 'anilist' && (!media.seasonData || !media.runtimeMinutes)) {
-			const details = await getAnilistDetails(parseInt(media.externalId));
+			const details = await getAnilistItemDetails(media);
 			if (details?.seasonData) {
 				patch.totalSeasons = details.totalSeasons;
 				patch.seasonData = details.seasonData;
@@ -282,4 +298,24 @@ export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia>
 	if (Object.keys(patch).length === 0) return media;
 	await updateMediaMeta(media.id, patch);
 	return (await getMediaById(media.id)) ?? media;
+}
+
+/**
+ * Open a search/catalogue result: return its local media, adding it with full provider
+ * details first if needed. With merged anime seasons, any season resolves to its series.
+ */
+export async function addMediaFromResult(item: SearchResult): Promise<LocalMedia> {
+	let details: SearchResult | null = null;
+	if (item.source === 'anilist' && item.type === 'anime' && (await getMergeAnimeSeasonsEnabled())) {
+		details = await getAnilistSeriesDetails(parseInt(item.externalId));
+	}
+
+	const target = details ?? item;
+	const existing = await getMediaByExternalId(target.source, target.externalId);
+	if (existing) return existing;
+
+	details ??= await fetchProviderDetails(item);
+	if (!details && !item.title) throw new Error(`No details for ${item.source}:${item.externalId}`);
+	const full = details ?? item;
+	return upsertMedia({ ...full, isAdult: full.isAdult ?? item.isAdult });
 }
