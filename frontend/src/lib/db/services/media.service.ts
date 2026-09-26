@@ -1,7 +1,13 @@
 import { getDb } from '../index';
-import type { LocalMedia } from '$lib/types/mediaTypes';
+import type { LocalMedia, SearchResult } from '$lib/types/mediaTypes';
 import type { MediaSource, MediaType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
+import { getTmdbDetails } from '../sources/tmdb';
+import { getIgdbDetails } from '../sources/igdb';
+import { getAnilistDetails } from '../sources/anilist';
+import { getComicVineDetails } from '../sources/comicvine';
+import { getOpenLibraryDetails } from '../sources/openlibrary';
+import { getFlashpointDetails } from '../sources/flashpoint';
 
 // Column names in the order defined in CREATE TABLE — used for positional→named conversion
 export const MEDIA_COLUMNS = [
@@ -209,4 +215,26 @@ export async function updateMediaMeta(id: string, patch: Partial<LocalMedia>): P
 	
 	values.push(id);
 	await db.run(`UPDATE Media SET ${updates.join(', ')} WHERE id = ?`, values);
+}
+
+/** Fetch full details for an item from the provider it came from. Null for manual entries or on failure. */
+export async function fetchProviderDetails(
+	item: Pick<SearchResult, 'source' | 'externalId' | 'type'>,
+): Promise<SearchResult | null> {
+	switch (item.source) {
+		case 'tmdb':
+			return getTmdbDetails(item.externalId, item.type as 'film' | 'tv');
+		case 'igdb':
+			return getIgdbDetails(item.externalId);
+		case 'anilist':
+			return getAnilistDetails(parseInt(item.externalId));
+		case 'comicvine':
+			return getComicVineDetails(item.externalId);
+		case 'openlibrary':
+			return getOpenLibraryDetails(item.externalId);
+		case 'flashpoint':
+			return getFlashpointDetails(item.externalId);
+		default:
+			return null;
+	}
 }

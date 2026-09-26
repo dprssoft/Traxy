@@ -2,13 +2,17 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { searchState, addRecentSearch, loadRecentSearches, getTypeColor } from '$lib/stores/search.svelte';
-	import { searchTmdb, getTmdbDetails } from '$lib/db/sources/tmdb';
-	import { searchIgdb, getIgdbDetails } from '$lib/db/sources/igdb';
-	import { searchAnilist, getAnilistDetails } from '$lib/db/sources/anilist';
-	import { searchComicVine, getComicVineDetails } from '$lib/db/sources/comicvine';
-	import { searchOpenLibrary, getOpenLibraryDetails } from '$lib/db/sources/openlibrary';
-	import { searchFlashpoint, getFlashpointDetails } from '$lib/db/sources/flashpoint';
-	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
+	import { searchTmdb } from '$lib/db/sources/tmdb';
+	import { searchIgdb } from '$lib/db/sources/igdb';
+	import { searchAnilist } from '$lib/db/sources/anilist';
+	import { searchComicVine } from '$lib/db/sources/comicvine';
+	import { searchOpenLibrary } from '$lib/db/sources/openlibrary';
+	import { searchFlashpoint } from '$lib/db/sources/flashpoint';
+	import {
+		fetchProviderDetails,
+		getMediaByExternalId,
+		upsertMedia,
+	} from '$lib/db/services/media.service';
 	import { deduplicateResults } from '$lib/utils/search-dedup';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
@@ -160,16 +164,7 @@
 		}
 
 		// 2. Fetch full details from source if needed, or just insert
-		let fullDetails: SearchResult | null = item;
-		
-		if (item.source === 'tmdb') fullDetails = await getTmdbDetails(item.externalId, item.type as 'film' | 'tv');
-		else if (item.source === 'igdb') fullDetails = await getIgdbDetails(item.externalId);
-		else if (item.source === 'anilist') fullDetails = await getAnilistDetails(parseInt(item.externalId));
-		else if (item.source === 'comicvine') fullDetails = await getComicVineDetails(item.externalId);
-		else if (item.source === 'openlibrary') fullDetails = await getOpenLibraryDetails(item.externalId);
-		else if (item.source === 'flashpoint') fullDetails = await getFlashpointDetails(item.externalId);
-
-		if (!fullDetails) fullDetails = item;
+		const fullDetails: SearchResult = (await fetchProviderDetails(item)) ?? item;
 
 		// 3. Upsert into local DB
 		const inserted = await upsertMedia({

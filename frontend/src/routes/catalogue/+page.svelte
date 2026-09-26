@@ -6,12 +6,11 @@
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
 	import { searchState } from '$lib/stores/search.svelte';
-	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
-	import { getTmdbDetails } from '$lib/db/sources/tmdb';
-	import { getIgdbDetails } from '$lib/db/sources/igdb';
-	import { getAnilistDetails } from '$lib/db/sources/anilist';
-	import { getComicVineDetails } from '$lib/db/sources/comicvine';
-	import { getOpenLibraryDetails } from '$lib/db/sources/openlibrary';
+	import {
+		fetchProviderDetails,
+		getMediaByExternalId,
+		upsertMedia,
+	} from '$lib/db/services/media.service';
 	import {
 		discoverMedia,
 		discoverCategoriesPooled,
@@ -295,20 +294,7 @@
 		}
 
 		// 2. Fetch full details from source
-		let fullDetails: SearchResult | null = item;
-
-		if (item.source === 'tmdb')
-			fullDetails = await getTmdbDetails(item.externalId, item.type as 'film' | 'tv');
-		else if (item.source === 'igdb')
-			fullDetails = await getIgdbDetails(item.externalId);
-		else if (item.source === 'anilist')
-			fullDetails = await getAnilistDetails(parseInt(item.externalId));
-		else if (item.source === 'comicvine')
-			fullDetails = await getComicVineDetails(item.externalId);
-		else if (item.source === 'openlibrary')
-			fullDetails = await getOpenLibraryDetails(item.externalId);
-
-		if (!fullDetails) fullDetails = item;
+		const fullDetails: SearchResult = (await fetchProviderDetails(item)) ?? item;
 
 		// 3. Upsert into local DB
 		const inserted = await upsertMedia({
