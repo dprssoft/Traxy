@@ -99,7 +99,7 @@ async function findWikidataEntity(
 
 		const typeKeywords = keywords[type] || [];
 		
-		let bestMatch = data.search[0]; // fallback to first
+		let bestMatch = data.search[0];
 		let maxScore = -1;
 
 		for (const item of data.search) {
@@ -125,7 +125,8 @@ async function findWikidataEntity(
 			}
 		}
 
-		if (maxScore >= 0) {
+		// Score 0 means neither the description nor the label matched — not a real hit
+		if (maxScore > 0) {
 			return bestMatch.id;
 		}
 
