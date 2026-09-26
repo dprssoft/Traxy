@@ -10,19 +10,12 @@
 	import { downloadFile } from '$lib/utils/download';
 	import { Capacitor } from '@capacitor/core';
 	import { Share } from '@capacitor/share';
+	import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 
 	const isNative = Capacitor.isNativePlatform();
-
-	async function nativeShare(filename: string, json: string): Promise<void> {
-		await Share.share({
-			title: filename,
-			text: json,
-			dialogTitle: 'Save or share your Traxy backup',
-		});
-	}
 
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let autosaveInput = $state<HTMLInputElement | null>(null);
@@ -101,18 +94,21 @@
 			backupStatus = '';
 			const json = await exportDatabaseJson();
 			if (isNative) {
-				await nativeShare(filename, json);
-				backupStatus = 'success:Backup ready to save!';
+				await Filesystem.writeFile({
+					path: `Download/${filename}`,
+					data: json,
+					directory: Directory.ExternalStorage,
+					encoding: Encoding.UTF8,
+				});
+				backupStatus = `success:Saved to Downloads/${filename}`;
 			} else {
 				downloadFile(filename, json, 'application/json');
 				backupStatus = 'success:Export successful!';
 			}
-			setTimeout(() => (backupStatus = ''), 4000);
-		} catch (err: unknown) {
-			if (err instanceof Error && err.name !== 'AbortError') {
-				console.error(err);
-				backupStatus = 'error:Export failed.';
-			}
+			setTimeout(() => (backupStatus = ''), 5000);
+		} catch (err) {
+			console.error(err);
+			backupStatus = 'error:Export failed.';
 		} finally {
 			exporting = false;
 		}
@@ -125,8 +121,12 @@
 			backupStatus = '';
 			const json = await exportDatabaseJson();
 			if (isNative) {
-				await nativeShare(filename, json);
-				backupStatus = 'success:Backup ready to save!';
+				await Share.share({
+					title: filename,
+					text: json,
+					dialogTitle: 'Share Traxy Backup',
+				});
+				backupStatus = 'success:Backup shared!';
 			} else {
 				const file = new File([json], filename, { type: 'application/json' });
 				if (navigator.canShare?.({ files: [file] })) {
