@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildWikiPatch, planWikiUpdate } from './wiki.service';
-import type { LocalMedia } from '$lib/types/mediaTypes';
+import { buildWikiPatch, diffWithProvider, planWikiUpdate } from './wiki.service';
+import type { LocalMedia, SearchResult } from '$lib/types/mediaTypes';
 
 const media = {
 	id: 'm1',
@@ -66,5 +66,50 @@ describe('planWikiUpdate', () => {
 			country: 'Japan',
 			wikiMeta: { wikidataId: 'Q1244799', fields: ['country'] },
 		});
+	});
+});
+
+describe('first-open provider check', () => {
+	const legacy = {
+		id: 'm3',
+		source: 'openlibrary',
+		externalId: '3',
+		type: 'manga',
+		title: 'Vagabond',
+		author: 'Takehiko Inoue',
+		country: 'Norway',
+		totalPages: 300,
+	} as unknown as LocalMedia;
+	const details = {
+		source: 'openlibrary',
+		externalId: '3',
+		type: 'manga',
+		title: 'Vagabond',
+		author: 'Inoue Takehiko',
+		totalPages: undefined,
+	} as unknown as SearchResult;
+
+	it('lets provider values win and never empties a field', () => {
+		const { patch, suspects } = diffWithProvider(legacy, details);
+		expect(patch).toEqual({ author: 'Inoue Takehiko' });
+		expect(suspects).toEqual(['country', 'totalPages']);
+	});
+
+	it('replaces a suspect value when the current match has one, keeps it otherwise', () => {
+		const { suspects } = diffWithProvider(legacy, details);
+		const patch = planWikiUpdate(legacy, { wikidataId: 'Q1244799', country: 'Japan' }, suspects);
+		expect(patch).toEqual({
+			country: 'Japan',
+			wikiMeta: { wikidataId: 'Q1244799', fields: ['country'] },
+		});
+		expect(patch).not.toHaveProperty('totalPages');
+	});
+
+	it('records "checked, no match" so the check does not repeat', () => {
+		expect(planWikiUpdate(legacy, null, ['country'])).toEqual({
+			wikiMeta: { wikidataId: null, fields: [] },
+		});
+		const checked = { ...legacy, wikiMeta: { wikidataId: null, fields: [] } } as LocalMedia;
+		expect(planWikiUpdate(checked, null)).toEqual({});
 	});
 });
