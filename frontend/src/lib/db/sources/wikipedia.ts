@@ -1,15 +1,21 @@
 /**
- * Wikidata enrichment source — queries Wikidata's SPARQL endpoint
- * to fill in missing metadata (author, country, status, etc.).
+ * Wikidata enrichment source — queries the Wikidata API to fill in missing
+ * metadata (author, country, genres, counts…) and find the Wikipedia article.
  *
  * This is a supplementary source: it never replaces already-populated fields.
- * Requires the `feat_wikipedia_enrichment` feature flag to be enabled.
+ * Gated by the `feat_wikipedia_enrichment` flag (Settings → Integrations).
  */
 import type { MediaType } from '$lib/db/schema';
+import { getCached, setCache } from '../apiCache';
 
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 
+/** Language used when a localized label/article is missing. Titles are searched in it too. */
+const FALLBACK_LANG = 'en';
+
 export interface WikipediaEnrichment {
+	wikidataId: string;
+	wikipediaUrl?: string;
 	author?: string;
 	country?: string;
 	description?: string;
@@ -23,25 +29,27 @@ export interface WikipediaEnrichment {
 	runtimeMinutes?: number;
 }
 
-interface WikidataSearchResult {
-	search: {
-		id: string;
-		label: string;
-		description?: string;
-	}[];
+export interface WikidataSearchHit {
+	id: string;
+	label: string;
+	description?: string;
 }
+
+type LangMap = Record<string, { value: string }>;
 
 interface WikidataEntity {
 	claims: Record<string, WikidataClaim[]>;
-	labels?: Record<string, { value: string }>;
-	descriptions?: Record<string, { value: string }>;
+	labels?: LangMap;
+	descriptions?: LangMap;
+	sitelinks?: Record<string, { url?: string }>;
 }
 
 interface WikidataClaim {
 	mainsnak: {
 		datavalue?: {
 			type: string;
-			value: any;
+			// Entity refs carry `id`, quantities carry `amount`; other value shapes are ignored
+			value?: { id?: string; amount?: string };
 		};
 	};
 }
@@ -65,76 +73,91 @@ const PROPS = {
 	DURATION: 'P2047',     // duration
 } as const;
 
+const TYPE_KEYWORDS: Record<string, string[]> = {
+	film: ['film', 'movie'],
+	tv: ['television', 'tv', 'series'],
+	anime: ['anime', 'animation', 'series'],
+	manga: ['manga', 'comic', 'series'],
+	manhwa: ['manhwa', 'comic', 'webtoon'],
+	manhua: ['manhua', 'comic', 'webtoon'],
+	comic: ['comic', 'graphic novel'],
+	book: ['novel', 'book', 'series'],
+	game: ['game', 'video game'],
+};
+
+/**
+ * GET a Wikimedia API URL as JSON. Throws on network/HTTP errors so callers can
+ * tell "no match" apart from "offline" and avoid caching the latter.
+ */
+async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T> {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		const res = await fetch(url, { signal: controller.signal });
+		if (!res.ok) throw new Error(`Wikimedia API ${res.status}`);
+		return (await res.json()) as T;
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
+/** Pick `lang`, else the fallback language, from a Wikidata language map. */
+function pickLang(map: LangMap | undefined, lang: string): string | undefined {
+	return map?.[lang]?.value ?? map?.[FALLBACK_LANG]?.value;
+}
+
+/**
+ * Score Wikidata search hits by how well their description matches the media type
+ * and whether the label equals the title. Returns the best hit's ID, or null when
+ * nothing scored (so the caller can try a fuzzier search).
+ */
+export function pickBestMatch(
+	hits: WikidataSearchHit[],
+	title: string,
+	type: MediaType,
+): string | null {
+	const typeKeywords = TYPE_KEYWORDS[type] || [];
+	let bestMatch: WikidataSearchHit | null = null;
+	let maxScore = 0;
+
+	for (const item of hits) {
+		let score = 0;
+		const desc = (item.description || '').toLowerCase();
+
+		if (desc) {
+			for (const kw of typeKeywords) {
+				if (desc.includes(kw)) score += 2;
+			}
+			// Bonus for 'franchise' or 'media' if it's broadly correct
+			if (desc.includes('franchise') || desc.includes('media')) score += 1;
+		}
+
+		// Exact title match bonus
+		if (item.label && item.label.toLowerCase() === title.toLowerCase()) {
+			score += 1;
+		}
+
+		if (score > maxScore) {
+			maxScore = score;
+			bestMatch = item;
+		}
+	}
+
+	return bestMatch?.id ?? null;
+}
+
 /**
  * Search Wikidata for the best matching entity for the given title + type.
  * Returns the Wikidata entity ID (Q-number) or null.
  */
-async function findWikidataEntity(
-	title: string,
-	type: MediaType,
-): Promise<string | null> {
-	try {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 8000);
-		// Search just the title
-		const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(title)}&language=en&format=json&limit=10&origin=*`;
-		const res = await fetch(url, { signal: controller.signal });
-		clearTimeout(timeout);
-		if (!res.ok) return null;
+async function findWikidataEntity(title: string, type: MediaType): Promise<string | null> {
+	// Provider titles are English, so search in English regardless of display language
+	const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(title)}&language=${FALLBACK_LANG}&format=json&limit=10&origin=*`;
+	const data = await fetchJson<{ search?: WikidataSearchHit[] }>(url);
+	const hit = data.search?.length ? pickBestMatch(data.search, title, type) : null;
 
-		const data: WikidataSearchResult = await res.json();
-		if (!data.search || data.search.length === 0) return null;
-
-		const keywords: Record<string, string[]> = {
-			film: ['film', 'movie'],
-			tv: ['television', 'tv', 'series'],
-			anime: ['anime', 'animation', 'series'],
-			manga: ['manga', 'comic', 'series'],
-			manhwa: ['manhwa', 'comic', 'webtoon'],
-			manhua: ['manhua', 'comic', 'webtoon'],
-			comic: ['comic', 'graphic novel'],
-			book: ['novel', 'book', 'series'],
-			game: ['game', 'video game'],
-		};
-
-		const typeKeywords = keywords[type] || [];
-		
-		let bestMatch = data.search[0];
-		let maxScore = -1;
-
-		for (const item of data.search) {
-			let score = 0;
-			const desc = (item.description || '').toLowerCase();
-			
-			if (desc) {
-				for (const kw of typeKeywords) {
-					if (desc.includes(kw)) score += 2;
-				}
-				// Bonus for 'franchise' or 'media' if it's broadly correct
-				if (desc.includes('franchise') || desc.includes('media')) score += 1;
-			}
-			
-			// Exact title match bonus
-			if (item.label && item.label.toLowerCase() === title.toLowerCase()) {
-				score += 1;
-			}
-			
-			if (score > maxScore) {
-				maxScore = score;
-				bestMatch = item;
-			}
-		}
-
-		// Score 0 means neither the description nor the label matched — not a real hit
-		if (maxScore > 0) {
-			return bestMatch.id;
-		}
-
-		// Fallback: If Wikidata exact search failed to find a good match, use Wikipedia's fuzzy full-text search
-		return await fallbackWikipediaSearch(title, type);
-	} catch {
-		return null;
-	}
+	// Fallback: If Wikidata exact search failed to find a good match, use Wikipedia's fuzzy full-text search
+	return hit ?? (await fallbackWikipediaSearch(title, type));
 }
 
 /**
@@ -142,88 +165,61 @@ async function findWikidataEntity(
  * then maps the top Wikipedia article to its corresponding Wikidata entity.
  */
 async function fallbackWikipediaSearch(title: string, type: MediaType): Promise<string | null> {
-	try {
-		const typeSuffix: Record<string, string> = {
-			film: 'film',
-			tv: 'tv series',
-			anime: 'anime',
-			manga: 'manga',
-			manhwa: 'manhwa',
-			manhua: 'manhua',
-			comic: 'comic',
-			book: 'novel',
-			game: 'video game',
-		};
+	const typeSuffix: Record<string, string> = {
+		film: 'film',
+		tv: 'tv series',
+		anime: 'anime',
+		manga: 'manga',
+		manhwa: 'manhwa',
+		manhua: 'manhua',
+		comic: 'comic',
+		book: 'novel',
+		game: 'video game',
+	};
 
-		const suffix = typeSuffix[type] ?? '';
-		const searchQuery = `${title} ${suffix}`.trim();
+	const suffix = typeSuffix[type] ?? '';
+	const searchQuery = `${title} ${suffix}`.trim();
 
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 8000);
-		
-		const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&origin=*`;
-		const wikiRes = await fetch(wikiUrl, { signal: controller.signal });
-		clearTimeout(timeout);
-		if (!wikiRes.ok) return null;
+	const wikiUrl = `https://${FALLBACK_LANG}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&origin=*`;
+	const wikiData = await fetchJson<{ query?: { search?: { title: string }[] } }>(wikiUrl);
+	const topTitle = wikiData.query?.search?.[0]?.title;
+	if (!topTitle) return null;
 
-		const wikiData = await wikiRes.json();
-		if (!wikiData.query?.search?.length) return null;
-
-		const topTitle = wikiData.query.search[0].title;
-
-		// Map Wikipedia title to Wikidata ID
-		const wdUrl = `${WIKIDATA_API}?action=wbgetentities&sites=enwiki&titles=${encodeURIComponent(topTitle)}&props=info&format=json&origin=*`;
-		const wdRes = await fetch(wdUrl);
-		if (!wdRes.ok) return null;
-
-		const wdData = await wdRes.json();
-		if (wdData.entities) {
-			const entityId = Object.keys(wdData.entities)[0];
-			if (entityId !== '-1') return entityId;
-		}
-		
-		return null;
-	} catch {
-		return null;
-	}
+	// Map Wikipedia title to Wikidata ID
+	const wdUrl = `${WIKIDATA_API}?action=wbgetentities&sites=${FALLBACK_LANG}wiki&titles=${encodeURIComponent(topTitle)}&props=info&format=json&origin=*`;
+	const wdData = await fetchJson<{ entities?: Record<string, unknown> }>(wdUrl);
+	const entityId = Object.keys(wdData.entities ?? {})[0];
+	return entityId && entityId !== '-1' ? entityId : null;
 }
 
 /**
- * Fetch a Wikidata entity's structured claims.
+ * Fetch a Wikidata entity's claims, labels, descriptions and Wikipedia sitelinks.
  */
-async function fetchWikidataEntity(entityId: string): Promise<WikidataEntity | null> {
-	try {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 8000);
-		const url = `${WIKIDATA_API}?action=wbgetentities&ids=${entityId}&props=claims|labels|descriptions&languages=en&format=json&origin=*`;
-		const res = await fetch(url, { signal: controller.signal });
-		clearTimeout(timeout);
-		if (!res.ok) return null;
-
-		const data = await res.json();
-		return data.entities?.[entityId] ?? null;
-	} catch {
-		return null;
-	}
+async function fetchWikidataEntity(entityId: string, lang: string): Promise<WikidataEntity | null> {
+	const langs = [...new Set([lang, FALLBACK_LANG])];
+	const url =
+		`${WIKIDATA_API}?action=wbgetentities&ids=${entityId}` +
+		`&props=claims|labels|descriptions|sitelinks/urls` +
+		`&languages=${langs.join('|')}&sitefilter=${langs.map((l) => `${l}wiki`).join('|')}` +
+		`&format=json&origin=*`;
+	const data = await fetchJson<{ entities?: Record<string, WikidataEntity> }>(url);
+	return data.entities?.[entityId] ?? null;
 }
 
 /**
- * Resolve a Wikidata entity ID (Q-number) to its English label.
+ * Resolve several Wikidata entity IDs to labels in one request.
  */
-async function resolveEntityLabel(entityId: string): Promise<string | null> {
-	try {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 5000);
-		const url = `${WIKIDATA_API}?action=wbgetentities&ids=${entityId}&props=labels&languages=en&format=json&origin=*`;
-		const res = await fetch(url, { signal: controller.signal });
-		clearTimeout(timeout);
-		if (!res.ok) return null;
-
-		const data = await res.json();
-		return data.entities?.[entityId]?.labels?.en?.value ?? null;
-	} catch {
-		return null;
+async function resolveEntityLabels(ids: string[], lang: string): Promise<Map<string, string>> {
+	const labels = new Map<string, string>();
+	if (ids.length === 0) return labels;
+	const langs = [...new Set([lang, FALLBACK_LANG])].join('|');
+	const url = `${WIKIDATA_API}?action=wbgetentities&ids=${[...new Set(ids)].join('|')}&props=labels&languages=${langs}&format=json&origin=*`;
+	const data = await fetchJson<{ entities?: Record<string, { labels?: LangMap }> }>(url, 5000);
+	for (const [id, entity] of Object.entries(data.entities ?? {})) {
+		const label = pickLang(entity.labels, lang);
+		if (label) labels.set(id, label);
 	}
+	return labels;
 }
 
 /**
@@ -263,21 +259,13 @@ function getEntityRefs(entity: WikidataEntity, prop: string, limit = 3): string[
 		.filter((id): id is string => !!id);
 }
 
-/**
- * Main enrichment function — searches Wikidata for the title, fetches structured data,
- * and returns partial metadata to fill in gaps.
- */
-export async function fetchWikidataEnrichment(
-	title: string,
+async function buildEnrichment(
+	entityId: string,
 	type: MediaType,
+	lang: string,
 ): Promise<WikipediaEnrichment | null> {
-	const entityId = await findWikidataEntity(title, type);
-	if (!entityId) return null;
-
-	const entity = await fetchWikidataEntity(entityId);
+	const entity = await fetchWikidataEntity(entityId, lang);
 	if (!entity) return null;
-
-	const result: WikipediaEnrichment = {};
 
 	// Author / Creator / Director — depends on type
 	const authorProp =
@@ -287,41 +275,56 @@ export async function fetchWikidataEnrichment(
 		PROPS.CREATOR;
 
 	const authorRef = getEntityRef(entity, authorProp) ?? getEntityRef(entity, PROPS.CREATOR);
-	if (authorRef) {
-		const label = await resolveEntityLabel(authorRef);
-		if (label) result.author = label;
-	}
-
-	// Country of origin
 	const countryRef = getEntityRef(entity, PROPS.COUNTRY);
-	if (countryRef) {
-		const label = await resolveEntityLabel(countryRef);
-		if (label) result.country = label;
-	}
-
-	// Genres
 	const genreRefs = getEntityRefs(entity, PROPS.GENRE, 3);
-	if (genreRefs.length > 0) {
-		const genreLabels = await Promise.all(genreRefs.map(resolveEntityLabel));
-		const genres = genreLabels.filter((g): g is string => !!g);
-		if (genres.length > 0) result.genres = genres;
+	const labels = await resolveEntityLabels(
+		[authorRef, countryRef, ...genreRefs].filter((id): id is string => !!id),
+		lang,
+	);
+
+	const genres = genreRefs.map((id) => labels.get(id)).filter((g): g is string => !!g);
+	const sitelinks = entity.sitelinks ?? {};
+
+	return {
+		wikidataId: entityId,
+		wikipediaUrl: sitelinks[`${lang}wiki`]?.url ?? sitelinks[`${FALLBACK_LANG}wiki`]?.url,
+		author: authorRef ? labels.get(authorRef) : undefined,
+		country: countryRef ? labels.get(countryRef) : undefined,
+		genres: genres.length > 0 ? genres : undefined,
+		description: pickLang(entity.descriptions, lang),
+		totalEpisodes: getQuantity(entity, PROPS.EPISODES),
+		totalSeasons: getQuantity(entity, PROPS.SEASONS),
+		totalVolumes: getQuantity(entity, PROPS.VOLUMES),
+		totalChapters: getQuantity(entity, PROPS.CHAPTERS),
+		totalPages: getQuantity(entity, PROPS.PAGES),
+		runtimeMinutes:
+			type === 'film' || type === 'anime' ? getQuantity(entity, PROPS.DURATION) : undefined,
+	};
+}
+
+/**
+ * Main enrichment function — searches Wikidata for the title, fetches structured data,
+ * and returns partial metadata to fill in gaps plus the Wikipedia article URL.
+ *
+ * `lang` selects the language of labels, descriptions and the article link (falling back
+ * to English). Results — including "no match" — are cached in ApiCache; network failures
+ * are not, so an offline visit retries next time.
+ */
+export async function fetchWikidataEnrichment(
+	title: string,
+	type: MediaType,
+	lang = FALLBACK_LANG,
+): Promise<WikipediaEnrichment | null> {
+	const cacheKey = `wikidata:${lang}:${type}:${title.toLowerCase()}`;
+	const cached = await getCached<{ result: WikipediaEnrichment | null }>(cacheKey);
+	if (cached) return cached.result;
+
+	try {
+		const entityId = await findWikidataEntity(title, type);
+		const result = entityId ? await buildEnrichment(entityId, type, lang) : null;
+		await setCache(cacheKey, { result });
+		return result;
+	} catch {
+		return null;
 	}
-
-	// Numeric fields
-	result.totalEpisodes = getQuantity(entity, PROPS.EPISODES);
-	result.totalSeasons = getQuantity(entity, PROPS.SEASONS);
-	result.totalVolumes = getQuantity(entity, PROPS.VOLUMES);
-	result.totalChapters = getQuantity(entity, PROPS.CHAPTERS);
-	result.totalPages = getQuantity(entity, PROPS.PAGES);
-	if (type === 'film' || type === 'anime') {
-		result.runtimeMinutes = getQuantity(entity, PROPS.DURATION);
-	}
-
-	// Description from Wikidata
-	const desc = entity.descriptions?.en?.value;
-	if (desc) result.description = desc;
-
-	// Only return if we actually found useful data
-	const hasData = Object.values(result).some((v) => v !== undefined);
-	return hasData ? result : null;
 }
