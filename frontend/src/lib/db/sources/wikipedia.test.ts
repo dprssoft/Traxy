@@ -18,6 +18,14 @@ describe('pickBestMatch', () => {
 		expect(pickBestMatch(hits, 'Dune', 'film')).toBe('Q2');
 	});
 
+	it('ignores an exact label match whose description is another media type', () => {
+		const hits = [
+			{ id: 'Q12008802', label: 'Vagabond', description: 'Norwegian musical group' },
+			{ id: 'Q2298257', label: 'Vagabond', description: '1985 film directed by Agnès Varda' },
+		];
+		expect(pickBestMatch(hits, 'Vagabond', 'manga')).toBeNull();
+	});
+
 	it('returns null when no hit scores, so the fuzzy fallback runs', () => {
 		const hits = [{ id: 'Q1', label: 'Something else', description: 'river in France' }];
 		expect(pickBestMatch(hits, 'Dune', 'film')).toBeNull();
@@ -74,7 +82,7 @@ describe('fetchWikidataEnrichment', () => {
 			runtimeMinutes: 155,
 		});
 		expect(fetch).toHaveBeenCalledTimes(3);
-		expect(setCache).toHaveBeenCalledWith('wikidata:en:film:dune', { result });
+		expect(setCache).toHaveBeenCalledWith('wikidata:v2:en:film:dune', { result });
 	});
 
 	it('does not cache when the network fails', async () => {

@@ -132,6 +132,10 @@ export function pickBestMatch(
 			if (desc.includes('franchise') || desc.includes('media')) score += 1;
 		}
 
+		// A hit that doesn't look like this media type is never a match, however well the
+		// label matches (e.g. "Vagabond" the Norwegian band for the manga)
+		if (score === 0) continue;
+
 		// Exact title match bonus
 		if (item.label && item.label.toLowerCase() === title.toLowerCase()) {
 			score += 1;
@@ -315,7 +319,8 @@ export async function fetchWikidataEnrichment(
 	type: MediaType,
 	lang = FALLBACK_LANG,
 ): Promise<WikipediaEnrichment | null> {
-	const cacheKey = `wikidata:${lang}:${type}:${title.toLowerCase()}`;
+	// Bump the version when matching changes so stale (possibly wrong) matches are dropped
+	const cacheKey = `wikidata:v2:${lang}:${type}:${title.toLowerCase()}`;
 	const cached = await getCached<{ result: WikipediaEnrichment | null }>(cacheKey);
 	if (cached) return cached.result;
 
