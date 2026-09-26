@@ -4,6 +4,7 @@
 	import { updateProgress, upsertTracking } from '$lib/db/services/tracking.service';
 
 	import { addMediaFromResult } from '$lib/db/services/media.service';
+	import { animeSeasonsStore } from '$lib/stores/animeSeasons.svelte';
 	import { goto } from '$app/navigation';
 
 	interface Props {
@@ -53,6 +54,14 @@
 		const next = Math.max(current - step, 0);
 		updateField(field, next);
 	}
+
+	/** A merged anime series (first season's ID, several seasons): tracked like a TV show. */
+	const isAnimeSeries = $derived(
+		media.type === 'anime' &&
+			animeSeasonsStore.mergeEnabled &&
+			(media.seasonData?.length ?? 0) > 1 &&
+			media.seasonData?.[0]?.linkedMediaId === media.externalId,
+	);
 
 	let currentAnimeSeason = $derived(
 		media.type === 'anime' && media.seasonData
@@ -212,7 +221,7 @@
 			</p>
 		
 		{:else if media.type === 'tv' || media.type === 'anime'}
-			{#if media.type === 'tv'}
+			{#if media.type === 'tv' || isAnimeSeries}
 				<div class="flex items-center justify-between p-3 rounded-2xl bg-[#16192b]/60 border border-white/[0.04]">
 					<span class="text-slate-300 text-xs font-semibold">Season {media.totalSeasons ? `/ ${media.totalSeasons}` : ''}</span>
 					<div class="flex items-center gap-2.5">

@@ -280,6 +280,10 @@ export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia>
 			}
 		} else if (media.type === 'anime' && media.source === 'anilist' && (!media.seasonData || !media.runtimeMinutes)) {
 			const details = await getAnilistItemDetails(media);
+			// A merged series' episode total spans all seasons and grows as seasons air
+			if (details?.totalEpisodes && details.totalEpisodes !== media.totalEpisodes) {
+				patch.totalEpisodes = details.totalEpisodes;
+			}
 			if (details?.seasonData) {
 				patch.totalSeasons = details.totalSeasons;
 				patch.seasonData = details.seasonData;
