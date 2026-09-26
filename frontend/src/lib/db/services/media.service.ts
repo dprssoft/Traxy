@@ -3,7 +3,7 @@ import type { LocalMedia, MediaMetaPatch, SearchResult } from '$lib/types/mediaT
 import type { MediaSource, MediaType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { getTmdbDetails } from '../sources/tmdb';
-import { getIgdbDetails } from '../sources/igdb';
+import { fetchIgdbTimeToBeat, fetchIgdbTimeToBeatByTitle, getIgdbDetails } from '../sources/igdb';
 import { getAnilistDetails } from '../sources/anilist';
 import { getComicVineDetails } from '../sources/comicvine';
 import { getOpenLibraryDetails } from '../sources/openlibrary';
@@ -243,4 +243,43 @@ export async function fetchProviderDetails(
 		default:
 			return null;
 	}
+}
+
+/**
+ * Fill details that older rows or search results may lack — TV seasons, runtimes, and game
+ * time-to-beat. Best effort: returns the (possibly updated) media, never throws.
+ */
+export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia> {
+	const patch: MediaMetaPatch = {};
+	try {
+		if ((media.type === 'tv' && !media.seasonData) || (media.type === 'film' && !media.runtimeMinutes)) {
+			if (media.source === 'tmdb') {
+				const details = await getTmdbDetails(media.externalId, media.type);
+				if (details?.seasonData) {
+					patch.totalSeasons = details.totalSeasons;
+					patch.totalEpisodes = details.totalEpisodes;
+					patch.seasonData = details.seasonData;
+				}
+				if (details?.runtimeMinutes) patch.runtimeMinutes = details.runtimeMinutes;
+			}
+		} else if (media.type === 'anime' && media.source === 'anilist' && (!media.seasonData || !media.runtimeMinutes)) {
+			const details = await getAnilistDetails(parseInt(media.externalId));
+			if (details?.seasonData) {
+				patch.totalSeasons = details.totalSeasons;
+				patch.seasonData = details.seasonData;
+			}
+			if (details?.runtimeMinutes) patch.runtimeMinutes = details.runtimeMinutes;
+		} else if (media.type === 'game' && !media.timeToBeat) {
+			const ttb = media.source === 'igdb'
+				? await fetchIgdbTimeToBeat(media.externalId)
+				: await fetchIgdbTimeToBeatByTitle(media.title);
+			if (ttb) patch.timeToBeat = JSON.stringify(ttb);
+		}
+	} catch (e) {
+		console.error('[media] filling missing details failed:', e);
+	}
+
+	if (Object.keys(patch).length === 0) return media;
+	await updateMediaMeta(media.id, patch);
+	return (await getMediaById(media.id)) ?? media;
 }
