@@ -8,9 +8,21 @@
 	} from '$lib/db/services/backup.service';
 	import { getAutosave, type AutosaveRecord } from '$lib/services/autosave.service';
 	import { downloadFile } from '$lib/utils/download';
+	import { Capacitor } from '@capacitor/core';
+	import { Share } from '@capacitor/share';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
+
+	const isNative = Capacitor.isNativePlatform();
+
+	async function nativeShare(filename: string, json: string): Promise<void> {
+		await Share.share({
+			title: filename,
+			text: json,
+			dialogTitle: 'Save or share your Traxy backup',
+		});
+	}
 
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let autosaveInput = $state<HTMLInputElement | null>(null);
@@ -83,20 +95,24 @@
 	}
 
 	async function handleExport() {
+		const filename = `traxy-backup-${new Date().toISOString().split('T')[0]}.json`;
 		try {
 			exporting = true;
 			backupStatus = '';
 			const json = await exportDatabaseJson();
-			downloadFile(
-				`traxy-backup-${new Date().toISOString().split('T')[0]}.json`,
-				json,
-				'application/json',
-			);
-			backupStatus = 'success:Export successful!';
+			if (isNative) {
+				await nativeShare(filename, json);
+				backupStatus = 'success:Backup ready to save!';
+			} else {
+				downloadFile(filename, json, 'application/json');
+				backupStatus = 'success:Export successful!';
+			}
 			setTimeout(() => (backupStatus = ''), 4000);
-		} catch (err) {
-			console.error(err);
-			backupStatus = 'error:Export failed.';
+		} catch (err: unknown) {
+			if (err instanceof Error && err.name !== 'AbortError') {
+				console.error(err);
+				backupStatus = 'error:Export failed.';
+			}
 		} finally {
 			exporting = false;
 		}
@@ -108,13 +124,18 @@
 			sharing = true;
 			backupStatus = '';
 			const json = await exportDatabaseJson();
-			const file = new File([json], filename, { type: 'application/json' });
-			if (navigator.canShare?.({ files: [file] })) {
-				await navigator.share({ files: [file], title: 'Traxy Backup' });
-				backupStatus = 'success:Backup shared!';
+			if (isNative) {
+				await nativeShare(filename, json);
+				backupStatus = 'success:Backup ready to save!';
 			} else {
-				downloadFile(filename, json, 'application/json');
-				backupStatus = 'success:Export successful!';
+				const file = new File([json], filename, { type: 'application/json' });
+				if (navigator.canShare?.({ files: [file] })) {
+					await navigator.share({ files: [file], title: 'Traxy Backup' });
+					backupStatus = 'success:Backup shared!';
+				} else {
+					downloadFile(filename, json, 'application/json');
+					backupStatus = 'success:Export successful!';
+				}
 			}
 			setTimeout(() => (backupStatus = ''), 4000);
 		} catch (err: unknown) {
