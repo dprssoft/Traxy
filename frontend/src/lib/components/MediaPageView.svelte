@@ -21,9 +21,16 @@
 		tracking: LocalTrackingStatus | null;
 		cycles: LocalWatchCycle[];
 		showCountryFlags?: boolean;
+		wikipediaUrl?: string | null;
 	}
 
-	let { media, tracking: initialTracking, cycles: initialCycles, showCountryFlags = false }: Props = $props();
+	let {
+		media,
+		tracking: initialTracking,
+		cycles: initialCycles,
+		showCountryFlags = false,
+		wikipediaUrl = null,
+	}: Props = $props();
 
 	// tracking and cycles are written locally (by handlers) AND synced from props
 	// eslint-disable-next-line svelte/prefer-writable-derived
@@ -574,6 +581,20 @@
 						{genre}
 					</span>
 				{/each}
+
+				{#if wikipediaUrl}
+					<!-- External article link: resolve() only applies to app routes -->
+					<!-- eslint-disable svelte/no-navigation-without-resolve -->
+					<a
+						href={wikipediaUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="px-2 py-0.5 bg-[#181b2e] border border-white/[0.08] text-slate-300 hover:text-white text-[10px] sm:text-xs rounded-md font-medium"
+					>
+						Wikipedia ↗
+					</a>
+					<!-- eslint-enable svelte/no-navigation-without-resolve -->
+				{/if}
 			</div>
 
 			<!-- 8. Media description (expandable) -->

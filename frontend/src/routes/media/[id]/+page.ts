@@ -6,7 +6,7 @@ import { getCycles } from '$lib/db/services/cycle.service';
 import { getTmdbDetails } from '$lib/db/sources/tmdb';
 import { getAnilistDetails } from '$lib/db/sources/anilist';
 import { getAppSettingBool, getWikiEnrichmentEnabled } from '$lib/db/services/settings.service';
-import { fetchWikidataEnrichment } from '$lib/db/sources/wikipedia';
+import { enrichMediaFromWiki } from '$lib/db/services/wiki.service';
 
 export const load: PageLoad = async ({ params, parent }) => {
 	// Layout load runs initDb(); page loads run in parallel unless we wait for it.
@@ -90,38 +90,10 @@ export const load: PageLoad = async ({ params, parent }) => {
 		if (updated) media = updated;
 	}
 
-	// Wikidata enrichment — fill in missing fields when feature is enabled
-	const hasMissingFields = !media.author || !media.country || !media.releaseStatus;
-	if (hasMissingFields) {
-		try {
-			const enabled = await getWikiEnrichmentEnabled();
-			if (enabled) {
-				const enrichment = await fetchWikidataEnrichment(media.title, media.type);
-				if (enrichment) {
-					// Only fill in fields that are currently empty
-					const patch: Record<string, unknown> = {};
-					if (!media.author && enrichment.author) patch.author = enrichment.author;
-					if (!media.country && enrichment.country) patch.country = enrichment.country;
-					if (!media.releaseStatus && enrichment.releaseStatus) patch.releaseStatus = enrichment.releaseStatus;
-					if ((!media.genres || media.genres.length === 0) && enrichment.genres) patch.genres = enrichment.genres;
-					if (!media.totalEpisodes && enrichment.totalEpisodes) patch.totalEpisodes = enrichment.totalEpisodes;
-					if (!media.totalSeasons && enrichment.totalSeasons) patch.totalSeasons = enrichment.totalSeasons;
-					if (!media.totalVolumes && enrichment.totalVolumes) patch.totalVolumes = enrichment.totalVolumes;
-					if (!media.totalChapters && enrichment.totalChapters) patch.totalChapters = enrichment.totalChapters;
-					if (!media.totalPages && enrichment.totalPages) patch.totalPages = enrichment.totalPages;
-					if (!media.runtimeMinutes && enrichment.runtimeMinutes) patch.runtimeMinutes = enrichment.runtimeMinutes;
-
-					if (Object.keys(patch).length > 0) {
-						await updateMediaMeta(media.id, patch);
-						// Re-fetch so the returned media object reflects the enriched fields
-						const enriched = await getMediaById(params.id);
-						if (enriched) media = enriched;
-					}
-				}
-			}
-		} catch {
-			// Wikidata enrichment is best-effort — never block page load on failure
-		}
+	// Wikidata enrichment — fills missing fields and finds the Wikipedia article
+	let wikipediaUrl: string | null = null;
+	if (await getWikiEnrichmentEnabled()) {
+		({ media, wikipediaUrl } = await enrichMediaFromWiki(media));
 	}
 
 	const tracking = await getTracking(params.id);
@@ -133,5 +105,6 @@ export const load: PageLoad = async ({ params, parent }) => {
 		tracking,
 		cycles,
 		showCountryFlags,
+		wikipediaUrl,
 	};
 };
