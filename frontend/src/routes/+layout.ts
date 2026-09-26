@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { Capacitor } from '@capacitor/core';
 import { initDb } from '$lib/db';
 import { getBottomNavPrefs, getContentFilterPrefs } from '$lib/db/services/settings.service';
+import { restoreAnimeMergeBackupIfPresent } from '$lib/db/services/backup.service';
 
 // Client-side layout load — no auth, no cookies.
 // SSR is disabled (adapter-static, ssr: false), so this runs only in the browser.
@@ -31,6 +32,9 @@ export const load = async () => {
 			await initJeepSqliteWeb();
 		}
 		await initDb();
+		await restoreAnimeMergeBackupIfPresent().catch((err) =>
+			console.error('Restoring the pre-merge anime backup failed', err),
+		);
 		return {
 			bottomNav: await getBottomNavPrefs().catch(() => null),
 			contentFilter: await getContentFilterPrefs().catch(() => null),

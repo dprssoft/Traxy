@@ -4,6 +4,7 @@ import {
 	importDatabaseJson,
 	resetAllUserData,
 	clearMediaCache,
+	restoreAnimeMergeBackupIfPresent,
 } from './backup.service';
 
 // Real table names, per the CREATE TABLE statements in db/index.ts. backup.service.ts
@@ -23,12 +24,16 @@ const STALE_TABLE_NAMES = ['LocalMedia', 'CustomCollection'];
 let executedQueries: { type: 'query' | 'run'; sql: string; values?: any[] }[] = [];
 // Rows returned for `PRAGMA table_info(...)` — one entry per column in the live table.
 let tableColumns: unknown[] = [];
+// Rows returned for AppSettings reads.
+let appSettingsRows: unknown[] = [];
 
 vi.mock('../index', () => ({
 	getDb: () => ({
 		query: vi.fn(async (sql: string, values: any[] = []) => {
 			executedQueries.push({ type: 'query', sql, values });
-			return { values: sql.startsWith('PRAGMA table_info') ? tableColumns : [] };
+			if (sql.startsWith('PRAGMA table_info')) return { values: tableColumns };
+			if (sql.includes('FROM AppSettings')) return { values: appSettingsRows };
+			return { values: [] };
 		}),
 		run: vi.fn(async (sql: string, values: any[] = []) => {
 			executedQueries.push({ type: 'run', sql, values });
@@ -140,5 +145,40 @@ describe('backup.service', () => {
 				{ type: 'run', sql: 'DELETE FROM ApiCache', values: [] },
 			]);
 		});
+	});
+});
+
+describe('restoreAnimeMergeBackupIfPresent', () => {
+	beforeEach(() => {
+		executedQueries = [];
+		tableColumns = [];
+		appSettingsRows = [];
+	});
+
+	it('does nothing when the merge never ran', async () => {
+		expect(await restoreAnimeMergeBackupIfPresent()).toBe(false);
+		expect(executedQueries.filter((q) => q.type === 'run')).toEqual([]);
+	});
+
+	it('restores the pre-merge library and drops the merge settings', async () => {
+		const backup = { version: 1, data: { Media: [['m1', 'anilist', '142853']] } };
+		appSettingsRows = [[JSON.stringify({ db: JSON.stringify(backup), seriesIds: [] })]];
+		tableColumns = [{}, {}, {}];
+
+		expect(await restoreAnimeMergeBackupIfPresent()).toBe(true);
+
+		const runs = executedQueries.filter((q) => q.type === 'run');
+		expect(runs).toContainEqual(
+			expect.objectContaining({ sql: 'INSERT INTO Media VALUES (?, ?, ?)', values: ['m1', 'anilist', '142853'] }),
+		);
+		const deletedKeys = runs
+			.filter((q) => q.sql.startsWith('DELETE FROM AppSettings'))
+			.map((q) => q.values?.[0]);
+		expect(deletedKeys).toEqual([
+			'anime_merge_backup',
+			'anime_merge_pending',
+			'anime_series_ids',
+			'feat_merge_anime_seasons',
+		]);
 	});
 });

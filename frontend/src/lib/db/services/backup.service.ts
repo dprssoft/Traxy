@@ -67,3 +67,32 @@ export async function resetAllUserData(): Promise<void> {
 		await db.run(`DELETE FROM ${table}`);
 	}
 }
+
+// Left behind by the reverted anime season merge (bba2783): a pre-merge backup of the library.
+const ANIME_MERGE_BACKUP_KEY = 'anime_merge_backup';
+const ANIME_MERGE_LEFTOVER_KEYS = [
+	ANIME_MERGE_BACKUP_KEY,
+	'anime_merge_pending',
+	'anime_series_ids',
+	'feat_merge_anime_seasons',
+];
+
+/**
+ * One-time cleanup after the anime season merge was reverted: if the merge ran on this
+ * device, put the library back as it was before it, then drop the merge's settings.
+ * Does nothing when the merge never ran.
+ */
+export async function restoreAnimeMergeBackupIfPresent(): Promise<boolean> {
+	const db = getDb();
+	const res = await db.query('SELECT value FROM AppSettings WHERE key = ?', [ANIME_MERGE_BACKUP_KEY]);
+	const row = res.values?.[0];
+	const raw = Array.isArray(row) ? row[0] : (row as { value?: string } | undefined)?.value;
+	if (!raw) return false;
+
+	const backup: { db: string } = JSON.parse(raw);
+	await importDatabaseJson(backup.db);
+	for (const key of ANIME_MERGE_LEFTOVER_KEYS) {
+		await db.run('DELETE FROM AppSettings WHERE key = ?', [key]);
+	}
+	return true;
+}
