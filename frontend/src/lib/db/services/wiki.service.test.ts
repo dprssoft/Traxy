@@ -50,7 +50,10 @@ describe('planWikiUpdate', () => {
 	});
 
 	it('clears previous fields when nothing matches any more', () => {
-		expect(planWikiUpdate(vagabond, null)).toEqual({ country: null, wikiMeta: null });
+		expect(planWikiUpdate(vagabond, null)).toEqual({
+			country: null,
+			wikiMeta: { wikidataId: null, fields: [] },
+		});
 	});
 
 	it('changes nothing when the match is unchanged and there are no new gaps', () => {

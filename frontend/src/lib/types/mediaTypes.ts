@@ -37,8 +37,9 @@ export interface LocalMedia {
 	wikiMeta?: WikiMeta;
 }
 
+/** Absent until the first Wikidata check; `wikidataId: null` means checked, no match. */
 export interface WikiMeta {
-	wikidataId: string;
+	wikidataId: string | null;
 	fields: string[];
 }
 
