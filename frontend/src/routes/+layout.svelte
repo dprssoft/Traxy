@@ -19,6 +19,7 @@
 	import { App } from '@capacitor/app';
 	import { Capacitor } from '@capacitor/core';
 	import { page } from '$app/stores';
+	import { triggerAutosave } from '$lib/services/autosave.service';
 
 	let { children, data } = $props();
 
@@ -65,6 +66,13 @@
 				}
 			});
 		}
+
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') triggerAutosave();
+		});
+
+		const autosaveInterval = setInterval(triggerAutosave, 5 * 60 * 1000);
+		return () => clearInterval(autosaveInterval);
 	});
 </script>
 

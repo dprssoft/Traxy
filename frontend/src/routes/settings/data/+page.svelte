@@ -1,19 +1,29 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import {
 		exportDatabaseJson,
 		importDatabaseJson,
 		clearMediaCache,
 		resetAllUserData,
 	} from '$lib/db/services/backup.service';
+	import { getAutosave, type AutosaveRecord } from '$lib/services/autosave.service';
 	import { downloadFile } from '$lib/utils/download';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 
 	let fileInput = $state<HTMLInputElement | null>(null);
+	let autosaveInput = $state<HTMLInputElement | null>(null);
 	let backupStatus = $state('');
 	let exporting = $state(false);
 	let importing = $state(false);
+	let sharing = $state(false);
+	let restoringAutosave = $state(false);
+	let autosave = $state<AutosaveRecord | null>(null);
+
+	onMount(() => {
+		autosave = getAutosave();
+	});
 
 	let showCacheModal = $state(false);
 	let cacheTimer = $state(3);
@@ -92,6 +102,50 @@
 		}
 	}
 
+	async function handleShare() {
+		const filename = `traxy-backup-${new Date().toISOString().split('T')[0]}.json`;
+		try {
+			sharing = true;
+			backupStatus = '';
+			const json = await exportDatabaseJson();
+			const file = new File([json], filename, { type: 'application/json' });
+			if (navigator.canShare?.({ files: [file] })) {
+				await navigator.share({ files: [file], title: 'Traxy Backup' });
+				backupStatus = 'success:Backup shared!';
+			} else {
+				downloadFile(filename, json, 'application/json');
+				backupStatus = 'success:Export successful!';
+			}
+			setTimeout(() => (backupStatus = ''), 4000);
+		} catch (err: unknown) {
+			if (err instanceof Error && err.name !== 'AbortError') {
+				console.error(err);
+				backupStatus = 'error:Share failed.';
+			}
+		} finally {
+			sharing = false;
+		}
+	}
+
+	async function handleRestoreAutosave() {
+		const record = getAutosave();
+		if (!record) return;
+		if (!confirm('Restore from autosave? This will overwrite your current data.')) return;
+		try {
+			restoringAutosave = true;
+			backupStatus = '';
+			await importDatabaseJson(record.json);
+			backupStatus = 'success:Autosave restored! Refreshing…';
+			setTimeout(() => window.location.reload(), 1200);
+		} catch (err) {
+			console.error(err);
+			backupStatus = 'error:Restore failed.';
+			setTimeout(() => (backupStatus = ''), 4000);
+		} finally {
+			restoringAutosave = false;
+		}
+	}
+
 	async function handleImport(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
@@ -138,12 +192,18 @@
 			<div>
 				<h3 class="font-bold text-white text-sm mb-1">Export Local Backup</h3>
 				<p class="text-xs text-slate-400">
-					Download a full snapshot of your lists, history, and notes as a portable JSON file.
+					Download a full snapshot of your lists, history, notes, and settings as a portable JSON
+					file.
 				</p>
 			</div>
-			<Button onclick={handleExport} loading={exporting} class="w-full">
-				📥 Export JSON Backup
-			</Button>
+			<div class="flex gap-2">
+				<Button onclick={handleExport} loading={exporting} class="flex-1">
+					📥 Export
+				</Button>
+				<Button onclick={handleShare} loading={sharing} variant="secondary" class="flex-1">
+					↗ Share
+				</Button>
+			</div>
 		</div>
 
 		<!-- Restore Card -->
@@ -184,6 +244,37 @@
 			{statusMsg}
 		</div>
 	{/if}
+
+	<div class="pt-4">
+		<SectionHeader
+			title="Autosave"
+			subtitle="Traxy automatically saves a backup to your browser's local storage every 5 minutes and when you leave the app."
+		/>
+		<div
+			class="mt-6 p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+		>
+			<div>
+				<p class="text-xs text-slate-400">
+					{#if autosave}
+						Last autosave: <span class="text-slate-200 font-medium"
+							>{new Date(autosave.ts).toLocaleString()}</span
+						>
+					{:else}
+						No autosave yet. One will be created automatically within 5 minutes.
+					{/if}
+				</p>
+			</div>
+			<Button
+				variant="secondary"
+				onclick={handleRestoreAutosave}
+				loading={restoringAutosave}
+				disabled={!autosave}
+				class="shrink-0"
+			>
+				↩ Restore from Autosave
+			</Button>
+		</div>
+	</div>
 
 	<div class="pt-8">
 		<SectionHeader title="Danger Zone" subtitle="Destructive actions that cannot be undone." />

@@ -1,9 +1,18 @@
 import type { capSQLiteSet } from '@capacitor-community/sqlite';
 import { getDb } from '../index';
 
+// Keys written by the reverted anime season merge — excluded from exports and cleaned up on boot.
+const ANIME_MERGE_BACKUP_KEY = 'anime_merge_backup';
+const ANIME_MERGE_LEFTOVER_KEYS = [
+	ANIME_MERGE_BACKUP_KEY,
+	'anime_merge_pending',
+	'anime_series_ids',
+	'feat_merge_anime_seasons',
+];
+
 /**
  * Serialise the user's library as JSON (`{ version, timestamp, data: { <table>: rows } }`).
- * ApiCache and AppSettings are not included.
+ * ApiCache is excluded (it's a cache). AppSettings is included as of v2.
  */
 export async function exportDatabaseJson(): Promise<string> {
 	const db = getDb();
@@ -24,9 +33,17 @@ export async function exportDatabaseJson(): Promise<string> {
 		exportData[table] = res.values || [];
 	}
 
+	// Export AppSettings, filtering out transient migration keys
+	const transientKeys = new Set(ANIME_MERGE_LEFTOVER_KEYS);
+	const settingsRes = await db.query('SELECT * FROM AppSettings');
+	exportData['AppSettings'] = (settingsRes.values || []).filter((row) => {
+		const key = Array.isArray(row) ? (row[0] as string) : (row as Record<string, string>).key;
+		return !transientKeys.has(key);
+	});
+
 	return JSON.stringify(
 		{
-			version: 1,
+			version: 2,
 			timestamp: new Date().toISOString(),
 			data: exportData,
 		},
@@ -38,6 +55,7 @@ export async function exportDatabaseJson(): Promise<string> {
 /**
  * Replace every user table with the contents of a backup made by `exportDatabaseJson`.
  * All deletes and inserts run as one transaction, so a bad backup leaves the library untouched.
+ * AppSettings is only restored from v2+ backups; v1 backups leave current settings intact.
  */
 export async function importDatabaseJson(jsonString: string): Promise<void> {
 	try {
@@ -69,6 +87,16 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 				(c) => (c as { name?: string }).name,
 			);
 			for (const row of rows) statements.push(toInsert(table, row, columns));
+		}
+
+		// v2+ backups include AppSettings — restore them so preferences survive reinstalls
+		if ((parsed.version ?? 1) >= 2 && Array.isArray(data['AppSettings'])) {
+			statements.push({ statement: 'DELETE FROM AppSettings', values: [] });
+			const cols = ((await db.query('PRAGMA table_info(AppSettings)')).values ?? []).map(
+				(c) => (c as { name?: string }).name,
+			);
+			for (const row of (data['AppSettings'] as BackupRow[]))
+				statements.push(toInsert('AppSettings', row, cols));
 		}
 
 		await db.executeSet(statements, true);
@@ -124,15 +152,6 @@ export async function resetAllUserData(): Promise<void> {
 		await db.run(`DELETE FROM ${table}`);
 	}
 }
-
-// Left behind by the reverted anime season merge (bba2783): a pre-merge backup of the library.
-const ANIME_MERGE_BACKUP_KEY = 'anime_merge_backup';
-const ANIME_MERGE_LEFTOVER_KEYS = [
-	ANIME_MERGE_BACKUP_KEY,
-	'anime_merge_pending',
-	'anime_series_ids',
-	'feat_merge_anime_seasons',
-];
 
 /**
  * One-time cleanup after the anime season merge was reverted: if the merge ran on this
