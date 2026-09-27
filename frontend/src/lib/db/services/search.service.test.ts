@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { searchAll } from './search.service';
+import { searchAll, expandSearchType, collapseToSearchType } from './search.service';
 import { DEFAULT_SEARCH_PREFS } from './settings.service';
 import { searchTmdb } from '../sources/tmdb';
 import { searchIgdb } from '../sources/igdb';
@@ -42,18 +42,18 @@ describe('searchAll', () => {
 	});
 
 	it('returns nothing and calls no provider for a blank query', async () => {
-		expect(await searchAll('   ', 'all', prefs)).toEqual([]);
+		expect(await searchAll('   ', [], prefs)).toEqual([]);
 		expect(searchTmdb).not.toHaveBeenCalled();
 	});
 
 	it('merges every provider for "all"', async () => {
-		const titles = (await searchAll('x', 'all', prefs)).map((r) => r.title).sort();
+		const titles = (await searchAll('x', [], prefs)).map((r) => r.title).sort();
 		expect(titles).toEqual(['Berserk', 'Dune', 'Frieren', 'Hades', 'Heat', 'Saga', 'Severance']);
 		expect(searchFlashpoint).not.toHaveBeenCalled();
 	});
 
 	it('only queries the providers a type needs and keeps that type', async () => {
-		const games = await searchAll('x', 'game', { ...prefs, flashpointEnabled: true });
+		const games = await searchAll('x', ['game'], { ...prefs, flashpointEnabled: true });
 		expect(games.map((r) => r.title)).toEqual(['Hades']);
 		expect(searchFlashpoint).toHaveBeenCalledWith('x');
 		expect(searchTmdb).not.toHaveBeenCalled();
@@ -61,15 +61,38 @@ describe('searchAll', () => {
 	});
 
 	it('treats manga as part of the comic filter', async () => {
-		const titles = (await searchAll('x', 'comic', prefs)).map((r) => r.title).sort();
+		const titles = (await searchAll('x', expandSearchType('comic'), prefs))
+			.map((r) => r.title)
+			.sort();
 		expect(titles).toEqual(['Berserk', 'Saga']);
 	});
 
 	it('skips a provider that fails', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => {});
 		vi.mocked(searchTmdb).mockRejectedValueOnce(new Error('offline'));
-		const titles = (await searchAll('x', 'film', prefs)).map((r) => r.title);
+		const titles = (await searchAll('x', ['film'], prefs)).map((r) => r.title);
 		expect(titles).toEqual([]);
 		expect(console.error).toHaveBeenCalled();
+	});
+
+	it('combines several types', async () => {
+		const titles = (await searchAll('x', ['film', 'book'], prefs)).map((r) => r.title).sort();
+		expect(titles).toEqual(['Dune', 'Heat']);
+		expect(searchIgdb).not.toHaveBeenCalled();
+	});
+});
+
+describe('search type mapping', () => {
+	it('expands the search-bar filters into media types', () => {
+		expect(expandSearchType('all')).toEqual([]);
+		expect(expandSearchType('film')).toEqual(['film']);
+		expect(expandSearchType('comic')).toEqual(['manga', 'manhwa', 'manhua', 'comic']);
+	});
+
+	it('collapses media types back to a search-bar filter when one matches', () => {
+		expect(collapseToSearchType(['comic', 'manga', 'manhua', 'manhwa'])).toBe('comic');
+		expect(collapseToSearchType(['tv'])).toBe('tv');
+		expect(collapseToSearchType(['film', 'tv'])).toBe('all');
+		expect(collapseToSearchType([])).toBe('all');
 	});
 });

@@ -14,9 +14,11 @@
 		rank?: number;
 		/** Shows a ✎ quick-edit button on the poster. */
 		onEdit?: () => void | Promise<void>;
+		/** Already tracked; shows an "In library" badge. */
+		inLibrary?: boolean;
 	}
 
-	let { item, onclick, fluid = false, rank, onEdit }: Props = $props();
+	let { item, onclick, fluid = false, rank, onEdit, inLibrary = false }: Props = $props();
 </script>
 
 <!-- Wrapper so the edit button can sit over the poster without nesting buttons -->
@@ -75,6 +77,14 @@
 				>
 					{MEDIA_TYPE_LABELS[item.type] ?? item.type}
 				</span>
+				{#if inLibrary}
+					<span
+						class="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-md bg-emerald-500/20 text-emerald-300 border border-white/[0.1]"
+						title="In your library"
+					>
+						✓ In library
+					</span>
+				{/if}
 			</div>
 
 			<!-- Title + Year overlay at bottom -->

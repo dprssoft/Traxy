@@ -15,13 +15,20 @@ the query (Enter / the keyboard's search key) opens the full results page at `/s
 		loadRecentSearches,
 		getTypeColor,
 		getSearchTypeLabel,
-		searchPageParams,
 		SEARCH_PAGE_PATH,
 	} from '$lib/stores/search.svelte';
 	import { ensureLocalMedia } from '$lib/db/services/media.service';
 	import { quickEdit } from '$lib/stores/quickEdit.svelte';
 	import QuickEditButton from './QuickEditButton.svelte';
-	import { searchAll, SEARCH_TYPES, type SearchType } from '$lib/db/services/search.service';
+	import {
+		searchAll,
+		collapseToSearchType,
+		expandSearchType,
+		SEARCH_TYPES,
+		type SearchType,
+	} from '$lib/db/services/search.service';
+	import { searchFiltersParams } from '$lib/utils/searchFilters';
+	import type { MediaType } from '$lib/db/schema';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
@@ -46,8 +53,8 @@ the query (Enter / the keyboard's search key) opens the full results page at `/s
 	$effect(() => {
 		if (page.url.pathname === resolve(SEARCH_PAGE_PATH)) {
 			query = page.url.searchParams.get('q') ?? '';
-			const type = page.url.searchParams.get('type') as SearchType | null;
-			if (type && SEARCH_TYPES.includes(type)) searchState.selectedType = type;
+			const types = page.url.searchParams.getAll('type') as MediaType[];
+			searchState.selectedType = collapseToSearchType(types);
 		} else {
 			query = '';
 		}
@@ -115,7 +122,11 @@ the query (Enter / the keyboard's search key) opens the full results page at `/s
 		const searchId = ++currentSearchId;
 
 		try {
-			const found = await searchAll(q, searchState.selectedType, searchPrefsStore.current);
+			const found = await searchAll(
+				q,
+				expandSearchType(searchState.selectedType),
+				searchPrefsStore.current,
+			);
 			if (searchId === currentSearchId) results = found;
 		} catch (err) {
 			console.error('Search failed', err);
@@ -143,9 +154,14 @@ the query (Enter / the keyboard's search key) opens the full results page at `/s
 		// Refining a search replaces the results entry, so Back leaves the results page.
 		const onResults =
 			page.url.pathname === resolve(SEARCH_PAGE_PATH) && page.url.searchParams.has('q');
-		goto(resolve(`${SEARCH_PAGE_PATH}${searchPageParams(q, searchState.selectedType)}`), {
-			replaceState: onResults,
-		});
+		goto(
+			resolve(
+				`${SEARCH_PAGE_PATH}${searchFiltersParams(q, { types: expandSearchType(searchState.selectedType) })}`,
+			),
+			{
+				replaceState: onResults,
+			},
+		);
 	}
 
 	function onTypeSelect(type: SearchType) {
