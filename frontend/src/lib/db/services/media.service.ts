@@ -246,6 +246,31 @@ export async function fetchProviderDetails(
 }
 
 /**
+ * Return the local record for a search/catalogue result, importing it on first use:
+ * full details are fetched from the provider (falling back to the result itself) and stored.
+ */
+export async function ensureLocalMedia(item: SearchResult): Promise<LocalMedia> {
+	const existing = await getMediaByExternalId(item.source, item.externalId);
+	if (existing) return existing;
+
+	const fullDetails: SearchResult = (await fetchProviderDetails(item)) ?? item;
+	return upsertMedia({
+		id: crypto.randomUUID(),
+		source: fullDetails.source,
+		externalId: fullDetails.externalId,
+		type: fullDetails.type,
+		title: fullDetails.title,
+		year: fullDetails.year,
+		posterUrl: fullDetails.posterUrl,
+		description: fullDetails.description,
+		totalEpisodes: fullDetails.totalEpisodes,
+		totalSeasons: fullDetails.totalSeasons,
+		totalPages: fullDetails.totalPages,
+		isAdult: fullDetails.isAdult ?? item.isAdult,
+	});
+}
+
+/**
  * Fill details that older rows or search results may lack — TV seasons, runtimes, and game
  * time-to-beat. Best effort: returns the (possibly updated) media, never throws.
  */
