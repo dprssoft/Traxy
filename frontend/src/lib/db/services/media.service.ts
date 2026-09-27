@@ -18,6 +18,7 @@ export const MEDIA_COLUMNS = [
 	'isAdult', 'wikiMeta',
 ];
 
+/** Convert a `Media` row into a `LocalMedia`, parsing the JSON-encoded columns. */
 export function rowToMedia(row: any): LocalMedia {
 	// capacitor-community/sqlite may return rows as arrays (positional) or objects (named).
 	// Normalise to a plain object keyed by column name so we never rely on ordering.

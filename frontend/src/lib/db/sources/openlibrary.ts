@@ -16,6 +16,7 @@ function subjectsAreAdult(subjects?: string[]): boolean {
 	return hasAdultKeywords(...(subjects ?? []));
 }
 
+/** Search books. No key needed. Empty on error. */
 export async function searchOpenLibrary(query: string): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
 
@@ -52,6 +53,7 @@ interface OpenLibraryWorkDetail {
 	subjects?: string[];
 }
 
+/** Full work details; `id` is the full work key, e.g. `/works/OL82563W`. Null on error. */
 export async function getOpenLibraryDetails(id: string): Promise<SearchResult | null> {
 	// id is expected to be the full key, e.g. "/works/OL82563W"
 	const cacheKey = `openlibrary:detail:${id}`;

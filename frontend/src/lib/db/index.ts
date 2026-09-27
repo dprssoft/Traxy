@@ -8,6 +8,11 @@ const DB_NAME = 'tracklist_db';
 let sqlite: SQLiteConnection;
 let db: SQLiteDBConnection;
 
+/**
+ * Open (or reuse) the on-device database and bring its schema up to date. Must finish before any
+ * service runs — the root layout load calls it and page loads wait for the layout. An existing
+ * connection is reused rather than recreated.
+ */
 export const initDb = async () => {
     sqlite = new SQLiteConnection(CapacitorSQLite);
 
@@ -208,6 +213,7 @@ export const applySchema = async (db: SchemaConnection) => {
     await migrateLegacyFavorites(db);
 };
 
+// Name of the single mixed-type favorites list older builds created as a user collection.
 const LEGACY_FAVORITES_NAME = 'Favorites';
 
 /** Splits the old mixed-type "Favorites" collection into one Favorite <Type> collection per type. */
@@ -255,6 +261,7 @@ async function migrateLegacyFavorites(db: SchemaConnection) {
     }
 }
 
+/** The open connection. Throws until `initDb` has completed. */
 export const getDb = () => {
     if (!db) throw new Error('Database not initialized');
     return db;

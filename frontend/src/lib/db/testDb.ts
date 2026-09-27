@@ -10,6 +10,7 @@ import { applySchema } from './index';
 
 type SqlValue = string | number | null;
 
+/** A fresh, empty database per call — create one in `beforeEach` to isolate tests. */
 export async function createTestDb(): Promise<SQLiteDBConnection> {
 	const SQL = await initSqlJs();
 	const raw = new SQL.Database();

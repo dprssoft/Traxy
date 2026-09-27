@@ -51,6 +51,7 @@ export interface TrackingTypeFilterPrefs {
 
 const TRACKING_TYPE_FILTERS_KEY = 'tracking_type_filters';
 
+/** My List type-chip preferences; defaults when unset or unreadable. */
 export async function getTrackingTypeFilterPrefs(): Promise<TrackingTypeFilterPrefs> {
 	const fallback = { order: [], showUntracked: false };
 	try {
@@ -75,6 +76,7 @@ export interface BottomNavPrefs {
 const BOTTOM_NAV_FLAG = 'feat_custom_bottom_nav';
 const BOTTOM_NAV_ITEMS_KEY = 'bottom_nav_items';
 
+/** Bottom bar customisation. The flag defaults to on; bad or missing ids fall back to the defaults. */
 export async function getBottomNavPrefs(): Promise<BottomNavPrefs> {
 	const enabled = await getAppSettingBool(BOTTOM_NAV_FLAG, true);
 	try {
@@ -86,6 +88,7 @@ export async function getBottomNavPrefs(): Promise<BottomNavPrefs> {
 	}
 }
 
+/** Save the bar's shortcuts, or pass null to go back to the defaults. */
 export async function setBottomNavIds(ids: string[] | null): Promise<void> {
 	const db = getDb();
 	if (ids === null) {
@@ -113,6 +116,7 @@ export interface ContentFilterPrefs {
 const ADULT_FILTER_FLAG = 'feat_adult_filter';
 const ADULT_FILTER_MODE_KEY = 'adult_filter_mode';
 
+/** Adult-content filter. On (hiding) by default until the user answers the first-launch prompt. */
 export async function getContentFilterPrefs(): Promise<ContentFilterPrefs> {
 	const flag = await getAppSetting(ADULT_FILTER_FLAG);
 	const mode = await getAppSetting(ADULT_FILTER_MODE_KEY);
@@ -133,6 +137,7 @@ export async function setContentFilterMode(mode: AdultFilterMode): Promise<void>
 
 const WIKI_ENRICHMENT_FLAG = 'feat_wikipedia_enrichment';
 
+/** Wikipedia/Wikidata enrichment is opt-in (off by default). */
 export async function getWikiEnrichmentEnabled(): Promise<boolean> {
 	return getAppSettingBool(WIKI_ENRICHMENT_FLAG, false);
 }

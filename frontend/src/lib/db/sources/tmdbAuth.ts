@@ -1,5 +1,9 @@
 const BASE_URL = 'https://api.themoviedb.org/3';
 
+/**
+ * Step 1 of TMDB's user login: get a request token and the page where the user approves it.
+ * Needed only for importing the user's TMDB lists, not for metadata lookups.
+ */
 export async function createTmdbRequestToken(apiKey: string): Promise<{ token: string; approvalUrl: string }> {
 	const res = await fetch(`${BASE_URL}/authentication/token/new?api_key=${apiKey}`);
 	if (!res.ok) throw new Error('Failed to create TMDB request token');
@@ -13,6 +17,7 @@ export async function createTmdbRequestToken(apiKey: string): Promise<{ token: s
 	};
 }
 
+/** Step 2: trade a request token the user has approved for a session id. */
 export async function createTmdbSession(apiKey: string, requestToken: string): Promise<string> {
 	const res = await fetch(`${BASE_URL}/authentication/session/new?api_key=${apiKey}`, {
 		method: 'POST',

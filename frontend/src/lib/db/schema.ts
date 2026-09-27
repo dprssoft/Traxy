@@ -1,6 +1,8 @@
 export type MediaType = 'film' | 'tv' | 'game' | 'anime' | 'manga' | 'manhwa' | 'manhua' | 'comic' | 'book';
 export type MediaSource = 'tmdb' | 'igdb' | 'anilist' | 'comicvine' | 'openlibrary' | 'flashpoint' | 'manual';
+/** `watched_letsplay` is game-only: the story was seen through someone else's playthrough. */
 export type TrackingStatusType = 'planned' | 'in_progress' | 'completed' | 'dropped' | 'paused' | 'watched_letsplay';
+/** How far a finished game was taken, matching HowLongToBeat's time-to-beat buckets. */
 export type CompletionTier = 'main_story' | 'main_plus_sides' | 'completionist';
 
 export type ActivityEventType =

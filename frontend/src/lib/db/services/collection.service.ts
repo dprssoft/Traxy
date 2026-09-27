@@ -109,6 +109,7 @@ export async function listCollections(opts: { mediaType?: MediaType } = {}): Pro
 	return querySummaries();
 }
 
+/** One collection with item count and cover posters, or null. */
 export async function getCollection(id: string): Promise<CollectionSummary | null> {
 	const [collection] = await querySummaries('WHERE c.id = ?', [id]);
 	return collection ?? null;
@@ -133,6 +134,7 @@ export async function getCollectionEntries(collectionId: string): Promise<Collec
 	}));
 }
 
+/** Create a user collection. A null `mediaType` makes it mixed (any type). */
 export async function createCollection(input: CollectionInput): Promise<CollectionSummary> {
 	const name = input.name.trim();
 	if (!name) throw new Error('Collection name is required');
@@ -199,6 +201,7 @@ export async function updateCollection(
 	return requireCollection(id);
 }
 
+/** Delete a user collection and its items (not the media). System collections are refused. */
 export async function deleteCollection(id: string): Promise<void> {
 	const collection = await requireCollection(id);
 	if (collection.systemKey) throw new Error('System collections cannot be deleted');
@@ -318,6 +321,7 @@ export async function getCollectionsForMedia(mediaId: string): Promise<Collectio
 	);
 }
 
+/** Whether media is in its Favorites or Wishlist. */
 export async function isInSystemCollection(
 	key: SystemCollectionKey,
 	mediaId: string,

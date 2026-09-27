@@ -138,6 +138,7 @@ function mapGame(item: IgdbGame): SearchResult {
 
 // ── Exports ────────────────────────────────────────────────────────────────
 
+/** Search games, leaving out alternate versions (`version_parent`). Empty without credentials or on error. */
 export async function searchIgdb(query: string): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
 	const creds = getCredentials();
@@ -162,6 +163,7 @@ export async function searchIgdb(query: string): Promise<SearchResult[]> {
 	}
 }
 
+/** Full game details by IGDB id. Null without credentials or on error. */
 export async function getIgdbDetails(id: string): Promise<SearchResult | null> {
 	const creds = getCredentials();
 	if (!creds) return null;

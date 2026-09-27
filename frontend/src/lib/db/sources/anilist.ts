@@ -231,6 +231,7 @@ async function getAnilistSeasonChain(startId: number): Promise<import('$lib/db/s
 }
 
 
+/** Search anime or manga (manhwa/manhua are told apart by country of origin). Empty on error. */
 export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
 
@@ -250,6 +251,10 @@ export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Pro
 	}
 }
 
+/**
+ * Full details by AniList id. For anime, sequels are followed to build per-season data, since
+ * AniList stores each season as a separate entry. Null on error.
+ */
 export async function getAnilistDetails(id: number): Promise<SearchResult | null> {
 	const cacheKey = `anilist:detail:${id}`;
 	try {

@@ -70,6 +70,7 @@ function mapTmdbStatus(status?: string): string | undefined {
 	return map[status] ?? status;
 }
 
+/** Search films and TV together (people are dropped). Empty without an API key or on error. */
 export async function searchTmdb(query: string, language = 'en-US'): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
 	const apiKey = apiKeyStore.current.tmdb || ENV_TMDB_API_KEY;
@@ -100,6 +101,7 @@ export async function searchTmdb(query: string, language = 'en-US'): Promise<Sea
 	}
 }
 
+/** Full film or TV details, including director/creator and TV season data. Null without a key or on error. */
 export async function getTmdbDetails(
 	id: string,
 	type: 'film' | 'tv',

@@ -65,6 +65,10 @@ async function fetchHltbToken(): Promise<HLTBToken | null> {
 	}
 }
 
+/**
+ * HowLongToBeat times for the best match of a game title. Needs a fresh auth token per search.
+ * Only successful results are cached, so a miss is retried next time. Null when nothing matches.
+ */
 export async function searchHltb(gameName: string): Promise<HLTBResult | null> {
 	if (!gameName || !gameName.trim()) return null;
 

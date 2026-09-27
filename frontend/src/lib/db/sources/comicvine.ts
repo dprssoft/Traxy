@@ -62,6 +62,7 @@ function mapVolume(item: ComicVineVolume): SearchResult {
 
 const CV_HEADERS = { 'User-Agent': 'TraxyApp/1.0' };
 
+/** Search comic volumes (series), not single issues. Empty without an API key or on error. */
 export async function searchComicVine(query: string): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
 	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
@@ -83,6 +84,7 @@ export async function searchComicVine(query: string): Promise<SearchResult[]> {
 	}
 }
 
+/** Full volume details by ComicVine volume id. Null without a key or on error. */
 export async function getComicVineDetails(id: string): Promise<SearchResult | null> {
 	const apiKey = apiKeyStore.current.comicvine || ENV_COMICVINE_API_KEY;
 	if (!apiKey) return null;

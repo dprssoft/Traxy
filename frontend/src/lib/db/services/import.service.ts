@@ -6,6 +6,7 @@ import { getAnilistDetails } from '../sources/anilist';
 import { getTmdbDetails } from '../sources/tmdb';
 import { fetchJson } from '../fetchUtils';
 
+// MAL export status codes (my_status); 5 is unused.
 function mapMalStatus(status: string): import('$lib/db/schema').TrackingStatusType {
 	switch (status) {
 		case '1': return 'in_progress';
@@ -17,6 +18,10 @@ function mapMalStatus(status: string): import('$lib/db/schema').TrackingStatusTy
 	}
 }
 
+/**
+ * Import a MyAnimeList XML export. Entries are stored as `manual` stubs (title only, keyed
+ * `mal-<id>`) rather than fetched from a provider, so large lists import without API calls.
+ */
 export async function importFromMal(xmlText: string): Promise<{ success: number; failed: number }> {
 	const parser = new DOMParser();
 	const xml = parser.parseFromString(xmlText, 'text/xml');
@@ -38,21 +43,8 @@ export async function importFromMal(xmlText: string): Promise<{ success: number;
 				continue;
 			}
 
-			// We need full details to get poster, year, etc. 
-			// AniList accepts MAL IDs via external links, but getting details by MAL ID directly is tricky in AniList GraphQL.
-			// Actually, AniList allows querying by `idMal`.
-			// Since we don't have an `idMal` query built, we will just insert it as a stub or try to search AniList by title.
-			// Or we can just insert the basic details manually!
-			
-			// Let's insert a basic record first. If the user clicks it later, it will be somewhat sparse,
-			// but we can at least display the title.
-			
 			const mediaId = crypto.randomUUID();
-			
-			// We use 'manual' source if we don't fetch full AniList metadata right now, 
-			// or we can mark it as 'anilist' and use the MAL ID as externalId (which might break details fetching).
-			// Better approach: use 'manual' and externalId = malId
-			
+
 			const media = await upsertMedia({
 				id: mediaId,
 				source: 'manual',
@@ -100,6 +92,7 @@ function mapAnilistStatus(status: string): import('$lib/db/schema').TrackingStat
 	}
 }
 
+/** Import a public AniList user's anime and manga lists, fetching full details for each entry. */
 export async function importFromAnilist(username: string): Promise<{ success: number; failed: number }> {
 	let success = 0;
 	let failed = 0;
@@ -195,6 +188,10 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 	return { success, failed };
 }
 
+/**
+ * Import a TMDB account's watchlists (as planned) and rated titles (as completed, with the
+ * rating as score). Needs a session id from `tmdbAuth`.
+ */
 export async function importFromTmdb(apiKey: string, sessionId: string): Promise<{ success: number; failed: number }> {
 	let success = 0;
 	let failed = 0;

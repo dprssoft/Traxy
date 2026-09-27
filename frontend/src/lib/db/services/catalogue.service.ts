@@ -18,6 +18,7 @@ function getMemoryCacheKey(type: MediaType | 'all', category: DiscoverCategory):
 	return `${type}:${category}`;
 }
 
+/** Category rows still fresh in this session's memory cache — lets the catalogue render instantly on revisit. */
 export function getMemoryCacheBatch(
 	type: MediaType | 'all',
 	categories: DiscoverCategory[]
@@ -34,6 +35,7 @@ export function getMemoryCacheBatch(
 	return result;
 }
 
+/** Remember a category row for `CACHE_TTL`. Memory only; `ApiCache` holds the longer-lived copy. */
 export function setMemoryCache(
 	type: MediaType | 'all',
 	category: DiscoverCategory,

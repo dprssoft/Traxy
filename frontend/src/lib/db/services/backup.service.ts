@@ -1,6 +1,10 @@
 import type { capSQLiteSet } from '@capacitor-community/sqlite';
 import { getDb } from '../index';
 
+/**
+ * Serialise the user's library as JSON (`{ version, timestamp, data: { <table>: rows } }`).
+ * ApiCache and AppSettings are not included.
+ */
 export async function exportDatabaseJson(): Promise<string> {
 	const db = getDb();
 	const tables = ['Media', 'TrackingStatus', 'WatchCycle', 'ActivityLog', 'Collection', 'CollectionItem', 'Goal'];
@@ -76,11 +80,13 @@ function toInsert(table: string, row: BackupRow, columns: (string | undefined)[]
 	};
 }
 
+/** Drop cached provider responses. The library itself is untouched. */
 export async function clearMediaCache(): Promise<void> {
 	const db = getDb();
 	await db.run('DELETE FROM ApiCache');
 }
 
+/** Wipe everything, settings and cache included. Irreversible. */
 export async function resetAllUserData(): Promise<void> {
 	const db = getDb();
 	const tables = ['ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'Collection', 'Media', 'ApiCache', 'AppSettings', 'Goal'];
