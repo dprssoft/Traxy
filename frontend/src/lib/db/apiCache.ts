@@ -15,7 +15,7 @@ export async function getCached<T>(cacheKey: string): Promise<T | null> {
 			[cacheKey, cutoff],
 		);
 		if (result.values && result.values.length > 0) {
-			return JSON.parse(result.values[0][0] as string) as T;
+			return JSON.parse((result.values[0] as { data: string }).data) as T;
 		}
 	} catch {
 		// Cache miss is never fatal
@@ -40,11 +40,9 @@ export async function getCachedBatch<T>(cacheKeys: string[]): Promise<Map<string
 			[...cacheKeys, cutoff],
 		);
 		if (queryResult.values) {
-			for (const row of queryResult.values) {
-				const key = row[0] as string;
-				const data = row[1] as string;
+			for (const row of queryResult.values as { cacheKey: string; data: string }[]) {
 				try {
-					result.set(key, JSON.parse(data) as T);
+					result.set(row.cacheKey, JSON.parse(row.data) as T);
 				} catch {
 					// Skip malformed rows
 				}
