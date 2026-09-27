@@ -9,9 +9,11 @@
 		onclick: () => void;
 		/** Fill the parent's width (grids) instead of the fixed row-card width. */
 		fluid?: boolean;
+		/** Position in a ranked list, shown as a #N badge. */
+		rank?: number;
 	}
 
-	let { item, onclick, fluid = false }: Props = $props();
+	let { item, onclick, fluid = false, rank }: Props = $props();
 </script>
 
 <button
@@ -45,8 +47,15 @@
 			class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none"
 		></div>
 
-		<!-- Media type badge -->
-		<div class="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
+		<!-- Rank + media type badges -->
+		<div class="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex items-center gap-1">
+			{#if rank !== undefined}
+				<span
+					class="text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded-md bg-amber-500 text-black shadow-md"
+				>
+					#{rank}
+				</span>
+			{/if}
 			<span
 				class="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-md {getTypeColor(item.type)} border border-white/[0.1]"
 			>

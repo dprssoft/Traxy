@@ -30,11 +30,13 @@
 	];
 
 	const sorted = $derived.by(() => {
+		// Ranked lists always show the user's order — that order is the ranking.
+		if (collection.isRanked) return entries;
 		if (sort === 'added') return [...entries].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
 		if (sort === 'title') return [...entries].sort((a, b) => a.media.title.localeCompare(b.media.title));
 		return entries;
 	});
-	const canReorder = $derived(editing && sort === 'manual');
+	const canReorder = $derived(editing && (collection.isRanked || sort === 'manual'));
 
 	$effect(() => {
 		const href = `/collections/${collection.id}`;
@@ -98,6 +100,9 @@
 				<Badge variant={collection.mediaType ? 'indigo' : 'slate'} size="xs">
 					{collection.mediaType ? MEDIA_TYPE_PLURAL_LABELS[collection.mediaType] : 'Shared'}
 				</Badge>
+				{#if collection.isRanked}
+					<Badge variant="amber" size="xs">Ranked</Badge>
+				{/if}
 			</div>
 		</div>
 
@@ -125,10 +130,12 @@
 			description="Open any title and use “Add To Collection” to put it here."
 		/>
 	{:else}
-		<div class="flex items-center justify-end gap-2">
-			<span class="text-xs text-slate-400">Sort</span>
-			<Select options={sortOptions} bind:value={sort} class="w-44" />
-		</div>
+		{#if !collection.isRanked}
+			<div class="flex items-center justify-end gap-2">
+				<span class="text-xs text-slate-400">Sort</span>
+				<Select options={sortOptions} bind:value={sort} class="w-44" />
+			</div>
+		{/if}
 
 		<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
 			{#each sorted as entry, i (entry.itemId)}
@@ -136,6 +143,7 @@
 					<CataloguePosterCard
 						item={entry.media}
 						fluid
+						rank={collection.isRanked ? i + 1 : undefined}
 						onclick={() => goto(resolve(`/media/${entry.media.id}`))}
 					/>
 					{#if entry.note}
