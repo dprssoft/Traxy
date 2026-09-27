@@ -1,5 +1,7 @@
 import type { capSQLiteSet } from '@capacitor-community/sqlite';
 import { getDb } from '../index';
+import { DETAIL_COLUMNS } from './media.service';
+import { ACTIVITY_LOG_LIMIT, pruneActivityLog } from './activity.service';
 
 // Settings kept in localStorage by the stores (goals per year, shell layout). API keys
 // (`traxy:apiKeys`) are deliberately left out: backups land in the public Download folder.
@@ -15,40 +17,94 @@ interface BackupSettings {
 	localStorage: Record<string, string>;
 }
 
+const BACKUP_TABLES = [
+	'Media',
+	'TrackingStatus',
+	'WatchCycle',
+	'ActivityLog',
+	'Collection',
+	'CollectionItem',
+	'Goal',
+];
+
+// Activity rows copy their title's name/poster/type for the feed; while the title is still in the
+// library the backup leaves them out and the import copies them back from Media.
+const ACTIVITY_MEDIA_COLUMNS = ['mediaTitle', 'mediaPosterUrl', 'mediaType'];
+
 /**
- * Serialise the user's library and settings as JSON
- * (`{ version, timestamp, data: { <table>: rows }, settings }`).
+ * Columns each table is written with, droppable ones last so rows can end early (see
+ * `trimTrailingNulls`). Media's `detailsPending` is left out: import sets it itself.
+ */
+function backupColumns(table: string, columns: string[]): string[] {
+	const last: readonly string[] =
+		table === 'Media' ? DETAIL_COLUMNS : table === 'ActivityLog' ? ACTIVITY_MEDIA_COLUMNS : [];
+	const kept = columns.filter((c) => !(table === 'Media' && c === 'detailsPending'));
+	return [...kept.filter((c) => !last.includes(c)), ...kept.filter((c) => last.includes(c))];
+}
+
+function trimTrailingNulls(row: unknown[]): unknown[] {
+	let end = row.length;
+	while (end > 0 && row[end - 1] == null) end--;
+	return row.slice(0, end);
+}
+
+/** A table in a v3 backup: column names once, then one array per row (trailing nulls cut). */
+interface BackupTable {
+	columns: string[];
+	rows: unknown[][];
+}
+
+/**
+ * Serialise the user's library and settings as compact JSON
+ * (`{ version: 3, timestamp, data: { <table>: { columns, rows } }, settings }`).
+ * Titles from a provider keep only what the app needs offline — provider details
+ * (`DETAIL_COLUMNS`) are fetched again after a restore. Manual titles keep everything.
  * ApiCache and API keys are not included.
  */
 export async function exportDatabaseJson(): Promise<string> {
 	const db = getDb();
-	const tables = [
-		'Media',
-		'TrackingStatus',
-		'WatchCycle',
-		'ActivityLog',
-		'Collection',
-		'CollectionItem',
-		'Goal',
-	];
+	const data: Record<string, BackupTable> = {};
+	let mediaIds = new Set<unknown>();
 
-	const exportData: Record<string, unknown[]> = {};
+	for (const table of BACKUP_TABLES) {
+		const order = table === 'ActivityLog' ? ' ORDER BY occurredAt DESC, rowid DESC LIMIT ?' : '';
+		const res = await db.query(`SELECT * FROM ${table}${order}`, order ? [ACTIVITY_LOG_LIMIT] : []);
+		const rows = (res.values ?? []) as Record<string, unknown>[];
+		const tableColumns = await getColumns(table);
+		const columns = backupColumns(
+			table,
+			tableColumns.length > 0 ? tableColumns : Object.keys(rows[0] ?? {}),
+		);
+		if (table === 'Media') mediaIds = new Set(rows.map((r) => r.id));
 
-	for (const table of tables) {
-		const res = await db.query(`SELECT * FROM ${table}`);
-		exportData[table] = res.values || [];
+		data[table] = {
+			columns,
+			rows: rows.map((row) => {
+				const slim = { ...row };
+				if (table === 'Media' && row.source !== 'manual') {
+					for (const c of DETAIL_COLUMNS) slim[c] = null;
+				}
+				if (table === 'ActivityLog' && mediaIds.has(row.mediaId)) {
+					for (const c of ACTIVITY_MEDIA_COLUMNS) slim[c] = null;
+				}
+				return trimTrailingNulls(columns.map((c) => slim[c] ?? null));
+			}),
+		};
 	}
 
-	return JSON.stringify(
-		{
-			version: 2,
-			timestamp: new Date().toISOString(),
-			data: exportData,
-			settings: await exportSettings(),
-		},
-		null,
-		2,
-	);
+	return JSON.stringify({
+		version: 3,
+		timestamp: new Date().toISOString(),
+		data,
+		settings: await exportSettings(),
+	});
+}
+
+async function getColumns(table: string): Promise<string[]> {
+	const res = await getDb().query(`PRAGMA table_info(${table})`);
+	return (res.values ?? [])
+		.map((c) => (c as { name?: string }).name)
+		.filter((name): name is string => !!name);
 }
 
 async function exportSettings(): Promise<BackupSettings> {
@@ -73,8 +129,9 @@ async function exportSettings(): Promise<BackupSettings> {
 }
 
 /**
- * Replace every user table with the contents of a backup made by `exportDatabaseJson`.
- * All deletes and inserts run as one transaction, so a bad backup leaves the library untouched.
+ * Replace every user table with the contents of a backup made by `exportDatabaseJson` (any
+ * version). All deletes and inserts run as one transaction, so a bad backup leaves the library
+ * untouched.
  * Settings are replaced only when the backup has them (version 2+); older backups keep the
  * current settings.
  */
@@ -101,13 +158,30 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 		for (const table of tables) {
 			statements.push({ statement: `DELETE FROM ${table}`, values: [] });
 
-			const rows: BackupRow[] = data[table] || [];
+			const rows = backupRows(data[table]);
 			if (rows.length === 0) continue;
 
-			const columns = ((await db.query(`PRAGMA table_info(${table})`)).values ?? []).map(
-				(c) => (c as { name?: string }).name,
-			);
+			const columns = await getColumns(table);
 			for (const row of rows) statements.push(toInsert(table, row, columns));
+		}
+
+		if ((parsed.version ?? 1) >= 3) {
+			// Slim backup: provider titles reload their details on the next page visit, and the
+			// feed gets its copied title/poster/type back from the library.
+			statements.push(
+				{
+					statement: "UPDATE Media SET detailsPending = 1 WHERE source != 'manual'",
+					values: [],
+				},
+				{
+					statement: `UPDATE ActivityLog SET
+						mediaTitle = (SELECT title FROM Media WHERE Media.id = ActivityLog.mediaId),
+						mediaPosterUrl = (SELECT posterUrl FROM Media WHERE Media.id = ActivityLog.mediaId),
+						mediaType = (SELECT type FROM Media WHERE Media.id = ActivityLog.mediaId)
+					WHERE mediaTitle IS NULL AND mediaId IN (SELECT id FROM Media)`,
+					values: [],
+				},
+			);
 		}
 
 		const settings: BackupSettings | undefined = parsed.settings;
@@ -123,13 +197,13 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 			}
 		} else if (Array.isArray(settingRows)) {
 			statements.push({ statement: 'DELETE FROM AppSettings', values: [] });
-			const columns = ((await db.query('PRAGMA table_info(AppSettings)')).values ?? []).map(
-				(c) => (c as { name?: string }).name,
-			);
+			const columns = await getColumns('AppSettings');
 			for (const row of settingRows) statements.push(toInsert('AppSettings', row, columns));
 		}
 
 		await db.executeSet(statements, true);
+		// Backups made before the feed cap can carry the whole history.
+		await pruneActivityLog();
 
 		if (settings) restoreLocalSettings(settings.localStorage ?? {});
 	} catch (err) {
@@ -151,11 +225,20 @@ function restoreLocalSettings(local: Record<string, string>): void {
 	}
 }
 
-// Backups hold rows as the driver returned them: objects keyed by column (current), or
-// positional arrays (older exports).
+// v1/v2 backups hold rows as the driver returned them: objects keyed by column, or positional
+// arrays (oldest exports). v3 tables are converted to keyed objects by `backupRows`.
 type BackupRow = Record<string, unknown> | unknown[];
 
-function toInsert(table: string, row: BackupRow, columns: (string | undefined)[]): capSQLiteSet {
+function backupRows(table: BackupTable | BackupRow[] | undefined): BackupRow[] {
+	if (!table) return [];
+	if (Array.isArray(table)) return table;
+	// Rows end early when their last columns are empty; missing columns are NULL.
+	return table.rows.map((row) =>
+		Object.fromEntries(table.columns.map((c, i) => [c, row[i] ?? null])),
+	);
+}
+
+function toInsert(table: string, row: BackupRow, columns: string[]): capSQLiteSet {
 	if (Array.isArray(row)) {
 		// Backups made before a column was added have shorter rows — pad them with NULLs so the
 		// positional INSERT still matches the table.

@@ -60,7 +60,7 @@ describe('backup.service', () => {
 			await exportDatabaseJson();
 
 			for (const table of REAL_TABLES) {
-				expect(executedQueries.some((q) => q.sql === `SELECT * FROM ${table}`)).toBe(true);
+				expect(executedQueries.some((q) => q.sql.startsWith(`SELECT * FROM ${table}`))).toBe(true);
 			}
 			for (const stale of STALE_TABLE_NAMES) {
 				expect(executedQueries.some((q) => q.sql.includes(stale))).toBe(false);
@@ -74,7 +74,7 @@ describe('backup.service', () => {
 
 		it('returns a JSON payload keyed by table name', async () => {
 			const json = JSON.parse(await exportDatabaseJson());
-			expect(json.version).toBe(2);
+			expect(json.version).toBe(3);
 			for (const table of REAL_TABLES) {
 				expect(json.data).toHaveProperty(table);
 			}
@@ -115,7 +115,7 @@ describe('backup.service', () => {
 		});
 
 		it('pads rows from older backups that predate newly added columns', async () => {
-			tableColumns = new Array(6).fill({});
+			tableColumns = ['a', 'b', 'c', 'd', 'e', 'f'].map((name) => ({ name }));
 			const backup = {
 				data: {
 					...Object.fromEntries(REAL_TABLES.map((t) => [t, []])),
