@@ -1,16 +1,13 @@
+import type { UserProfile } from '$lib/db/services/settings.service';
 
-export interface UserState {
-	username: string;
-	email: string;
-	role: string;
-	profilePicUrl?: string;
-	bio?: string;
-	memberSinceYear?: number;
-}
+export type UserState = UserProfile;
 
 let user = $state<UserState | null>(null);
 
-/** Local profile shown in the sidebar and profile page. In memory only — not persisted across reloads. */
+/**
+ * Local profile shown in the sidebar and profile page. The root layout loads it; the profile
+ * page saves it through the settings service.
+ */
 export const userStore = {
 	get value() {
 		return user;

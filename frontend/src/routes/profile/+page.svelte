@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { userStore } from '$lib/stores/user.svelte';
+	import { setUserProfile } from '$lib/db/services/settings.service';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -8,13 +9,20 @@
 	let usernameInput = $state(userStore.value?.username ?? 'Traxy Explorer');
 	let saved = $state(false);
 
-	function saveProfile() {
-		userStore.set({
+	async function saveProfile() {
+		const profile = {
 			username: usernameInput,
 			email: userStore.value?.email ?? 'local@traxy.app',
 			role: userStore.value?.role ?? 'USER',
 			memberSinceYear: userStore.value?.memberSinceYear ?? 2026
-		});
+		};
+		try {
+			await setUserProfile(profile);
+		} catch (e) {
+			console.error('Failed to save profile', e);
+			return;
+		}
+		userStore.set(profile);
 		saved = true;
 		setTimeout(() => (saved = false), 2500);
 	}

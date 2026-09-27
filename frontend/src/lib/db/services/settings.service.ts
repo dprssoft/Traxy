@@ -179,3 +179,29 @@ export async function getSearchPrefs(): Promise<SearchPrefs> {
 export async function setSearchPrefs(prefs: SearchPrefs): Promise<void> {
 	await setAppSetting(SEARCH_PREFS_KEY, JSON.stringify(prefs));
 }
+
+/** The local profile — there are no accounts, so this only labels the app for its one user. */
+export interface UserProfile {
+	username: string;
+	email: string;
+	role: string;
+	profilePicUrl?: string;
+	bio?: string;
+	memberSinceYear?: number;
+}
+
+const USER_PROFILE_KEY = 'user_profile';
+
+/** The saved profile, or null if none was saved (or it is unreadable). */
+export async function getUserProfile(): Promise<UserProfile | null> {
+	try {
+		const raw = await getAppSetting(USER_PROFILE_KEY);
+		return raw ? (JSON.parse(raw) as UserProfile) : null;
+	} catch {
+		return null;
+	}
+}
+
+export async function setUserProfile(profile: UserProfile): Promise<void> {
+	await setAppSetting(USER_PROFILE_KEY, JSON.stringify(profile));
+}

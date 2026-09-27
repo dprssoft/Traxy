@@ -15,6 +15,7 @@
 	import { layoutStore, bottomNavCatalogue, defaultBottomNavItems } from '$lib/stores/layout';
 	import { resolveBottomNavItems } from '$lib/utils/bottomNav';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
+	import { userStore } from '$lib/stores/user.svelte';
 	import { App } from '@capacitor/app';
 	import { Capacitor } from '@capacitor/core';
 	import { page } from '$app/stores';
@@ -36,6 +37,10 @@
 
 	$effect.pre(() => {
 		if (data.contentFilter) contentFilterStore.setPrefs(data.contentFilter);
+	});
+
+	$effect.pre(() => {
+		if (data.profile) userStore.init(data.profile);
 	});
 
 	beforeNavigate(({ from }) => {

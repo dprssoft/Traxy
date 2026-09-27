@@ -3,6 +3,8 @@ import {
 	DEFAULT_SEARCH_PREFS,
 	getContentFilterPrefs,
 	getSearchPrefs,
+	getUserProfile,
+	setUserProfile,
 	setSearchPrefs,
 	setContentFilterEnabled,
 	setContentFilterMode,
@@ -71,5 +73,18 @@ describe('search prefs', () => {
 	it('falls back to defaults on unreadable JSON', async () => {
 		settings.search_prefs = '{oops';
 		expect(await getSearchPrefs()).toEqual(DEFAULT_SEARCH_PREFS);
+	});
+});
+
+describe('user profile', () => {
+	beforeEach(() => {
+		settings = {};
+	});
+
+	it('is null until saved, then round-trips', async () => {
+		expect(await getUserProfile()).toBeNull();
+		const profile = { username: 'Kai', email: 'local@traxy.app', role: 'USER' };
+		await setUserProfile(profile);
+		expect(await getUserProfile()).toEqual(profile);
 	});
 });

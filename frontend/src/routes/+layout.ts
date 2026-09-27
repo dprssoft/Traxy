@@ -1,7 +1,11 @@
 import { browser } from '$app/environment';
 import { Capacitor } from '@capacitor/core';
 import { initDb } from '$lib/db';
-import { getBottomNavPrefs, getContentFilterPrefs } from '$lib/db/services/settings.service';
+import {
+	getBottomNavPrefs,
+	getContentFilterPrefs,
+	getUserProfile,
+} from '$lib/db/services/settings.service';
 import { restoreAnimeMergeBackupIfPresent } from '$lib/db/services/backup.service';
 
 // Client-side layout load — no auth, no cookies.
@@ -38,7 +42,8 @@ export const load = async () => {
 		return {
 			bottomNav: await getBottomNavPrefs().catch(() => null),
 			contentFilter: await getContentFilterPrefs().catch(() => null),
+			profile: await getUserProfile(),
 		};
 	}
-	return { bottomNav: null, contentFilter: null };
+	return { bottomNav: null, contentFilter: null, profile: null };
 };
