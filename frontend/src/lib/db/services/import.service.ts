@@ -108,13 +108,14 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 
 	for (const type of types) {
 		try {
+			// Without a format, AniList returns the score in the user's own scale (up to 100 points).
 			const query = `
 				query ($userName: String, $type: MediaType) {
 				  MediaListCollection(userName: $userName, type: $type) {
 				    lists {
 				      entries {
 				        status
-				        score
+				        score(format: POINT_10)
 				        progress
 				        media {
 				          id

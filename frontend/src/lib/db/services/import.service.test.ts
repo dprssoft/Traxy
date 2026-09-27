@@ -123,6 +123,15 @@ describe('import.service', () => {
 			);
 		});
 
+		it('asks AniList for scores on the app\'s 10-point scale', async () => {
+			mockAnilistFetch([]);
+
+			await importFromAnilist('someuser');
+
+			const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+			expect(body.query).toContain('score(format: POINT_10)');
+		});
+
 		it('counts entries with no resolvable details as failed and skips tracking', async () => {
 			mockAnilistFetch([{ status: 'CURRENT', score: 0, progress: 0, media: { id: 1 } }]);
 			mockGetAnilistDetails.mockResolvedValue(null);
