@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 	import type { TrackingListItem } from '$lib/types/trackingTypes';
 	import type { MediaType } from '$lib/db/schema';
@@ -215,7 +216,7 @@
 		<div class="py-16 text-center text-slate-400 bg-[#121422]/50 backdrop-blur-xl rounded-3xl border border-white/[0.06] border-dashed space-y-3">
 			<span class="text-3xl block">📋</span>
 			<p class="text-sm font-medium">Nothing here yet in this list.</p>
-			<a href="/search" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors shadow-md shadow-indigo-600/20">
+			<a href={resolve('/search')} class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors shadow-md shadow-indigo-600/20">
 				Search and Add Media
 			</a>
 		</div>

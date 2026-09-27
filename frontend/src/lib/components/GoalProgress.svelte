@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { goalStore } from '$lib/stores/goal.svelte';
 	import type { TrackingListItem } from '$lib/types/trackingTypes';
 	import { getMediaTypeGroup } from '$lib/constants';
@@ -42,7 +43,7 @@
 <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
 	<div class="flex items-center justify-between mb-6">
 		<h3 class="text-white font-bold">Goals for {currentYear}</h3>
-		<a href="/settings" class="text-sm text-gray-400 hover:text-white transition-colors">Configure ⚙️</a>
+		<a href={resolve('/settings')} class="text-sm text-gray-400 hover:text-white transition-colors">Configure ⚙️</a>
 	</div>
 
 	<div class="space-y-6">

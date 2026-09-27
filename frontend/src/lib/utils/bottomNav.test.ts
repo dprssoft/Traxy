@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { resolveBottomNavItems } from './bottomNav';
 import type { NavItem } from '$lib/stores/layout';
 
-const mk = (href: string): NavItem => ({ href, label: href, icon: '', match: () => false });
+// Fake paths keep the fixture short; the resolver only compares hrefs as strings.
+const mk = (href: string): NavItem => ({
+	href: href as NavItem['href'],
+	label: href,
+	icon: '',
+	match: () => false,
+});
 const catalogue = ['/', '/a', '/b', '/c', '/d', '/e', '/f'].map(mk);
 const defaults = catalogue.slice(0, 5);
 

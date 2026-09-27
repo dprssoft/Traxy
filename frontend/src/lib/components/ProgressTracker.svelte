@@ -5,6 +5,7 @@ depending on media type. Anime seasons are separate AniList entries, so changing
 navigates to (and imports, if needed) the linked season's own media page.
 -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { LocalMedia } from '$lib/types/mediaTypes';
 	import type { LocalTrackingStatus } from '$lib/types/trackingTypes';
 	import { updateProgress, upsertTracking } from '$lib/db/services/tracking.service';
@@ -81,7 +82,7 @@ navigates to (and imports, if needed) the linked season's own media page.
 		try {
 			const existing = await getMediaByExternalId('anilist', nextSeason.linkedMediaId);
 			if (existing) {
-				goto(`/media/${existing.id}`);
+				goto(resolve(`/media/${existing.id}`));
 				return;
 			}
 			// Each anime season is its own AniList entry; skip (don't stub) if AniList is unreachable.
@@ -93,7 +94,7 @@ navigates to (and imports, if needed) the linked season's own media page.
 			if (!fullDetails) return;
 
 			const inserted = await upsertMedia(fullDetails);
-			goto(`/media/${inserted.id}`);
+			goto(resolve(`/media/${inserted.id}`));
 		} finally {
 			isUpdating = false;
 		}

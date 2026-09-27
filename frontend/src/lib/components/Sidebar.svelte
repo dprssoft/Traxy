@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { drawerNavItems, layoutStore } from '$lib/stores/layout';
 	import { userStore } from '$lib/stores/user.svelte';
@@ -20,7 +21,7 @@
 >
 	<!-- Top Section from Wireframe: [Square Icon] Username with Divider -->
 	<a 
-		href="/profile" 
+		href={resolve('/profile')} 
 		class="flex items-center gap-3.5 pb-4 mb-3 border-b border-white/[0.08] group transition-all
 			{isCollapsed ? 'justify-center' : ''}"
 		title="Open user profile ({username})"
@@ -48,7 +49,7 @@
 		{#each navItems as item}
 			{@const isActive = item.match($page.url.pathname)}
 			<a 
-				href={item.href}
+				href={resolve(item.href)}
 				title={item.label}
 				class="flex items-center rounded-2xl font-semibold text-sm transition-all relative group
 					{isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2.5'}
@@ -86,7 +87,7 @@
 		{#if aboutItem}
 			{@const isAboutActive = aboutItem.match($page.url.pathname)}
 			<a
-				href={aboutItem.href}
+				href={resolve(aboutItem.href)}
 				title="About Traxy"
 				class="flex items-center rounded-2xl text-sm font-semibold transition-all group
 					{isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2.5'}

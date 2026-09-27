@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { layoutStore, drawerNavItems } from '$lib/stores/layout';
 	import { userStore } from '$lib/stores/user.svelte';
@@ -84,7 +85,7 @@
 		>
 			<!-- Top: User profile block (from wireframe) -->
 			<div class="p-4 pb-4 border-b border-white/[0.08] flex items-center justify-between gap-3">
-				<a href="/profile" onclick={close} class="flex items-center gap-3 min-w-0 group cursor-pointer" title="View Profile">
+				<a href={resolve('/profile')} onclick={close} class="flex items-center gap-3 min-w-0 group cursor-pointer" title="View Profile">
 					<!-- Avatar square from wireframe -->
 					<div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/25 shrink-0 border border-white/[0.1] group-hover:scale-105 transition-transform">
 						{profileInitial}
@@ -116,7 +117,7 @@
 				{#each drawerNavItems.filter((i) => i.href !== '/settings/about') as item}
 					{@const isActive = item.match($page.url.pathname)}
 					<a
-						href={item.href}
+						href={resolve(item.href)}
 						class="flex items-center justify-between px-3.5 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 group
 							{isActive 
 								? 'text-white bg-gradient-to-r from-indigo-600/25 to-purple-600/15 border border-indigo-500/35 shadow-md shadow-indigo-500/10' 
@@ -149,7 +150,7 @@
 			<div class="p-4 border-t border-white/[0.08] space-y-3 bg-[#090a12]/60">
 				<!-- About link from wireframe bottom -->
 				<a
-					href="/settings/about"
+					href={resolve('/settings/about')}
 					class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-xs font-semibold"
 				>
 					<div class="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-slate-400">

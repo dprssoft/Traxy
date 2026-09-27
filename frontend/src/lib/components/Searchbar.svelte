@@ -5,6 +5,7 @@ cross-provider duplicates (`search-dedup`) and applies the adult-content filter.
 imports it locally and opens its media page.
 -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { searchState, addRecentSearch, loadRecentSearches, getTypeColor } from '$lib/stores/search.svelte';
@@ -161,7 +162,7 @@ imports it locally and opens its media page.
 		query = '';
 		
 		const media = await ensureLocalMedia(item);
-		goto(`/media/${media.id}`);
+		goto(resolve(`/media/${media.id}`));
 	}
 
 	async function onResultEdit(item: SearchResult) {

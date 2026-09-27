@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { TrackingListItem } from '$lib/types/trackingTypes';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import { Badge, Card, SensitiveContent } from '$lib/components/ui';
@@ -17,7 +18,7 @@
 
 <Card padding="none" class="overflow-hidden flex {compact ? 'h-28' : 'h-32 sm:h-36'} group hover:border-indigo-500/30 transition-all duration-200">
 	<!-- Poster -->
-	<a href={`/media/${item.media.id}`} class="{compact ? 'w-16' : 'w-24'} h-full shrink-0 overflow-hidden bg-slate-900">
+	<a href={resolve(`/media/${item.media.id}`)} class="{compact ? 'w-16' : 'w-24'} h-full shrink-0 overflow-hidden bg-slate-900">
 		{#if item.media.posterUrl}
 			<SensitiveContent isAdult={item.media.isAdult} class="w-full h-full">
 				<img src={item.media.posterUrl} alt={item.media.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -32,7 +33,7 @@
 	<!-- Info -->
 	<div class="{compact ? 'p-2.5' : 'p-3 sm:p-4'} flex-1 flex flex-col min-w-0">
 		<div class="flex items-baseline gap-2 min-w-0">
-			<a href={`/media/${item.media.id}`} class="text-white font-bold text-base leading-tight truncate group-hover:text-indigo-400 transition-colors">
+			<a href={resolve(`/media/${item.media.id}`)} class="text-white font-bold text-base leading-tight truncate group-hover:text-indigo-400 transition-colors">
 				{item.media.title}
 			</a>
 			{#if !compact && item.media.originalTitle && item.media.originalTitle !== item.media.title}

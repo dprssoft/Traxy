@@ -123,8 +123,8 @@
 						<p class="text-xs text-slate-300">
 							Step 2: Please approve the request on TMDB's website. A new tab will open.
 						</p>
-						<a 
-							href={approvalUrl} 
+						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external TMDB page -->
+						<a href={approvalUrl}
 							target="_blank" 
 							rel="noopener noreferrer"
 							class="inline-block w-full py-2.5 bg-[#0a0b12] text-indigo-400 font-bold rounded-xl text-sm border border-indigo-500/30 transition-all hover:bg-indigo-500/10 mb-2 text-center"

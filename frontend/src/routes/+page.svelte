@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 	import FeedEntry from '$lib/components/FeedEntry.svelte';
 	import InfiniteScrollSentinel from '$lib/components/InfiniteScrollSentinel.svelte';
@@ -213,7 +214,7 @@
 				</p>
 			</div>
 			<a
-				href="/search"
+				href={resolve('/search')}
 				class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all cursor-pointer"
 			>
 				<span>🔍</span> Search & Track Media

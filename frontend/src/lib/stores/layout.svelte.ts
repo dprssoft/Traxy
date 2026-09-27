@@ -1,5 +1,7 @@
+import type { Pathname } from '$app/types';
+
 export interface NavItem {
-	href: string;
+	href: Pathname;
 	label: string;
 	icon: string;
 	badge?: string;
