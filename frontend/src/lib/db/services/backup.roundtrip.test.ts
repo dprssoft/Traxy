@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { createTestDb } from '../testDb';
-import { exportDatabaseJson, importDatabaseJson } from './backup.service';
+import {
+	clearMediaCache,
+	exportDatabaseJson,
+	getMediaCacheSize,
+	importDatabaseJson,
+} from './backup.service';
 
 let db: SQLiteDBConnection;
 
@@ -281,5 +286,52 @@ describe('slim v3 backup (real schema)', () => {
 		const newSize = (await exportDatabaseJson()).length;
 
 		expect(newSize).toBeLessThan(oldSize * 0.15);
+	});
+});
+
+describe('clearMediaCache (real schema)', () => {
+	beforeEach(async () => {
+		db = await createTestDb();
+		await db.run(
+			`INSERT INTO Media (id, source, externalId, type, title, year, posterUrl, totalEpisodes, description, genres)
+			 VALUES ('p1', 'tmdb', '1396', 'tv', 'Breaking Bad', 2008, 'https://img/bb.jpg', 62, 'Chemistry.', '["Drama"]'),
+			        ('u1', 'manual', 'x', 'book', 'My Zine', 2020, NULL, NULL, 'Hand-written', NULL)`,
+		);
+		await db.run(
+			"INSERT INTO TrackingStatus (id, mediaId, status, currentEpisode) VALUES ('t1', 'p1', 'in_progress', 12)",
+		);
+		await db.run(
+			"INSERT INTO ActivityLog (id, mediaId, mediaTitle, eventType, payload, occurredAt) VALUES ('a1', 'p1', 'Breaking Bad', 'episode_watched', '{}', '2026-01-01')",
+		);
+		await db.run("INSERT INTO Collection (id, name) VALUES ('c1', 'Favourites')");
+		await db.run(
+			"INSERT INTO ApiCache (cacheKey, data, cachedAt) VALUES ('k', '{\"big\":1}', '2026-01-01')",
+		);
+	});
+
+	it('clears provider details and the API cache, and keeps user data', async () => {
+		expect(await getMediaCacheSize()).toBeGreaterThan(0);
+
+		await clearMediaCache();
+
+		const media = (await db.query('SELECT * FROM Media ORDER BY id')).values as Record<
+			string,
+			unknown
+		>[];
+		expect(media[0]).toMatchObject({
+			id: 'p1',
+			title: 'Breaking Bad',
+			posterUrl: 'https://img/bb.jpg',
+			totalEpisodes: 62,
+			description: null,
+			genres: null,
+			detailsPending: 1,
+		});
+		expect(media[1]).toMatchObject({ id: 'u1', description: 'Hand-written', detailsPending: null });
+		expect(await activityCount()).toBe(1);
+		expect((await db.query('SELECT * FROM TrackingStatus')).values).toHaveLength(1);
+		expect((await db.query('SELECT * FROM Collection')).values).toHaveLength(1);
+		expect((await db.query('SELECT * FROM ApiCache')).values).toHaveLength(0);
+		expect(await getMediaCacheSize()).toBe(0);
 	});
 });

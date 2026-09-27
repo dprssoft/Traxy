@@ -256,10 +256,37 @@ function toInsert(table: string, row: BackupRow, columns: string[]): capSQLiteSe
 	};
 }
 
-/** Drop cached provider responses. The library itself is untouched. */
+/**
+ * Clear everything that can be fetched again: cached provider responses and the provider details
+ * of each title (`DETAIL_COLUMNS`), which reload on the title's next page visit. Tracking,
+ * history, the feed, collections, goals, settings and manual titles are untouched, as are each
+ * title's name, year, poster and totals.
+ */
 export async function clearMediaCache(): Promise<void> {
+	await getDb().executeSet(
+		[
+			{ statement: 'DELETE FROM ApiCache', values: [] },
+			{
+				statement: `UPDATE Media SET ${DETAIL_COLUMNS.map((c) => `${c} = NULL`).join(', ')},
+					detailsPending = 1 WHERE source != 'manual'`,
+				values: [],
+			},
+		],
+		true,
+	);
+}
+
+/** Approximate size in bytes of what `clearMediaCache` would clear. */
+export async function getMediaCacheSize(): Promise<number> {
 	const db = getDb();
-	await db.run('DELETE FROM ApiCache');
+	const details = DETAIL_COLUMNS.map((c) => `COALESCE(length(${c}), 0)`).join(' + ');
+	const res = await db.query(
+		`SELECT
+			(SELECT COALESCE(SUM(length(data)), 0) FROM ApiCache) +
+			(SELECT COALESCE(SUM(${details}), 0) FROM Media WHERE source != 'manual') AS size`,
+	);
+	const row = res.values?.[0];
+	return Number(Array.isArray(row) ? row[0] : (row as { size?: number } | undefined)?.size) || 0;
 }
 
 /** Wipe everything, settings and cache included. Irreversible. */

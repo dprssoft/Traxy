@@ -4,10 +4,12 @@
 		exportDatabaseJson,
 		importDatabaseJson,
 		clearMediaCache,
+		getMediaCacheSize,
 		resetAllUserData,
 	} from '$lib/db/services/backup.service';
 	import { getAutosave, type AutosaveRecord } from '$lib/services/autosave.service';
 	import { downloadFile } from '$lib/utils/download';
+	import { formatBytes } from '$lib/utils/format';
 	import { Capacitor } from '@capacitor/core';
 	import { Share } from '@capacitor/share';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
@@ -29,16 +31,13 @@
 	});
 
 	let showCacheModal = $state(false);
-	let cacheTimer = $state(3);
-	let cacheInterval: ReturnType<typeof setInterval>;
+	let cacheSize = $state<number | null>(null);
+	let clearingCache = $state(false);
 
-	function startCacheTimer() {
-		cacheTimer = 3;
-		clearInterval(cacheInterval);
-		cacheInterval = setInterval(() => {
-			if (cacheTimer > 0) cacheTimer--;
-			else clearInterval(cacheInterval);
-		}, 1000);
+	async function openCacheModal() {
+		cacheSize = null;
+		showCacheModal = true;
+		cacheSize = await getMediaCacheSize().catch(() => null);
 	}
 
 	let showResetModal = $state(false);
@@ -63,13 +62,15 @@
 
 	async function handleClearCache() {
 		try {
+			clearingCache = true;
 			await clearMediaCache();
-			backupStatus = 'success:Media cache cleared successfully.';
+			backupStatus = 'success:Cache cleared.';
 			setTimeout(() => (backupStatus = ''), 4000);
 		} catch (err) {
 			console.error(err);
-			backupStatus = 'error:Failed to clear media cache.';
+			backupStatus = 'error:Failed to clear the cache.';
 		} finally {
+			clearingCache = false;
 			showCacheModal = false;
 		}
 	}
@@ -285,32 +286,24 @@
 		</div>
 	</div>
 
+	<div class="pt-4">
+		<SectionHeader
+			title="Cache"
+			subtitle="Downloaded descriptions, seasons, genres and search results. They load again when you open a title."
+		/>
+		<div
+			class="mt-6 p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+		>
+			<p class="text-xs text-slate-400">
+				Your library, progress, feed, collections and settings are never touched.
+			</p>
+			<Button variant="secondary" onclick={openCacheModal} class="shrink-0">🧹 Clear Cache</Button>
+		</div>
+	</div>
+
 	<div class="pt-8">
 		<SectionHeader title="Danger Zone" subtitle="Destructive actions that cannot be undone." />
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-			<!-- Clear Cache Card -->
-			<div
-				class="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex flex-col justify-between gap-4"
-			>
-				<div>
-					<h3 class="font-bold text-rose-500 text-sm mb-1">Clear Media Cache</h3>
-					<p class="text-xs text-slate-400">
-						Clears cached API search results and metadata. Useful if media info (country, runtime,
-						etc.) is incorrect.
-					</p>
-				</div>
-				<Button
-					variant="danger"
-					onclick={() => {
-						showCacheModal = true;
-						startCacheTimer();
-					}}
-					class="w-full"
-				>
-					🗑 Clear Media Cache
-				</Button>
-			</div>
-
+		<div class="grid grid-cols-1 gap-4 mt-6">
 			<!-- Reset App Card -->
 			<div
 				class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col justify-between gap-4"
@@ -339,23 +332,37 @@
 	</div>
 </div>
 
-<Modal bind:open={showCacheModal} title="Clear Media Cache" size="md">
-	<div class="space-y-4">
-		<p class="text-sm text-slate-300">
-			This will delete all cached API responses and temporary metadata. It will <strong>not</strong> delete
-			any of your tracked media, reviews, or lists.
-		</p>
-		<p class="text-sm text-slate-300">
-			The app will simply re-fetch the latest data from sources like TMDB, AniList, and Wikipedia
-			the next time it needs them.
+<Modal bind:open={showCacheModal} title="Clear Cache" size="md">
+	<div class="space-y-4 text-sm text-slate-300">
+		<div>
+			<p class="font-semibold text-white mb-1">Cleared</p>
+			<ul class="list-disc pl-5 space-y-0.5 text-slate-400">
+				<li>Cached search results and provider responses</li>
+				<li>Descriptions, genres, seasons, platforms and Wikipedia info of each title</li>
+			</ul>
+		</div>
+		<div>
+			<p class="font-semibold text-white mb-1">Kept</p>
+			<ul class="list-disc pl-5 space-y-0.5 text-slate-400">
+				<li>Tracking, progress, scores, notes and rewatch history</li>
+				<li>Your feed, collections, goals and settings</li>
+				<li>Each title's name, year, poster and episode/chapter counts</li>
+				<li>Titles you added manually</li>
+			</ul>
+		</div>
+		<p class="text-slate-400">
+			{#if cacheSize === null}
+				Measuring…
+			{:else}
+				Frees about <strong class="text-white">{formatBytes(cacheSize)}</strong>. Details load again
+				the next time you open a title (needs internet).
+			{/if}
 		</p>
 	</div>
 	{#snippet footer()}
 		<div class="flex justify-end gap-3 mt-6">
 			<Button variant="secondary" onclick={() => (showCacheModal = false)}>Cancel</Button>
-			<Button variant="danger" onclick={handleClearCache} disabled={cacheTimer > 0}>
-				{cacheTimer > 0 ? `Clear Cache (${cacheTimer}s)` : 'Clear Cache'}
-			</Button>
+			<Button onclick={handleClearCache} loading={clearingCache}>Clear Cache</Button>
 		</div>
 	{/snippet}
 </Modal>

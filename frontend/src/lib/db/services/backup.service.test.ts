@@ -144,9 +144,12 @@ describe('backup.service', () => {
 	});
 
 	describe('clearMediaCache', () => {
-		it('deletes only from ApiCache', async () => {
+		it('only touches ApiCache and Media', async () => {
 			await clearMediaCache();
-			expect(executedQueries).toEqual([{ type: 'run', sql: 'DELETE FROM ApiCache', values: [] }]);
+			expect(executedQueries.map((q) => q.sql.split(' ').slice(0, 3).join(' '))).toEqual([
+				'DELETE FROM ApiCache',
+				'UPDATE Media SET',
+			]);
 		});
 	});
 });

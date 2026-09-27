@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate } from './format';
+import { formatBytes, formatDate } from './format';
 
 describe('formatDate', () => {
 	it('formats an ISO date string in en-US locale (M/D/YYYY)', () => {
@@ -13,5 +13,14 @@ describe('formatDate', () => {
 
 	it('returns "Invalid Date" for unparseable input (documents the contract)', () => {
 		expect(formatDate('not a date')).toBe('Invalid Date');
+	});
+});
+
+describe('formatBytes', () => {
+	it('picks a readable unit', () => {
+		expect(formatBytes(512)).toBe('512 B');
+		expect(formatBytes(1536)).toBe('1.5 KB');
+		expect(formatBytes(250 * 1024)).toBe('250 KB');
+		expect(formatBytes(3.2 * 1024 * 1024)).toBe('3.2 MB');
 	});
 });
