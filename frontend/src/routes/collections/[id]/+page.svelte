@@ -10,6 +10,12 @@
 		updateEntryNote,
 	} from '$lib/db/services/collection.service';
 	import { setCrumbLabel, clearCrumbLabel } from '$lib/stores/breadcrumb';
+	import { downloadFile } from '$lib/utils/download';
+	import {
+		collectionExportFilename,
+		formatCollectionJson,
+		formatCollectionText,
+	} from '$lib/utils/collectionExport';
 	import CataloguePosterCard from '$lib/components/CataloguePosterCard.svelte';
 	import { Badge, Button, EmptyState, Modal, Select } from '$lib/components/ui';
 
@@ -61,6 +67,27 @@
 		);
 	}
 
+	// ── Export (in the order currently shown) ──────────────────────────────
+	let copied = $state(false);
+
+	async function copyAsText() {
+		try {
+			await navigator.clipboard.writeText(formatCollectionText(collection, sorted));
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch (err) {
+			console.error('Failed to copy collection', err);
+		}
+	}
+
+	function exportJson() {
+		downloadFile(
+			collectionExportFilename(collection, 'json'),
+			formatCollectionJson(collection, sorted),
+			'application/json',
+		);
+	}
+
 	// ── Per-item note ────────────────────────────────────────────────────────
 	let noteEntry = $state<CollectionEntry | null>(null);
 	let noteDraft = $state('');
@@ -106,8 +133,12 @@
 			</div>
 		</div>
 
-		<div class="flex items-center gap-2 shrink-0">
+		<div class="flex items-center gap-2 shrink-0 flex-wrap">
 			{#if entries.length > 0}
+				<Button variant="secondary" size="sm" onclick={copyAsText}>
+					{copied ? 'Copied ✓' : 'Copy list'}
+				</Button>
+				<Button variant="secondary" size="sm" onclick={exportJson}>Export JSON</Button>
 				<Button variant={editing ? 'primary' : 'secondary'} size="sm" onclick={() => (editing = !editing)}>
 					{editing ? 'Done' : 'Edit'}
 				</Button>
