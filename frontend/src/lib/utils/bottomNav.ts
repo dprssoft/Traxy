@@ -1,5 +1,6 @@
 import type { NavItem } from '$lib/stores/layout';
 
+/** How many shortcuts the customisable bottom bar can hold. */
 export const BOTTOM_NAV_MIN = 3;
 export const BOTTOM_NAV_MAX = 5;
 

@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 
 const TOKEN_KEY = 'auth_token';
 
+/** localStorage helpers for an auth token (no-ops during SSR). */
 export const storage = {
 	setToken: (token: string) => {
 		if (browser) {
