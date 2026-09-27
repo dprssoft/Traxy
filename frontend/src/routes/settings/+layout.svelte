@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { resolvePath } from '$lib/utils/paths';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import type { Pathname } from '$app/types';
 	import Tabs from '$lib/components/ui/Tabs.svelte';
 
@@ -95,7 +95,7 @@
 				orientation="vertical"
 				onchange={(id) => {
 					const tab = tabs.find((t) => t.id === id);
-					if (tab) goto(resolve(tab.href));
+					if (tab) goto(resolvePath(tab.href));
 				}}
 			/>
 		</div>

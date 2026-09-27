@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolvePath } from '$lib/utils/paths';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { drawerNavItems, layoutStore } from '$lib/stores/layout';
@@ -53,7 +54,7 @@
 		{#each navItems as item (item.href)}
 			{@const isActive = item.match($page.url.pathname)}
 			<a
-				href={resolve(item.href)}
+				href={resolvePath(item.href)}
 				title={item.label}
 				class="flex items-center rounded-2xl font-semibold text-sm transition-all relative group
 					{isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2.5'}
@@ -100,7 +101,7 @@
 		{#if aboutItem}
 			{@const isAboutActive = aboutItem.match($page.url.pathname)}
 			<a
-				href={resolve(aboutItem.href)}
+				href={resolvePath(aboutItem.href)}
 				title="About Traxy"
 				class="flex items-center rounded-2xl text-sm font-semibold transition-all group
 					{isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2.5'}

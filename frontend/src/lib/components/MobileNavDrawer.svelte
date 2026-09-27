@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolvePath } from '$lib/utils/paths';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { layoutStore, drawerNavItems } from '$lib/stores/layout';
@@ -141,7 +142,7 @@
 				{#each drawerNavItems.filter((i) => i.href !== '/settings/about') as item (item.href)}
 					{@const isActive = item.match($page.url.pathname)}
 					<a
-						href={resolve(item.href)}
+						href={resolvePath(item.href)}
 						class="flex items-center justify-between px-3.5 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 group
 							{isActive
 							? 'text-white bg-gradient-to-r from-indigo-600/25 to-purple-600/15 border border-indigo-500/35 shadow-md shadow-indigo-500/10'

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/utils/paths';
 	import { page } from '$app/stores';
 	import { layoutStore } from '$lib/stores/layout';
 </script>
@@ -10,7 +10,7 @@
 	{#each layoutStore.bottomNavItems as item (item.href)}
 		{@const isActive = item.match($page.url.pathname)}
 		<a
-			href={resolve(item.href)}
+			href={resolvePath(item.href)}
 			class="flex flex-col items-center gap-1 py-1 px-1.5 transition-all duration-200 flex-1 max-w-16 group"
 			aria-label={item.label}
 		>
