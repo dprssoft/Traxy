@@ -2,6 +2,7 @@ import { getDb } from '../index';
 import type { ActivityLog } from '$lib/db/schema';
 import type { ActivityItem, ActivityPayload } from '$lib/types/activityTypes';
 import { v4 as uuidv4 } from 'uuid';
+import { recordDeletion } from './syncLog.service';
 
 function getCategoryForEventType(eventType: ActivityItem['eventType']): ActivityItem['category'] {
 	if (
@@ -115,6 +116,7 @@ export async function handleProgressDecrement(
 	if (toDelete.length > 0) {
 		const placeholders = toDelete.map(() => '?').join(',');
 		await db.run(`DELETE FROM ActivityLog WHERE id IN (${placeholders})`, toDelete);
+		for (const id of toDelete) await recordDeletion('ActivityLog', id);
 	}
 
 	return { highestRemaining, highestRemainingOccurredAt };

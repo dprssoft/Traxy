@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getSystemCollectionName, WISHLIST_MEDIA_TYPES } from '$lib/constants';
 import { logActivity } from './activity.service';
 import { getMediaById, rowToMedia } from './media.service';
+import { collectionItemKey, collectionKey, mediaKeyById, recordDeletion } from './syncLog.service';
 
 const COVER_COUNT = 4;
 
@@ -220,6 +221,8 @@ export async function deleteCollection(id: string): Promise<void> {
 	const db = getDb();
 	await db.run('DELETE FROM CollectionItem WHERE collectionId = ?', [id]);
 	await db.run('DELETE FROM Collection WHERE id = ?', [id]);
+	// Its items go with it: sync drops items whose collection is deleted.
+	await recordDeletion('Collection', collectionKey(collection));
 }
 
 /** Get (creating on first use) a system collection for a media type. */
@@ -278,9 +281,16 @@ export async function addToCollection(collectionId: string, mediaId: string): Pr
 	const nextOrder =
 		Number((max.values?.[0] as { maxOrder: number } | undefined)?.maxOrder ?? -1) + 1;
 	const result = await db.run(
-		`INSERT OR IGNORE INTO CollectionItem (id, collectionId, mediaId, sortOrder, addedAt)
-		 VALUES (?, ?, ?, ?, ?)`,
-		[uuidv4(), collectionId, mediaId, nextOrder, new Date().toISOString()],
+		`INSERT OR IGNORE INTO CollectionItem (id, collectionId, mediaId, sortOrder, addedAt, updatedAt)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		[
+			uuidv4(),
+			collectionId,
+			mediaId,
+			nextOrder,
+			new Date().toISOString(),
+			new Date().toISOString(),
+		],
 	);
 	const inserted = (result.changes?.changes ?? 0) > 0;
 	if (inserted) {
@@ -308,6 +318,9 @@ export async function removeFromCollection(
 	);
 	const removed = (result.changes?.changes ?? 0) > 0;
 	if (removed) {
+		const mKey = await mediaKeyById(mediaId);
+		if (mKey)
+			await recordDeletion('CollectionItem', collectionItemKey(collectionKey(collection), mKey));
 		const media = await getMediaById(mediaId);
 		await logActivity({
 			mediaId,
@@ -368,11 +381,10 @@ export async function toggleSystemCollection(
 export async function reorderCollection(collectionId: string, mediaIds: string[]): Promise<void> {
 	const db = getDb();
 	for (const [index, mediaId] of mediaIds.entries()) {
-		await db.run('UPDATE CollectionItem SET sortOrder = ? WHERE collectionId = ? AND mediaId = ?', [
-			index,
-			collectionId,
-			mediaId,
-		]);
+		await db.run(
+			'UPDATE CollectionItem SET sortOrder = ?, updatedAt = ? WHERE collectionId = ? AND mediaId = ?',
+			[index, new Date().toISOString(), collectionId, mediaId],
+		);
 	}
 	await db.run('UPDATE Collection SET updatedAt = ? WHERE id = ?', [
 		new Date().toISOString(),
@@ -386,9 +398,8 @@ export async function updateEntryNote(
 	mediaId: string,
 	note: string,
 ): Promise<void> {
-	await getDb().run('UPDATE CollectionItem SET note = ? WHERE collectionId = ? AND mediaId = ?', [
-		note.trim() || null,
-		collectionId,
-		mediaId,
-	]);
+	await getDb().run(
+		'UPDATE CollectionItem SET note = ?, updatedAt = ? WHERE collectionId = ? AND mediaId = ?',
+		[note.trim() || null, new Date().toISOString(), collectionId, mediaId],
+	);
 }

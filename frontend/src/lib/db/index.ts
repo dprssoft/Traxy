@@ -144,6 +144,7 @@ export const applySchema = async (db: SchemaConnection) => {
         cycleNumber INTEGER,
         startedAt TEXT,
         finishedAt TEXT,
+        updatedAt TEXT,
         FOREIGN KEY(mediaId) REFERENCES Media(id)
     );
     CREATE TABLE IF NOT EXISTS Collection (
@@ -164,6 +165,7 @@ export const applySchema = async (db: SchemaConnection) => {
         sortOrder INTEGER,
         addedAt TEXT,
         note TEXT,
+        updatedAt TEXT,
         FOREIGN KEY(collectionId) REFERENCES Collection(id),
         FOREIGN KEY(mediaId) REFERENCES Media(id)
     );
@@ -191,7 +193,14 @@ export const applySchema = async (db: SchemaConnection) => {
     );
     CREATE TABLE IF NOT EXISTS AppSettings (
         key TEXT PRIMARY KEY,
-        value TEXT
+        value TEXT,
+        updatedAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS SyncTombstone (
+        tableName TEXT NOT NULL,
+        rowKey TEXT NOT NULL,
+        deletedAt TEXT NOT NULL,
+        PRIMARY KEY (tableName, rowKey)
     );
     `;
 
@@ -232,6 +241,9 @@ export const applySchema = async (db: SchemaConnection) => {
 		'Collection ADD COLUMN isRanked INTEGER',
 		'Collection ADD COLUMN sortOrder INTEGER',
 		'CollectionItem ADD COLUMN note TEXT',
+		'CollectionItem ADD COLUMN updatedAt TEXT',
+		'WatchCycle ADD COLUMN updatedAt TEXT',
+		'AppSettings ADD COLUMN updatedAt TEXT',
 	];
 	for (const col of collectionColumns) {
 		try {

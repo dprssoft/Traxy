@@ -47,8 +47,8 @@ export async function createCycle(mediaId: string, startedAt?: string): Promise<
 	const resolvedStart = startedAt ?? new Date().toISOString().slice(0, 10);
 
 	await db.run(
-		'INSERT INTO WatchCycle (id, mediaId, cycleNumber, startedAt, finishedAt) VALUES (?, ?, ?, ?, NULL)',
-		[id, mediaId, cycleNumber, resolvedStart],
+		'INSERT INTO WatchCycle (id, mediaId, cycleNumber, startedAt, finishedAt, updatedAt) VALUES (?, ?, ?, ?, NULL, ?)',
+		[id, mediaId, cycleNumber, resolvedStart, new Date().toISOString()],
 	);
 	return { id, mediaId, cycleNumber, startedAt: resolvedStart };
 }
@@ -62,16 +62,16 @@ export async function closeCycle(mediaId: string, finishedAt?: string): Promise<
 	const db = getDb();
 	const resolved = finishedAt ?? new Date().toISOString().slice(0, 10);
 	const result = await db.run(
-		'UPDATE WatchCycle SET finishedAt = ? WHERE mediaId = ? AND finishedAt IS NULL',
-		[resolved, mediaId],
+		'UPDATE WatchCycle SET finishedAt = ?, updatedAt = ? WHERE mediaId = ? AND finishedAt IS NULL',
+		[resolved, new Date().toISOString(), mediaId],
 	);
 	if ((result.changes?.changes ?? 0) > 0) return;
 
 	const existing = await db.query('SELECT 1 FROM WatchCycle WHERE mediaId = ? LIMIT 1', [mediaId]);
 	if (existing.values?.length) return;
 	await db.run(
-		'INSERT INTO WatchCycle (id, mediaId, cycleNumber, startedAt, finishedAt) VALUES (?, ?, 1, ?, ?)',
-		[uuidv4(), mediaId, resolved, resolved],
+		'INSERT INTO WatchCycle (id, mediaId, cycleNumber, startedAt, finishedAt, updatedAt) VALUES (?, ?, 1, ?, ?, ?)',
+		[uuidv4(), mediaId, resolved, resolved, new Date().toISOString()],
 	);
 }
 
@@ -83,10 +83,18 @@ export async function updateCycleDates(
 ): Promise<void> {
 	const db = getDb();
 	if (startedAt !== undefined) {
-		await db.run('UPDATE WatchCycle SET startedAt = ? WHERE id = ?', [startedAt, id]);
+		await db.run('UPDATE WatchCycle SET startedAt = ?, updatedAt = ? WHERE id = ?', [
+			startedAt,
+			new Date().toISOString(),
+			id,
+		]);
 	}
 	if (finishedAt !== undefined) {
-		await db.run('UPDATE WatchCycle SET finishedAt = ? WHERE id = ?', [finishedAt, id]);
+		await db.run('UPDATE WatchCycle SET finishedAt = ?, updatedAt = ? WHERE id = ?', [
+			finishedAt,
+			new Date().toISOString(),
+			id,
+		]);
 	}
 }
 

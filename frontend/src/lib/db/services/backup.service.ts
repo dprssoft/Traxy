@@ -326,6 +326,7 @@ export async function resetAllUserData(): Promise<void> {
 		'ApiCache',
 		'AppSettings',
 		'Goal',
+		'SyncTombstone',
 	];
 	for (const table of tables) {
 		await db.run(`DELETE FROM ${table}`);

@@ -1,8 +1,12 @@
+import { nowIso } from '$lib/utils/format';
+
 interface YearlyGoal {
 	year: number;
 	watchCount: number; // films, tv, anime
 	gameCount: number; // games
 	readCount: number; // books, manga, comics
+	/** When these targets were last changed; sync keeps the newer copy. */
+	updatedAt?: string;
 }
 
 const currentYear = () => new Date().getFullYear();
@@ -39,6 +43,6 @@ if (typeof window !== 'undefined') {
 /** Merge `goals` into this year's targets and persist them. */
 export function saveGoals(goals: Partial<YearlyGoal>) {
 	const year = currentYear();
-	goalStore.current = { ...goalStore.current, ...goals, year };
+	goalStore.current = { ...goalStore.current, ...goals, year, updatedAt: nowIso() };
 	localStorage.setItem(`traxy:goals:${year}`, JSON.stringify(goalStore.current));
 }

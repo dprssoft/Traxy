@@ -3,6 +3,7 @@
  * Wraps the AppSettings table in the local SQLite database.
  */
 import { getDb } from '../index';
+import { recordDeletion } from './syncLog.service';
 
 /**
  * Get a setting value by key. Returns null if not found.
@@ -29,7 +30,11 @@ export async function getAppSettingBool(key: string, defaultValue = false): Prom
  */
 export async function setAppSetting(key: string, value: string): Promise<void> {
 	const db = getDb();
-	await db.run('INSERT OR REPLACE INTO AppSettings (key, value) VALUES (?, ?)', [key, value]);
+	await db.run('INSERT OR REPLACE INTO AppSettings (key, value, updatedAt) VALUES (?, ?, ?)', [
+		key,
+		value,
+		new Date().toISOString(),
+	]);
 }
 
 /**
@@ -90,6 +95,7 @@ export async function setBottomNavIds(ids: string[] | null): Promise<void> {
 	const db = getDb();
 	if (ids === null) {
 		await db.run('DELETE FROM AppSettings WHERE key = ?', [BOTTOM_NAV_ITEMS_KEY]);
+		await recordDeletion('AppSettings', BOTTOM_NAV_ITEMS_KEY);
 	} else {
 		await setAppSetting(BOTTOM_NAV_ITEMS_KEY, JSON.stringify(ids));
 	}

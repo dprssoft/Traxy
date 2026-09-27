@@ -6,6 +6,7 @@ import { logActivity } from './activity.service';
 import { getMediaById, rowToMedia, MEDIA_COLUMNS } from './media.service';
 import { createCycle, closeCycle } from './cycle.service';
 import { handleProgressDecrement } from './activity.service';
+import { mediaKeyById, recordDeletion } from './syncLog.service';
 import type { ActivityPayload } from '$lib/types/activityTypes';
 
 // Progress field → ActivityLog event type mapping
@@ -450,4 +451,5 @@ export async function updateNote(mediaId: string, note: string): Promise<LocalTr
 export async function deleteTracking(mediaId: string): Promise<void> {
 	const db = getDb();
 	await db.run('DELETE FROM TrackingStatus WHERE mediaId = ?', [mediaId]);
+	await recordDeletion('TrackingStatus', await mediaKeyById(mediaId));
 }
