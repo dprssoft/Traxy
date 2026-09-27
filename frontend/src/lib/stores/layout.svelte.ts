@@ -188,7 +188,5 @@ class LayoutState {
 }
 
 export const layoutStore = new LayoutState();
-/** @deprecated Alias of `defaultBottomNavItems`. */
-export const navItems = defaultBottomNavItems;
 /** Every shortcut a user can put in the bottom bar. */
 export const bottomNavCatalogue = drawerNavItems;
