@@ -1,4 +1,11 @@
-﻿// Stub: will load collection items from local SQLite during collections implementation.
-export const load = async ({ params }: { params: { id: string } }) => {
-	return { collectionId: params.id, items: [] };
+import { error } from '@sveltejs/kit';
+import type { PageLoad } from './$types';
+import { getCollection, getCollectionEntries } from '$lib/db/services/collection.service';
+
+export const load: PageLoad = async ({ params, parent }) => {
+	// Layout load runs initDb(); page loads run in parallel unless we wait for it.
+	await parent();
+	const collection = await getCollection(params.id);
+	if (!collection) error(404, 'Collection not found');
+	return { collection, entries: await getCollectionEntries(params.id) };
 };

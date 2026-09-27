@@ -7,15 +7,19 @@
 	interface Props {
 		item: SearchResult;
 		onclick: () => void;
+		/** Fill the parent's width (grids) instead of the fixed row-card width. */
+		fluid?: boolean;
 	}
 
-	let { item, onclick }: Props = $props();
+	let { item, onclick, fluid = false }: Props = $props();
 </script>
 
 <button
 	type="button"
 	{onclick}
-	class="group relative flex-shrink-0 w-[105px] xs:w-[120px] sm:w-[145px] md:w-[160px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 rounded-2xl transition-all"
+	class="group relative flex-shrink-0 {fluid
+		? 'w-full'
+		: 'w-[105px] xs:w-[120px] sm:w-[145px] md:w-[160px]'} cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40 rounded-2xl transition-all"
 >
 	<!-- Poster -->
 	<div

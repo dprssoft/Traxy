@@ -75,7 +75,7 @@
 			maxlength={255}
 			rows="2"
 			placeholder="Optional"
-			class="{inputClass} resize-none"
+			class="{inputClass} block resize-none"
 		></textarea>
 	</label>
 
