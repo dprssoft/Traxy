@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import ActivityHeatmap from '$lib/components/ActivityHeatmap.svelte';
 	import MediaPieChart from '$lib/components/MediaPieChart.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -84,12 +83,7 @@
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-		<div class="lg:col-span-2 space-y-6">
-			<ActivityHeatmap year={data.year} data={data.heatmapDays} />
-		</div>
-		<div class="lg:col-span-1">
-			<MediaPieChart data={typeCounts} />
-		</div>
+	<div class="max-w-xl">
+		<MediaPieChart data={typeCounts} />
 	</div>
 </div>

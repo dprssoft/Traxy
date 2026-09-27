@@ -2,11 +2,6 @@
 
 export type { MediaType };
 
-export interface HeatmapDay {
-	date: string; // YYYY-MM-DD
-	count: number;
-}
-
 export interface GoalWithProgress {
 	id: string;
 	mediaType: MediaType | 'any';

@@ -1,7 +1,6 @@
 import { getDb } from '../index';
 import type { ActivityLog } from '$lib/db/schema';
 import type { ActivityItem, ActivityPayload } from '$lib/types/activityTypes';
-import type { HeatmapDay } from '$lib/types/statsTypes';
 import { v4 as uuidv4 } from 'uuid';
 
 function getCategoryForEventType(eventType: ActivityItem['eventType']): ActivityItem['category'] {
@@ -169,22 +168,4 @@ export async function getActivityForMedia(mediaId: string): Promise<ActivityItem
 	);
 	if (!result.values) return [];
 	return (result.values as ActivityRow[]).map(rowToItem);
-}
-
-/**
- * Aggregate activity events by calendar day for the given year.
- * Returns one entry per day that has at least one event.
- */
-export async function getActivityHeatmap(year: number): Promise<HeatmapDay[]> {
-	const db = getDb();
-	const result = await db.query(
-		`SELECT date(occurredAt) as date, COUNT(*) as count
-		 FROM ActivityLog
-		 WHERE occurredAt >= ? AND occurredAt < ?
-		 GROUP BY date(occurredAt)
-		 ORDER BY date ASC`,
-		[`${year}-01-01`, `${year + 1}-01-01`],
-	);
-	if (!result.values) return [];
-	return (result.values as HeatmapDay[]).map(({ date, count }) => ({ date, count }));
 }
