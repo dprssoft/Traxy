@@ -3,6 +3,8 @@
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 	import { Badge, Card, SensitiveContent } from '$lib/components/ui';
 	import StatusButton from './StatusButton.svelte';
+	import QuickEditButton from './QuickEditButton.svelte';
+	import { quickEdit } from '$lib/stores/quickEdit.svelte';
 
 	interface Props {
 		item: TrackingListItem;
@@ -47,8 +49,14 @@
 			</Badge>
 		</div>
 
-		<div class="mt-auto">
-			<StatusButton media={item.media} tracking={item.tracking} variant="compact" {onTrackingChanged} />
+		<div class="mt-auto flex items-center justify-between gap-2 min-w-0">
+			<div class="min-w-0">
+				<StatusButton media={item.media} tracking={item.tracking} variant="compact" {onTrackingChanged} />
+			</div>
+			<QuickEditButton
+				label="Quick edit {item.media.title}"
+				onclick={() => quickEdit.open(item.media, { onTrackingChanged })}
+			/>
 		</div>
 	</div>
 </Card>

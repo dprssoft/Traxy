@@ -7,6 +7,7 @@
 	import { applyContentFilter } from '$lib/utils/contentFilter';
 	import { searchState } from '$lib/stores/search.svelte';
 	import { ensureLocalMedia } from '$lib/db/services/media.service';
+	import { quickEdit } from '$lib/stores/quickEdit.svelte';
 	import {
 		discoverMedia,
 		discoverCategoriesPooled,
@@ -286,6 +287,10 @@
 		recordVisitedMedia(media);
 		goto(resolve(`/media/${media.id}`));
 	}
+
+	async function onItemEdit(item: SearchResult) {
+		quickEdit.open(await ensureLocalMedia(item));
+	}
 </script>
 
 <svelte:head>
@@ -410,6 +415,7 @@
 				loading={categoryLoading[cat.id]}
 				error={categoryError[cat.id]}
 				{onItemClick}
+				{onItemEdit}
 				emptyMessage={cat.id === 'visited'
 					? 'No recently visited media yet'
 					: selectedType === 'all'

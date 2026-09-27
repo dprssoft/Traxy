@@ -9,6 +9,8 @@
 	import { searchOpenLibrary } from '$lib/db/sources/openlibrary';
 	import { searchFlashpoint } from '$lib/db/sources/flashpoint';
 	import { ensureLocalMedia } from '$lib/db/services/media.service';
+	import { quickEdit } from '$lib/stores/quickEdit.svelte';
+	import QuickEditButton from './QuickEditButton.svelte';
 	import { deduplicateResults } from '$lib/utils/search-dedup';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
@@ -155,6 +157,12 @@
 		const media = await ensureLocalMedia(item);
 		goto(`/media/${media.id}`);
 	}
+
+	async function onResultEdit(item: SearchResult) {
+		const media = await ensureLocalMedia(item);
+		closeSearch();
+		quickEdit.open(media);
+	}
 </script>
 
 <div class="relative w-full min-w-0" bind:this={containerEl}>
@@ -255,8 +263,9 @@
 					<div class="p-8 text-center text-slate-500 text-sm">Nothing found</div>
 				{:else}
 					{#each visibleResults as item}
+						<div class="relative">
 						<button 
-							class="w-full flex gap-3 p-2.5 hover:bg-white/[0.06] rounded-xl text-left items-start transition-all cursor-pointer group"
+							class="w-full flex gap-3 p-2.5 pr-12 hover:bg-white/[0.06] rounded-xl text-left items-start transition-all cursor-pointer group"
 							onclick={() => onResultClick(item)}
 						>
 							{#if item.posterUrl}
@@ -289,6 +298,12 @@
 								{/if}
 							</div>
 						</button>
+						<QuickEditButton
+							label="Quick edit {item.title}"
+							onclick={() => onResultEdit(item)}
+							class="absolute right-2.5 top-1/2 -translate-y-1/2"
+						/>
+						</div>
 					{/each}
 				{/if}
 			</div>

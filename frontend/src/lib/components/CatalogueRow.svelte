@@ -9,6 +9,8 @@
 		items: SearchResult[];
 		loading: boolean;
 		onItemClick: (item: SearchResult) => void;
+		/** Enables the ✎ quick-edit button on each poster. */
+		onItemEdit?: (item: SearchResult) => void | Promise<void>;
 		emptyMessage?: string;
 		error?: boolean;
 	}
@@ -18,6 +20,7 @@
 		items,
 		loading,
 		onItemClick,
+		onItemEdit,
 		emptyMessage = 'No results available',
 		error = false,
 	}: Props = $props();
@@ -115,7 +118,11 @@
 		>
 			{#each visibleItems as item (item.externalId + item.source)}
 				<div class="snap-start">
-					<CataloguePosterCard {item} onclick={() => onItemClick(item)} />
+					<CataloguePosterCard
+						{item}
+						onclick={() => onItemClick(item)}
+						onEdit={onItemEdit && (() => onItemEdit(item))}
+					/>
 				</div>
 			{/each}
 			{#if visibleCount < items.length}

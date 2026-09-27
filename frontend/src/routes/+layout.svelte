@@ -8,6 +8,8 @@
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import MobileNavDrawer from '$lib/components/MobileNavDrawer.svelte';
 	import ContentFilterPrompt from '$lib/components/ContentFilterPrompt.svelte';
+	import MediaQuickSheet from '$lib/components/MediaQuickSheet.svelte';
+	import { quickEdit } from '$lib/stores/quickEdit.svelte';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
 	import { layoutStore, bottomNavCatalogue, defaultBottomNavItems } from '$lib/stores/layout';
@@ -93,3 +95,10 @@
 
 <!-- First-launch adult content filter question -->
 <ContentFilterPrompt />
+
+<!-- App-wide quick edit, opened from the ✎ button on posters and entries -->
+{#if quickEdit.media}
+	{#key quickEdit.media.id}
+		<MediaQuickSheet media={quickEdit.media} />
+	{/key}
+{/if}

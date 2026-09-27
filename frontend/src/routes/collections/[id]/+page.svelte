@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 	import type { CollectionEntry } from '$lib/types/collectionTypes';
@@ -10,6 +10,7 @@
 		updateEntryNote,
 	} from '$lib/db/services/collection.service';
 	import { setCrumbLabel, clearCrumbLabel } from '$lib/stores/breadcrumb';
+	import { quickEdit } from '$lib/stores/quickEdit.svelte';
 	import { downloadFile } from '$lib/utils/download';
 	import {
 		collectionExportFilename,
@@ -176,6 +177,7 @@
 						fluid
 						rank={collection.isRanked ? i + 1 : undefined}
 						onclick={() => goto(resolve(`/media/${entry.media.id}`))}
+						onEdit={() => quickEdit.open(entry.media, { onClosed: invalidateAll })}
 					/>
 					{#if entry.note}
 						<p class="text-[11px] text-slate-400 italic line-clamp-2 px-0.5" title={entry.note}>

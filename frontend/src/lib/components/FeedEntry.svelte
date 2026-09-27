@@ -3,6 +3,9 @@
 	import { isGrouped } from '$lib/types/activityTypes';
 	import { SensitiveContent } from '$lib/components/ui';
 	import { getMediaTypeGroup, STATUS_LABELS_BY_GROUP, MEDIA_TYPE_LABELS } from '$lib/constants';
+	import { getMediaById } from '$lib/db/services/media.service';
+	import { quickEdit } from '$lib/stores/quickEdit.svelte';
+	import QuickEditButton from './QuickEditButton.svelte';
 
 	interface Props {
 		activity: FeedItem;
@@ -364,15 +367,22 @@
 	});
 
 	const timeString = $derived(formatTimestamp(activity.occurredAt));
+
+	async function openQuickEdit() {
+		if (!activity.mediaId) return;
+		const media = await getMediaById(activity.mediaId);
+		if (media) quickEdit.open(media);
+	}
 	const href = $derived(
 		single?.href ?? (activity.mediaId ? `/media/${activity.mediaId}` : null)
 	);
 </script>
 
+<div class="relative">
 <svelte:element
 	this={href ? 'a' : 'div'}
 	{href}
-	class="group relative flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-[#131627]/85 hover:bg-[#191d33] border border-white/[0.08] hover:border-indigo-500/30 transition-all duration-200 shadow-sm hover:shadow-indigo-500/5 select-none"
+	class="{activity.mediaId ? 'pr-12 sm:pr-14' : ''} group relative flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-[#131627]/85 hover:bg-[#191d33] border border-white/[0.08] hover:border-indigo-500/30 transition-all duration-200 shadow-sm hover:shadow-indigo-500/5 select-none"
 >
 	<div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
 		<!-- 2. Entry Image: Media poster or System image -->
@@ -454,3 +464,11 @@
 		</div>
 	{/if}
 </svelte:element>
+{#if activity.mediaId}
+	<QuickEditButton
+		label="Quick edit {title}"
+		onclick={openQuickEdit}
+		class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2"
+	/>
+{/if}
+</div>
