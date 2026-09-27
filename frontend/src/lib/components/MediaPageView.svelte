@@ -573,7 +573,7 @@
 <!-- ── Window [13]: Add to Collection Modal ──────────────────────────── -->
 {#if showCollectionModal}
 	<AddToCollectionModal
-		mediaId={media.id}
+		{media}
 		onClose={() => (showCollectionModal = false)}
 	/>
 {/if}

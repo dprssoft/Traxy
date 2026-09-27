@@ -64,11 +64,11 @@
 
 		<!-- Panel -->
 		<div
-			class="relative w-full {sizes[size]} bg-[#0d0e1a] border border-white/[0.10] rounded-3xl shadow-2xl shadow-black/60 animate-in"
+			class="relative w-full {sizes[size]} max-h-[90vh] flex flex-col bg-[#0d0e1a] border border-white/[0.10] rounded-3xl shadow-2xl shadow-black/60 animate-in"
 		>
 			{#if title}
 				<div
-					class="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/[0.06]"
+					class="shrink-0 flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/[0.06]"
 				>
 					<h2 class="text-base font-bold text-white">{title}</h2>
 					<button
@@ -94,12 +94,12 @@
 				</div>
 			{/if}
 
-			<div class="p-6">
+			<div class="p-6 overflow-y-auto min-h-0">
 				{@render children()}
 			</div>
 
 			{#if footer}
-				<div class="px-6 pb-6 pt-0">
+				<div class="shrink-0 px-6 pb-6 pt-0">
 					{@render footer()}
 				</div>
 			{/if}
