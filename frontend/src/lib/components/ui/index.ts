@@ -15,3 +15,4 @@ export { default as Shimmer } from './Shimmer.svelte';
 export { default as MarqueeText } from './MarqueeText.svelte';
 export { default as SecretInput } from './SecretInput.svelte';
 export { default as SensitiveContent } from './SensitiveContent.svelte';
+export { default as ChipGroup } from './ChipGroup.svelte';
