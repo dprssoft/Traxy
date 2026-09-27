@@ -40,3 +40,15 @@ describe('closeCycle', () => {
 		expect(await getCycles('m1')).toHaveLength(1);
 	});
 });
+
+describe('createCycle', () => {
+	beforeEach(async () => {
+		db = await createTestDb();
+	});
+
+	it('numbers cycles per media, starting at 1', async () => {
+		expect((await createCycle('m1')).cycleNumber).toBe(1);
+		expect((await createCycle('m1')).cycleNumber).toBe(2);
+		expect((await createCycle('m2')).cycleNumber).toBe(1);
+	});
+});

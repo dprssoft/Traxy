@@ -9,7 +9,7 @@ export async function exportDatabaseJson(): Promise<string> {
 	const db = getDb();
 	const tables = ['Media', 'TrackingStatus', 'WatchCycle', 'ActivityLog', 'Collection', 'CollectionItem', 'Goal'];
 	
-	const exportData: Record<string, any[]> = {};
+	const exportData: Record<string, unknown[]> = {};
 
 	for (const table of tables) {
 		const res = await db.query(`SELECT * FROM ${table}`);

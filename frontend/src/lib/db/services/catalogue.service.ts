@@ -4,7 +4,7 @@
  */
 import type { SearchResult } from '$lib/types/mediaTypes';
 import type { MediaType } from '$lib/db/schema';
-import { getCached, getCachedBatch } from '../apiCache';
+import { getCachedBatch } from '../apiCache';
 
 // In-memory cache for fast catalogue navigation
 interface MemoryCacheEntry {

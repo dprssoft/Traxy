@@ -34,15 +34,22 @@ function getCategoryForEventType(eventType: ActivityItem['eventType']): Activity
 // ActivityLog columns plus the linked media's adult flag, so feed posters can be blurred.
 const ACTIVITY_SELECT = 'SELECT a.*, m.isAdult AS mediaIsAdult FROM ActivityLog a LEFT JOIN Media m ON m.id = a.mediaId';
 
-function rowToItem(row: any): ActivityItem {
-	let id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult;
-	if (Array.isArray(row)) {
-		[id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult] =
-			row;
-	} else {
-		({ id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult } =
-			row);
-	}
+// One row of ACTIVITY_SELECT. `payload` is JSON text as stored.
+interface ActivityRow {
+	id: string;
+	mediaId: string | null;
+	mediaTitle: string | null;
+	mediaPosterUrl: string | null;
+	mediaType: string | null;
+	eventType: string;
+	payload: string | ActivityPayload | null;
+	occurredAt: string;
+	mediaIsAdult: number | null;
+}
+
+function rowToItem(row: ActivityRow): ActivityItem {
+	const { id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult } =
+		row;
 	const parsedPayload = payload
 		? ((typeof payload === 'string' ? JSON.parse(payload) : payload) as ActivityPayload)
 		: ({} as ActivityPayload);
@@ -140,7 +147,7 @@ export async function getActivityFeed(limit = 20, offset = 0): Promise<ActivityI
 		[limit, offset],
 	);
 	if (!result.values) return [];
-	return result.values.map(rowToItem);
+	return (result.values as ActivityRow[]).map(rowToItem);
 }
 
 /** Return all activity events for a specific media item, newest first. */
@@ -151,7 +158,7 @@ export async function getActivityForMedia(mediaId: string): Promise<ActivityItem
 		[mediaId],
 	);
 	if (!result.values) return [];
-	return result.values.map(rowToItem);
+	return (result.values as ActivityRow[]).map(rowToItem);
 }
 
 /**
@@ -169,17 +176,5 @@ export async function getActivityHeatmap(year: number): Promise<HeatmapDay[]> {
 		[`${year}-01-01`, `${year + 1}-01-01`],
 	);
 	if (!result.values) return [];
-	return result.values.map((row: any) => {
-		if (Array.isArray(row)) {
-			return {
-				date: row[0] as string,
-				count: row[1] as number,
-			};
-		} else {
-			return {
-				date: row.date as string,
-				count: row.count as number,
-			};
-		}
-	});
+	return (result.values as HeatmapDay[]).map(({ date, count }) => ({ date, count }));
 }

@@ -11,6 +11,15 @@ const OPENLIBRARY_TIMEOUT_MS = 8000;
 // search.json only returns `subject` when asked for it explicitly.
 const SEARCH_FIELDS = 'key,title,first_publish_year,cover_i,subject';
 
+/** A search doc or trending work — both carry these fields. */
+interface OpenLibraryDoc {
+	key: string;
+	title: string;
+	first_publish_year?: number;
+	cover_i?: number;
+	subject?: string[];
+}
+
 /** Open Library has no adult flag — fall back to keywords in the subject tags. */
 function subjectsAreAdult(subjects?: string[]): boolean {
 	return hasAdultKeywords(...(subjects ?? []));
@@ -23,12 +32,12 @@ export async function searchOpenLibrary(query: string): Promise<SearchResult[]> 
 	const cacheKey = `openlibrary:search:${query}`;
 	try {
 		return await withCache(cacheKey, async () => {
-			const data = await fetchJson<{ docs: unknown[] }>(
+			const data = await fetchJson<{ docs: OpenLibraryDoc[] }>(
 				`${BASE_URL}/search.json?q=${encodeURIComponent(query)}&limit=10&fields=${SEARCH_FIELDS}`,
 				OPENLIBRARY_TIMEOUT_MS,
 			);
 
-			return data.docs.map((item: any) => ({
+			return data.docs.map((item) => ({
 				externalId: item.key, // e.g. /works/OL82563W
 				source: 'openlibrary',
 				type: 'book',
@@ -89,12 +98,12 @@ export async function getOpenLibraryDetails(id: string): Promise<SearchResult | 
 export async function discoverOpenLibraryTrending(forceRefresh = false): Promise<SearchResult[]> {
 	const cacheKey = 'openlibrary:discover:trending';
 	const fetcher = async (): Promise<SearchResult[]> => {
-		const data = await fetchJson<{ works?: unknown[] }>(
+		const data = await fetchJson<{ works?: OpenLibraryDoc[] }>(
 			`${BASE_URL}/trending/daily.json?limit=20`,
 			OPENLIBRARY_TIMEOUT_MS,
 		);
 
-		return (data.works ?? []).map((item: any) => ({
+		return (data.works ?? []).map((item) => ({
 			externalId: item.key, // e.g. /works/OL82563W
 			source: 'openlibrary' as const,
 			type: 'book' as const,
@@ -120,12 +129,12 @@ export async function discoverOpenLibraryTrending(forceRefresh = false): Promise
 export async function discoverOpenLibraryNew(forceRefresh = false): Promise<SearchResult[]> {
 	const cacheKey = 'openlibrary:discover:new';
 	const fetcher = async (): Promise<SearchResult[]> => {
-		const data = await fetchJson<{ docs: unknown[] }>(
+		const data = await fetchJson<{ docs: OpenLibraryDoc[] }>(
 			`${BASE_URL}/search.json?sort=new&limit=20&has_fulltext=false&fields=${SEARCH_FIELDS}`,
 			OPENLIBRARY_TIMEOUT_MS,
 		);
 
-		return data.docs.map((item: any) => ({
+		return data.docs.map((item) => ({
 			externalId: item.key,
 			source: 'openlibrary' as const,
 			type: 'book' as const,
@@ -155,12 +164,12 @@ export async function discoverOpenLibraryNew(forceRefresh = false): Promise<Sear
 export async function discoverOpenLibraryTopRated(forceRefresh = false): Promise<SearchResult[]> {
 	const cacheKey = 'openlibrary:discover:top_rated';
 	const fetcher = async (): Promise<SearchResult[]> => {
-		const data = await fetchJson<{ works?: unknown[] }>(
+		const data = await fetchJson<{ works?: OpenLibraryDoc[] }>(
 			`${BASE_URL}/trending/yearly.json?limit=20`,
 			OPENLIBRARY_TIMEOUT_MS,
 		);
 
-		return (data.works ?? []).map((item: any) => ({
+		return (data.works ?? []).map((item) => ({
 			externalId: item.key,
 			source: 'openlibrary' as const,
 			type: 'book' as const,
@@ -190,12 +199,12 @@ export async function discoverOpenLibraryRandom(): Promise<SearchResult[]> {
 	const randomPage = Math.floor(Math.random() * 50) + 1;
 
 	try {
-		const data = await fetchJson<{ works?: unknown[] }>(
+		const data = await fetchJson<{ works?: OpenLibraryDoc[] }>(
 			`${BASE_URL}/trending/daily.json?limit=20&page=${randomPage}`,
 			OPENLIBRARY_TIMEOUT_MS,
 		);
 
-		const results: SearchResult[] = (data.works ?? []).map((item: any) => ({
+		const results: SearchResult[] = (data.works ?? []).map((item) => ({
 			externalId: item.key,
 			source: 'openlibrary' as const,
 			type: 'book' as const,

@@ -88,7 +88,27 @@ query ($id: Int) {
 }
 `;
 
-function mapAnilistType(item: any): import('$lib/db/schema').MediaType {
+/** The subset of AniList's Media object our queries request (search, detail and discover differ). */
+interface AnilistMedia {
+	id: number;
+	title: { romaji?: string; english?: string; native?: string };
+	type?: 'ANIME' | 'MANGA';
+	format?: string;
+	status?: string;
+	episodes?: number;
+	chapters?: number;
+	volumes?: number;
+	duration?: number;
+	coverImage?: { large?: string; extraLarge?: string };
+	startDate?: { year?: number };
+	description?: string;
+	countryOfOrigin?: string;
+	genres?: string[];
+	isAdult?: boolean;
+	staff?: { edges?: { role?: string; node?: { name?: { full?: string } } }[] };
+}
+
+function mapAnilistType(item: AnilistMedia): import('$lib/db/schema').MediaType {
 	if (item.type === 'ANIME') return 'anime';
 	if (item.type === 'MANGA') {
 		if (item.countryOfOrigin === 'KR') return 'manhwa';
@@ -125,20 +145,20 @@ function mapAnilistCountry(code?: string): string | undefined {
 }
 
 /** Extract the most relevant author/creator from AniList staff edges */
-function extractAnilistAuthor(item: any): string | undefined {
+function extractAnilistAuthor(item: AnilistMedia): string | undefined {
 	const staff = item.staff?.edges;
 	if (!staff || staff.length === 0) return undefined;
 	// Priority: Original Creator > Story > Director > first staff member
 	const priorityRoles = ['Original Creator', 'Story & Art', 'Story', 'Director', 'Original Story'];
 	for (const role of priorityRoles) {
-		const match = staff.find((e: any) => e.role?.includes(role));
+		const match = staff.find((e) => e.role?.includes(role));
 		if (match?.node?.name?.full) return match.node.name.full;
 	}
 	return staff[0]?.node?.name?.full;
 }
 
-function mapAnilistItem(item: any): SearchResult {
-	const displayTitle = item.title.english || item.title.romaji || item.title.native;
+function mapAnilistItem(item: AnilistMedia): SearchResult {
+	const displayTitle = item.title.english || item.title.romaji || item.title.native || '';
 	const origTitle = item.title.native || item.title.romaji;
 	return {
 		externalId: item.id.toString(),
@@ -154,7 +174,7 @@ function mapAnilistItem(item: any): SearchResult {
 		description: item.description?.replace(/<[^>]*>?/gm, '') || undefined,
 		author: extractAnilistAuthor(item),
 		country: mapAnilistCountry(item.countryOfOrigin),
-		genres: item.genres?.length > 0 ? item.genres : undefined,
+		genres: item.genres?.length ? item.genres : undefined,
 		isAdult: item.isAdult === true || item.genres?.includes('Hentai') === true,
 		releaseStatus: mapAnilistStatus(item.status),
 		totalEpisodes: item.episodes || undefined,
@@ -198,8 +218,8 @@ async function getAnilistSeasonChain(startId: number): Promise<import('$lib/db/s
 
 			if (prequel && !visited.has(prequel)) await fetchRelations(prequel);
 			if (sequel && !visited.has(sequel)) await fetchRelations(sequel);
-		} catch (e) {
-			// ignore
+		} catch {
+			// A missing link just ends the chain early.
 		}
 	}
 
@@ -238,7 +258,7 @@ export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Pro
 	const cacheKey = `anilist:search:${type}:${query}`;
 	try {
 		return await withCache(cacheKey, async () => {
-			const data = await fetchJson<{ data: { Page: { media: unknown[] } } }>(
+			const data = await fetchJson<{ data: { Page: { media: AnilistMedia[] } } }>(
 				BASE_URL,
 				ANILIST_TIMEOUT_MS,
 				{ 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -259,7 +279,7 @@ export async function getAnilistDetails(id: number): Promise<SearchResult | null
 	const cacheKey = `anilist:detail:${id}`;
 	try {
 		return await withCache(cacheKey, async () => {
-			const data = await fetchJson<{ data: { Media: unknown } }>(
+			const data = await fetchJson<{ data: { Media: AnilistMedia } }>(
 				BASE_URL,
 				ANILIST_TIMEOUT_MS,
 				{ 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -334,7 +354,7 @@ async function discoverAnilist(
 		};
 		if (status) variables.status = status;
 
-		const data = await fetchJson<{ data: { Page: { media: unknown[] } } }>(
+		const data = await fetchJson<{ data: { Page: { media: AnilistMedia[] } } }>(
 			BASE_URL,
 			ANILIST_TIMEOUT_MS,
 			{ 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -390,7 +410,7 @@ export async function discoverAnilistRandom(
 	const randomPage = Math.floor(Math.random() * 50) + 1;
 	// Don't cache random results so they vary per visit
 	try {
-		const data = await fetchJson<{ data: { Page: { media: unknown[] } } }>(
+		const data = await fetchJson<{ data: { Page: { media: AnilistMedia[] } } }>(
 			BASE_URL,
 			ANILIST_TIMEOUT_MS,
 			{ 'Content-Type': 'application/json', Accept: 'application/json' },

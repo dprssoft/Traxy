@@ -1,6 +1,6 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
 import { fetchJson, parseYear, withCache } from '../fetchUtils';
-import { getCached, setCache } from '../apiCache';
+import { setCache } from '../apiCache';
 import { apiKeyStore } from '$lib/stores/apiKeys.svelte';
 
 const ENV_TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;

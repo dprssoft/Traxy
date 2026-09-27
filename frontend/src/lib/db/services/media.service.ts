@@ -19,24 +19,46 @@ export const MEDIA_COLUMNS = [
 ];
 
 /** Convert a `Media` row into a `LocalMedia`, parsing the JSON-encoded columns. */
-export function rowToMedia(row: any): LocalMedia {
-	// capacitor-community/sqlite may return rows as arrays (positional) or objects (named).
-	// Normalise to a plain object keyed by column name so we never rely on ordering.
-	let r: Record<string, any>;
-	if (Array.isArray(row)) {
-		r = {};
-		MEDIA_COLUMNS.forEach((col, i) => { r[col] = row[i]; });
-		// If the DB has more columns than our list (e.g. from older schema), extras are ignored.
-		// If the row has fewer entries (older DB without ALTER TABLE cols yet), extras default to undefined.
-	} else {
-		r = row as Record<string, any>;
-	}
+// A Media row as stored: JSON columns are text, booleans are 0/1.
+interface MediaRow {
+	id: string;
+	source: MediaSource;
+	externalId: string;
+	type: MediaType;
+	title: string;
+	year: number | null;
+	posterUrl: string | null;
+	description: string | null;
+	originalTitle: string | null;
+	serializationYears: string | null;
+	author: string | null;
+	country: string | null;
+	genres: string | null;
+	releaseStatus: string | null;
+	totalEpisodes: number | null;
+	totalSeasons: number | null;
+	totalVolumes: number | null;
+	totalChapters: number | null;
+	platforms: string | null;
+	totalPages: number | null;
+	seasonData: string | null;
+	timeToBeat: string | null;
+	runtimeMinutes: number | null;
+	isAdult: number | null;
+	wikiMeta: string | null;
+}
+
+export function rowToMedia(row: unknown[] | Record<string, unknown>): LocalMedia {
+	// Joined queries hand over positional slices; plain queries return named rows.
+	const r = (
+		Array.isArray(row) ? Object.fromEntries(MEDIA_COLUMNS.map((col, i) => [col, row[i]])) : row
+	) as unknown as MediaRow;
 
 	return {
 		id: r.id,
-		source: r.source as MediaSource,
+		source: r.source,
 		externalId: r.externalId,
-		type: r.type as MediaType,
+		type: r.type,
 		title: r.title,
 		year: r.year ?? undefined,
 		posterUrl: r.posterUrl ?? undefined,
@@ -178,7 +200,7 @@ export async function searchLocalMedia(query: string): Promise<LocalMedia[]> {
 export async function updateMediaMeta(id: string, patch: MediaMetaPatch): Promise<void> {
 	const db = getDb();
 	const updates: string[] = [];
-	const values: any[] = [];
+	const values: unknown[] = [];
 	
 	const fields = [
 		'title', 'year', 'posterUrl', 'description',

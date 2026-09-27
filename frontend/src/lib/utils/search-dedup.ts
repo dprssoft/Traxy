@@ -1,14 +1,11 @@
-import type { SearchResult } from '$lib/types/mediaTypes';
+import type { MediaSource, SearchResult } from '$lib/types/mediaTypes';
 import type { SearchPrefs } from '$lib/db/services/settings.service';
-
-/** Media types that belong to the anime/manga family (AniList is authoritative). */
-const ANILIST_TYPES = new Set(['anime', 'manga', 'manhwa', 'manhua'] as const);
 
 /**
  * Sources whose results should be suppressed when AniList already has the same
  * title in the anime/manga family.
  */
-const SUPPRESSIBLE_SOURCES = new Set(['tmdb', 'openlibrary', 'comicvine'] as const);
+const SUPPRESSIBLE_SOURCES = new Set<MediaSource>(['tmdb', 'openlibrary', 'comicvine']);
 
 /**
  * Matches the suffix that identifies a manga/book volume entry, e.g.:
@@ -96,7 +93,7 @@ export function deduplicateResults(
 	// Filter out suppressible results covered by AniList (respecting user prefs).
 	const deduped = results.filter((r) => {
 		if (r.source === 'anilist') return true; // AniList results always kept
-		if (!SUPPRESSIBLE_SOURCES.has(r.source as any)) return true;
+		if (!SUPPRESSIBLE_SOURCES.has(r.source)) return true;
 		return !isCoveredByAnilist(r);
 	});
 

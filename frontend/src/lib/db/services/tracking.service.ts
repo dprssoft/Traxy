@@ -1,9 +1,5 @@
 import { getDb } from '../index';
-import type {
-	LocalTrackingStatus,
-	LocalWatchCycle,
-	TrackingListItem,
-} from '$lib/types/trackingTypes';
+import type { LocalTrackingStatus, TrackingListItem } from '$lib/types/trackingTypes';
 import type { TrackingStatusType } from '$lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { logActivity } from './activity.service';
@@ -23,77 +19,46 @@ const PROGRESS_EVENT_MAP: Partial<Record<keyof LocalTrackingStatus, string>> = {
 	hoursPlayed: 'hours_updated',
 };
 
-function rowToTracking(row: any): LocalTrackingStatus {
-	let id,
-		mediaId,
-		status,
-		score,
-		note,
-		currentEpisode,
-		currentSeason,
-		currentChapter,
-		currentVolume,
-		currentPage,
-		currentIssue,
-		hoursPlayed,
-		completionTier,
-		createdAt,
-		updatedAt;
-	if (Array.isArray(row)) {
-		[
-			id,
-			mediaId,
-			status,
-			score,
-			note,
-			currentEpisode,
-			currentSeason,
-			currentChapter,
-			currentVolume,
-			currentPage,
-			currentIssue,
-			hoursPlayed,
-			completionTier,
-			createdAt,
-			updatedAt,
-		] = row;
-	} else {
-		({
-			id,
-			mediaId,
-			status,
-			score,
-			note,
-			currentEpisode,
-			currentSeason,
-			currentChapter,
-			currentVolume,
-			currentPage,
-			currentIssue,
-			hoursPlayed,
-			completionTier,
-			createdAt,
-			updatedAt,
-		} = row);
-	}
+// A TrackingStatus row as stored.
+interface TrackingRow {
+	id: string;
+	mediaId: string;
+	status: TrackingStatusType;
+	score: number | null;
+	note: string | null;
+	currentEpisode: number | null;
+	currentSeason: number | null;
+	currentChapter: number | null;
+	currentVolume: number | null;
+	currentPage: number | null;
+	currentIssue: number | null;
+	hoursPlayed: number | null;
+	completionTier: LocalTrackingStatus['completionTier'] | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+function rowToTracking(row: unknown[] | Record<string, unknown>): LocalTrackingStatus {
+	// Joined queries hand over positional slices; plain queries return named rows.
+	const r = (
+		Array.isArray(row) ? Object.fromEntries(TRACKING_COLUMNS.map((col, i) => [col, row[i]])) : row
+	) as unknown as TrackingRow;
 	return {
-		id,
-		mediaId,
-		status: status as TrackingStatusType,
-		score: score ?? undefined,
-		note: note ?? undefined,
-		currentEpisode: currentEpisode ?? undefined,
-		currentSeason: currentSeason ?? undefined,
-		currentChapter: currentChapter ?? undefined,
-		currentVolume: currentVolume ?? undefined,
-		currentPage: currentPage ?? undefined,
-		currentIssue: currentIssue ?? undefined,
-		hoursPlayed: hoursPlayed ?? undefined,
-		completionTier: completionTier
-			? (completionTier as LocalTrackingStatus['completionTier'])
-			: undefined,
-		createdAt,
-		updatedAt,
+		id: r.id,
+		mediaId: r.mediaId,
+		status: r.status,
+		score: r.score ?? undefined,
+		note: r.note ?? undefined,
+		currentEpisode: r.currentEpisode ?? undefined,
+		currentSeason: r.currentSeason ?? undefined,
+		currentChapter: r.currentChapter ?? undefined,
+		currentVolume: r.currentVolume ?? undefined,
+		currentPage: r.currentPage ?? undefined,
+		currentIssue: r.currentIssue ?? undefined,
+		hoursPlayed: r.hoursPlayed ?? undefined,
+		completionTier: r.completionTier ?? undefined,
+		createdAt: r.createdAt,
+		updatedAt: r.updatedAt,
 	};
 }
 

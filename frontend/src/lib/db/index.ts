@@ -30,8 +30,8 @@ export const initDb = async () => {
         } else {
             try {
                 db = await sqlite.createConnection(DB_NAME, false, 'no-encryption', 1, false);
-            } catch (err: any) {
-                if (err?.message?.includes('already exists')) {
+            } catch (err) {
+                if ((err as { message?: string })?.message?.includes('already exists')) {
                     db = await sqlite.retrieveConnection(DB_NAME, false);
                 } else {
                     throw err;

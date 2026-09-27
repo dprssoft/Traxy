@@ -1,4 +1,3 @@
-import { getDb } from '../index';
 import { upsertMedia } from './media.service';
 import { upsertTracking } from './tracking.service';
 import { logActivity } from './activity.service';
@@ -201,7 +200,7 @@ export async function importFromTmdb(apiKey: string, sessionId: string): Promise
 			let totalPages = 1;
 
 			while (page <= totalPages) {
-				const data = await fetchJson<{ page: number; total_pages: number; results: any[] }>(
+				const data = await fetchJson<{ page: number; total_pages: number; results: { id: number; rating?: number }[] }>(
 					`${BASE_URL}${ep.url}?api_key=${apiKey}&session_id=${sessionId}&page=${page}`
 				);
 				totalPages = data.total_pages;

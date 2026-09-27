@@ -5,19 +5,21 @@ import { v4 as uuidv4 } from 'uuid';
 import { logActivity } from './activity.service';
 import { getMediaById } from './media.service';
 
-function rowToCycle(row: any): LocalWatchCycle {
-	let id, mediaId, cycleNumber, startedAt, finishedAt;
-	if (Array.isArray(row)) {
-		[id, mediaId, cycleNumber, startedAt, finishedAt] = row;
-	} else {
-		({ id, mediaId, cycleNumber, startedAt, finishedAt } = row);
-	}
+interface CycleRow {
+	id: string;
+	mediaId: string;
+	cycleNumber: number;
+	startedAt: string | null;
+	finishedAt: string | null;
+}
+
+function rowToCycle(row: CycleRow): LocalWatchCycle {
 	return {
-		id,
-		mediaId,
-		cycleNumber,
-		startedAt: startedAt ?? undefined,
-		finishedAt: finishedAt ?? undefined,
+		id: row.id,
+		mediaId: row.mediaId,
+		cycleNumber: row.cycleNumber,
+		startedAt: row.startedAt ?? undefined,
+		finishedAt: row.finishedAt ?? undefined,
 	};
 }
 
@@ -29,7 +31,7 @@ export async function getCycles(mediaId: string): Promise<LocalWatchCycle[]> {
 		[mediaId],
 	);
 	if (!result.values) return [];
-	return result.values.map(rowToCycle);
+	return (result.values as CycleRow[]).map(rowToCycle);
 }
 
 /** Create a new cycle with the next available cycleNumber. */
@@ -38,19 +40,11 @@ export async function createCycle(
 	startedAt?: string,
 ): Promise<LocalWatchCycle> {
 	const db = getDb();
-	const countResult = await db.query(
-		'SELECT MAX(cycleNumber) FROM WatchCycle WHERE mediaId = ?',
+	const maxResult = await db.query(
+		'SELECT MAX(cycleNumber) AS maxCycle FROM WatchCycle WHERE mediaId = ?',
 		[mediaId],
 	);
-	let prevMax = 0;
-	if (countResult.values && countResult.values.length > 0) {
-		const row = countResult.values[0] as any;
-		if (Array.isArray(row)) {
-			prevMax = (row[0] as number | null) ?? 0;
-		} else {
-			prevMax = (Object.values(row)[0] as number | null) ?? 0;
-		}
-	}
+	const prevMax = (maxResult.values?.[0] as { maxCycle: number | null } | undefined)?.maxCycle ?? 0;
 	const cycleNumber = prevMax + 1;
 	const id = uuidv4();
 	const resolvedStart = startedAt ?? new Date().toISOString().slice(0, 10);
