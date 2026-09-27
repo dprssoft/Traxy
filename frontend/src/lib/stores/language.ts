@@ -8,6 +8,7 @@ const initial: string = browser
 	? localStorage.getItem(STORAGE_KEY) ?? DEFAULT_LANG
 	: DEFAULT_LANG;
 
+/** Preferred UI/metadata language, persisted in localStorage. */
 export const selectedLang = writable<string>(initial);
 
 if (browser) {
@@ -20,6 +21,7 @@ if (browser) {
 	});
 }
 
+/** Languages offered in the picker. */
 export const SUPPORTED_LANGS: { code: string; label: string }[] = [
 	{ code: 'uk', label: 'Ukrainian' },
 	{ code: 'en', label: 'English' },

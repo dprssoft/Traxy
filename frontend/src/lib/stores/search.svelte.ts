@@ -1,15 +1,13 @@
-// Global state for search functionality using Svelte 5 runes
 import type { MediaType } from '$lib/db/schema';
 
-// This acts as a global store.
-// In Svelte 5, we can export a simple object or class holding runes.
-
+/** App-wide search bar state. Recent searches persist in localStorage. */
 export const searchState = $state({
 	selectedType: 'all' as MediaType | 'all',
 	recentSearches: [] as string[],
 	isOpen: false, // For search overlay/modal state
 });
 
+/** Move `query` to the front of the recent list (max 10, no duplicates) and persist it. */
 export function addRecentSearch(query: string) {
 	const trimmed = query.trim();
 	if (!trimmed) return;
@@ -30,6 +28,7 @@ export function addRecentSearch(query: string) {
 	}
 }
 
+/** Restore recent searches from localStorage; call once on the client. */
 export function loadRecentSearches() {
 	if (typeof localStorage !== 'undefined') {
 		const stored = localStorage.getItem('traxy:recent_searches');
@@ -43,7 +42,7 @@ export function loadRecentSearches() {
 	}
 }
 
-// Ensure type badge colors match the app's theme
+/** Tailwind classes for a media-type badge; reading types share one colour. */
 export function getTypeColor(type: MediaType | 'all'): string {
 	switch (type) {
 		case 'film': return 'bg-blue-500/20 text-blue-400';

@@ -28,4 +28,5 @@ class ContentFilterState {
 	};
 }
 
+/** Reactive mirror of the adult-content prefs; the settings service persists them. */
 export const contentFilterStore = new ContentFilterState();

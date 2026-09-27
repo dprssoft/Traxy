@@ -26,4 +26,5 @@ class QuickEditState {
 	};
 }
 
+/** Open with `quickEdit.open(media, callbacks)`; the sheet itself is mounted once in the root layout. */
 export const quickEdit = new QuickEditState();

@@ -6,6 +6,7 @@ export interface NavItem {
 	match: (pathname: string) => boolean;
 }
 
+/** Bottom bar shortcuts used until the user customises them. */
 export const defaultBottomNavItems: NavItem[] = [
 	{
 		href: '/',
@@ -39,6 +40,7 @@ export const defaultBottomNavItems: NavItem[] = [
 	}
 ];
 
+/** Every destination in the navigation drawer, in drawer order. */
 export const drawerNavItems: NavItem[] = [
 	{
 		href: '/',
@@ -91,6 +93,10 @@ export const drawerNavItems: NavItem[] = [
 	}
 ];
 
+/**
+ * Shell layout state. Topbar mirroring and sidebar collapse persist in localStorage; the bottom
+ * bar items are pushed in from AppSettings by the root layout.
+ */
 class LayoutState {
 	topbarMirrored = $state(false);
 	sidebarCollapsed = $state(false);
@@ -182,6 +188,7 @@ class LayoutState {
 }
 
 export const layoutStore = new LayoutState();
+/** @deprecated Alias of `defaultBottomNavItems`. */
 export const navItems = defaultBottomNavItems;
 /** Every shortcut a user can put in the bottom bar. */
 export const bottomNavCatalogue = drawerNavItems;

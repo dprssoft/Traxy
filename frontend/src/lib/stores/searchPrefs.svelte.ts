@@ -58,4 +58,5 @@ function createSearchPrefsStore() {
 	};
 }
 
+/** Search merge preferences, kept in AppSettings. `load()` reads them once; until then defaults apply. */
 export const searchPrefsStore = createSearchPrefsStore();

@@ -14,6 +14,7 @@ export const lastCrumbLabel = writable<string | null>(null);
  */
 export const crumbLabels = writable<Record<string, string>>({});
 
+/** Label the breadcrumb segment at `href`. Pair with `clearCrumbLabel` on unmount. */
 export function setCrumbLabel(href: string, label: string) {
 	crumbLabels.update((m) => ({ ...m, [href]: label }));
 }

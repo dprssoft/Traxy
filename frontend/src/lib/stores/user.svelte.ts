@@ -10,6 +10,7 @@ export interface UserState {
 
 let user = $state<UserState | null>(null);
 
+/** Local profile shown in the sidebar and profile page. In memory only — not persisted across reloads. */
 export const userStore = {
 	get value() {
 		return user;
