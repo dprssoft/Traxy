@@ -255,20 +255,7 @@ export async function ensureLocalMedia(item: SearchResult): Promise<LocalMedia> 
 	if (existing) return existing;
 
 	const fullDetails: SearchResult = (await fetchProviderDetails(item)) ?? item;
-	return upsertMedia({
-		id: crypto.randomUUID(),
-		source: fullDetails.source,
-		externalId: fullDetails.externalId,
-		type: fullDetails.type,
-		title: fullDetails.title,
-		year: fullDetails.year,
-		posterUrl: fullDetails.posterUrl,
-		description: fullDetails.description,
-		totalEpisodes: fullDetails.totalEpisodes,
-		totalSeasons: fullDetails.totalSeasons,
-		totalPages: fullDetails.totalPages,
-		isAdult: fullDetails.isAdult ?? item.isAdult,
-	});
+	return upsertMedia({ ...fullDetails, isAdult: fullDetails.isAdult ?? item.isAdult });
 }
 
 /**

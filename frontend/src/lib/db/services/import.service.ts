@@ -139,19 +139,7 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 						const details = await getAnilistDetails(anilistId);
 						if (!details) { failed++; continue; }
 
-						const media = await upsertMedia({
-							id: crypto.randomUUID(),
-							source: details.source,
-							externalId: details.externalId,
-							type: details.type,
-							title: details.title,
-							year: details.year,
-							posterUrl: details.posterUrl,
-							description: details.description,
-							totalEpisodes: details.totalEpisodes,
-							totalSeasons: details.totalSeasons,
-							totalPages: details.totalPages,
-						});
+						const media = await upsertMedia(details);
 
 						await upsertTracking({
 							mediaId: media.id,
@@ -223,18 +211,7 @@ export async function importFromTmdb(apiKey: string, sessionId: string): Promise
 						const details = await getTmdbDetails(item.id.toString(), ep.type);
 						if (!details) { failed++; continue; }
 
-						const media = await upsertMedia({
-							id: crypto.randomUUID(),
-							source: details.source,
-							externalId: details.externalId,
-							type: details.type,
-							title: details.title,
-							year: details.year,
-							posterUrl: details.posterUrl,
-							description: details.description,
-							totalEpisodes: details.totalEpisodes,
-							totalSeasons: details.totalSeasons,
-						});
+						const media = await upsertMedia(details);
 
 						await upsertTracking({
 							mediaId: media.id,
