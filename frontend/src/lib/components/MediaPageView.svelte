@@ -8,6 +8,9 @@
 	import TrackModal from './TrackModal.svelte';
 	import AddToCollectionModal from './AddToCollectionModal.svelte';
 	import SystemCollectionButton from './SystemCollectionButton.svelte';
+	import { resolve } from '$app/paths';
+	import type { CollectionSummary } from '$lib/types/collectionTypes';
+	import { getCollectionsForMedia } from '$lib/db/services/collection.service';
 	import { MEDIA_TYPE_LABELS, WISHLIST_MEDIA_TYPES, getStatusLabel } from '$lib/constants';
 	import { updateScore, updateNote, getTracking, upsertTracking } from '$lib/db/services/tracking.service';
 	import { getCycles } from '$lib/db/services/cycle.service';
@@ -58,6 +61,19 @@
 		if (media) {
 			recordVisitedMedia(media);
 		}
+	});
+
+	// Collections containing this media, shown as chips
+	let inCollections = $state<CollectionSummary[]>([]);
+
+	function refreshCollections() {
+		getCollectionsForMedia(media.id)
+			.then((list) => (inCollections = list))
+			.catch((err) => console.error('Failed to load collections for media', err));
+	}
+
+	$effect(() => {
+		refreshCollections();
 	});
 
 	// -------------------------------------------------------------------------
@@ -305,10 +321,13 @@
 
 		<div class="flex items-center gap-2">
 			<!-- 15. Add to favorite -->
-			<SystemCollectionButton {media} kind="favorites" />
-			{#if WISHLIST_MEDIA_TYPES.includes(media.type)}
-				<SystemCollectionButton {media} kind="wishlist" />
-			{/if}
+			<!-- Re-keyed so a change made in the collection picker shows here too -->
+			{#key inCollections}
+				<SystemCollectionButton {media} kind="favorites" onchange={refreshCollections} />
+				{#if WISHLIST_MEDIA_TYPES.includes(media.type)}
+					<SystemCollectionButton {media} kind="wishlist" onchange={refreshCollections} />
+				{/if}
+			{/key}
 
 			<!-- 16. Share (to be implemented) -->
 			<button
@@ -508,6 +527,21 @@
 				{/if}
 			</div>
 
+			<!-- Collections containing this media -->
+			{#if inCollections.length > 0}
+				<div class="flex flex-wrap items-center gap-1.5">
+					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">In</span>
+					{#each inCollections as col (col.id)}
+						<a
+							href={resolve(`/collections/${col.id}`)}
+							class="px-2 py-0.5 bg-[#181b2e] border border-white/[0.08] hover:border-indigo-500/40 text-slate-300 hover:text-white text-[10px] sm:text-xs rounded-md font-medium transition-colors"
+						>
+							{col.systemKey === 'favorites' ? '❤️ ' : col.systemKey === 'wishlist' ? '🎁 ' : ''}{col.name}
+						</a>
+					{/each}
+				</div>
+			{/if}
+
 			<!-- 8. Media description (expandable) -->
 			<div class="flex flex-col gap-1.5 mt-2">
 				<h2 class="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
@@ -574,6 +608,7 @@
 {#if showCollectionModal}
 	<AddToCollectionModal
 		{media}
+		onchange={refreshCollections}
 		onClose={() => (showCollectionModal = false)}
 	/>
 {/if}
