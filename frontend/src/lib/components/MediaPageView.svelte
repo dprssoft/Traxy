@@ -8,7 +8,7 @@
 	import TrackModal from './TrackModal.svelte';
 	import AddToCollectionModal from './AddToCollectionModal.svelte';
 	import SystemCollectionButton from './SystemCollectionButton.svelte';
-	import { MEDIA_TYPE_LABELS, getStatusLabel } from '$lib/constants';
+	import { MEDIA_TYPE_LABELS, WISHLIST_MEDIA_TYPES, getStatusLabel } from '$lib/constants';
 	import { updateScore, updateNote, getTracking, upsertTracking } from '$lib/db/services/tracking.service';
 	import { getCycles } from '$lib/db/services/cycle.service';
 	import { recordVisitedMedia } from '$lib/db/services/catalogue.service';
@@ -306,6 +306,9 @@
 		<div class="flex items-center gap-2">
 			<!-- 15. Add to favorite -->
 			<SystemCollectionButton {media} kind="favorites" />
+			{#if WISHLIST_MEDIA_TYPES.includes(media.type)}
+				<SystemCollectionButton {media} kind="wishlist" />
+			{/if}
 
 			<!-- 16. Share (to be implemented) -->
 			<button
