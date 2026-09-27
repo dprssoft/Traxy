@@ -19,8 +19,8 @@
 
 	const options = $derived(getStatusOptions(media.type));
 
-	async function selectStatus(status: TrackingStatusType) {
-		if (isUpdating) return;
+	async function selectStatus(status: TrackingStatusType): Promise<LocalTrackingStatus | null> {
+		if (isUpdating) return null;
 		isUpdating = true;
 		try {
 			const updated = await upsertTracking({
@@ -28,8 +28,10 @@
 				status,
 			});
 			onTrackingChanged(updated);
+			return updated;
 		} catch (err) {
 			console.error('Failed to update status', err);
+			return null;
 		} finally {
 			isUpdating = false;
 		}
@@ -58,17 +60,14 @@
 	}
 
 	async function adjustProgress(field: keyof LocalTrackingStatus, delta: number, max?: number) {
-		if (!tracking) {
-			// Initialize tracking first
-			await selectStatus('in_progress');
-		}
-		const currentVal = (tracking?.[field] as number) || 0;
+		// Initialize tracking first; the prop only catches up after the parent re-renders.
+		const current = tracking ?? (await selectStatus('in_progress'));
+		if (!current) return;
+		const currentVal = (current[field] as number) || 0;
 		let nextVal = Math.max(0, currentVal + delta);
 		if (max !== undefined) nextVal = Math.min(nextVal, max);
 		await updateProgress(media.id, field, nextVal);
-		if (tracking) {
-			onTrackingChanged({ ...tracking, [field]: nextVal });
-		}
+		onTrackingChanged({ ...current, [field]: nextVal });
 	}
 </script>
 
