@@ -78,6 +78,22 @@ export async function getAllTracking(): Promise<LocalTrackingStatus[]> {
 	return result.values.map(rowToTracking);
 }
 
+/** `source:externalId` of every tracked media item, to mark provider results already in the library. */
+export async function getTrackedExternalKeys(): Promise<Set<string>> {
+	const db = getDb();
+	const result = await db.query(
+		'SELECT m.source AS source, m.externalId AS externalId FROM TrackingStatus t JOIN Media m ON m.id = t.mediaId',
+	);
+	return new Set(
+		(result.values ?? []).map((row) => {
+			const [source, externalId] = Array.isArray(row)
+				? row
+				: [(row as { source: string }).source, (row as { externalId: string }).externalId];
+			return `${source}:${externalId}`;
+		}),
+	);
+}
+
 // Column names in the order the JOIN below selects them — used to split each joined row
 // back into its TrackingStatus and Media halves. `t.id` is aliased to avoid colliding with
 // `m.id` (the only column name shared by both tables) when the driver returns named rows.
