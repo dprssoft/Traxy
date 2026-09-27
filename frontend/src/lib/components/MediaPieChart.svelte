@@ -72,7 +72,7 @@
 		</div>
 
 		<div class="w-full grid grid-cols-2 gap-2 text-xs">
-			{#each slices as slice}
+			{#each slices as slice (slice.type)}
 				<div class="flex items-center justify-between p-2 rounded-xl bg-[#16192b]/50 border border-white/[0.04]">
 					<div class="flex items-center gap-2 text-slate-300">
 						<div class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style="background-color: {slice.color};"></div>

@@ -46,7 +46,7 @@
 
 	<!-- Main Navigation Items from Wireframe Board 2 -->
 	<nav class="space-y-1.5 flex-1 overflow-y-auto py-2">
-		{#each navItems as item}
+		{#each navItems as item (item.href)}
 			{@const isActive = item.match($page.url.pathname)}
 			<a 
 				href={resolve(item.href)}

@@ -67,7 +67,7 @@
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-white/[0.04]">
-					{#each [...cycles].reverse() as cycle}
+					{#each [...cycles].reverse() as cycle (cycle.id)}
 						<tr class="hover:bg-white/[0.02] transition-colors">
 							<td class="px-3.5 py-3 text-white font-bold whitespace-nowrap">
 								{#if cycle.cycleNumber === 1}
@@ -116,7 +116,7 @@
 		
 		<!-- Mobile View -->
 		<div class="sm:hidden flex flex-col gap-3">
-			{#each [...cycles].reverse() as cycle}
+			{#each [...cycles].reverse() as cycle (cycle.id)}
 				<div class="bg-[#16192b]/40 rounded-2xl p-3.5 border border-white/[0.04] flex flex-col gap-3">
 					<div class="text-white font-bold text-sm">
 						{#if cycle.cycleNumber === 1}

@@ -87,7 +87,7 @@
 	</SectionHeader>
 
 	<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-		{#each achievements as a}
+		{#each achievements as a (a.id)}
 			<div
 				class="p-5 rounded-2xl border transition-all duration-200 flex items-start gap-4
 					{a.unlocked 

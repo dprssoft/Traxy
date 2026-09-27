@@ -31,7 +31,7 @@
 		: 'flex gap-1 overflow-x-auto scrollbar-hide'} {extraClass}"
 	role="tablist"
 >
-	{#each tabs as tab}
+	{#each tabs as tab (tab.id)}
 		{@const isActive = active === tab.id}
 		<button
 			role="tab"

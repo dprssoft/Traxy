@@ -233,7 +233,7 @@ imports it locally and opens its media page.
 			
 			<!-- Type Filters -->
 			<div class="flex overflow-x-auto gap-1.5 p-3 border-b border-white/[0.06] scrollbar-hide shrink-0 bg-[#0d0e18]/50">
-				{#each filterTypes as type}
+				{#each filterTypes as type (type)}
 					<button
 						onclick={() => onTypeSelect(type)}
 						class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer {searchState.selectedType === type ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'bg-[#181b2e] text-slate-400 hover:text-white hover:bg-[#20243d]'}"
@@ -253,7 +253,7 @@ imports it locally and opens its media page.
 				{:else if query.trim().length === 0}
 					{#if searchState.recentSearches.length > 0}
 						<div class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recent searches</div>
-						{#each searchState.recentSearches as recent}
+						{#each searchState.recentSearches as recent (recent)}
 							<button 
 								class="w-full text-left px-3.5 py-2 text-sm text-slate-300 hover:bg-white/[0.06] rounded-xl flex items-center gap-3 transition-colors cursor-pointer"
 								onclick={() => { query = recent; performSearch(recent); }}
@@ -269,7 +269,7 @@ imports it locally and opens its media page.
 				{:else if visibleResults.length === 0}
 					<div class="p-8 text-center text-slate-500 text-sm">Nothing found</div>
 				{:else}
-					{#each visibleResults as item}
+					{#each visibleResults as item (`${item.source}:${item.externalId}`)}
 						<div class="relative">
 						<button 
 							class="w-full flex gap-3 p-2.5 pr-12 hover:bg-white/[0.06] rounded-xl text-left items-start transition-all cursor-pointer group"
@@ -295,7 +295,7 @@ imports it locally and opens its media page.
 								</div>
 								{#if item.type === 'game' && item.platforms && item.platforms.length > 0}
 									<div class="flex flex-wrap gap-1 mt-1.5">
-										{#each item.platforms.slice(0, 3) as platform}
+										{#each item.platforms.slice(0, 3) as platform (platform)}
 											<span class="text-[10px] font-medium px-1.5 py-0.5 bg-[#181b2e] text-slate-300 rounded border border-white/[0.06]">{platform}</span>
 										{/each}
 										{#if item.platforms.length > 3}

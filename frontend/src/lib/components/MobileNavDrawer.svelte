@@ -114,7 +114,7 @@
 
 			<!-- Main Navigation Items (from wireframe) -->
 			<nav class="p-3 space-y-1 flex-1">
-				{#each drawerNavItems.filter((i) => i.href !== '/settings/about') as item}
+				{#each drawerNavItems.filter((i) => i.href !== '/settings/about') as item (item.href)}
 					{@const isActive = item.match($page.url.pathname)}
 					<a
 						href={resolve(item.href)}
