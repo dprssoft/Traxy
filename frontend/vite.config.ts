@@ -9,6 +9,8 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.test.ts'],
 		environment: 'jsdom',
+		// A UTC+ zone, so date code that mixes local and UTC days fails here too.
+		env: { TZ: 'Europe/Kyiv' },
 	},
 	// Only override resolve conditions under Vitest, so component tests pick the
 	// browser build of Svelte. Setting `conditions` unconditionally would clobber

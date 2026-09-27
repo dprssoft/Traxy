@@ -8,38 +8,29 @@
 
 	let { year, data }: Props = $props();
 
-	// Generate a 53-week matrix of days for the given year
+	const DAY_MS = 86_400_000;
+
+	type Cell = { date: string; count: number; inYear: boolean };
+
+	// Sunday-first weeks covering the year. Days are UTC dates, matching `date(occurredAt)` in
+	// the heatmap query — local-midnight Dates would shift every cell a day in UTC+ zones.
 	const weeks = $derived.by(() => {
-		const start = new Date(year, 0, 1);
-		const end = new Date(year, 11, 31);
-		
-		const dataMap = new Map<string, number>();
-		for (const d of data) {
-			dataMap.set(d.date.split('T')[0], d.count);
-		}
+		const counts: Record<string, number> = Object.fromEntries(
+			data.map((d) => [d.date.split('T')[0], d.count]),
+		);
+		const jan1 = Date.UTC(year, 0, 1);
+		const firstSunday = jan1 - new Date(jan1).getUTCDay() * DAY_MS;
+		const dec31 = Date.UTC(year, 11, 31);
 
-		let curr = new Date(start);
-		// back up to Sunday
-		while (curr.getDay() !== 0) {
-			curr.setDate(curr.getDate() - 1);
-		}
-
-		const result: { date: string; count: number; inYear: boolean }[][] = [];
-		let currentWeek: { date: string; count: number; inYear: boolean }[] = [];
-
-		while (curr <= end || currentWeek.length > 0) {
-			const ds = curr.toISOString().split('T')[0];
-			currentWeek.push({
-				date: ds,
-				count: dataMap.get(ds) || 0,
-				inYear: curr.getFullYear() === year
-			});
-
-			if (currentWeek.length === 7) {
-				result.push(currentWeek);
-				currentWeek = [];
+		const result: Cell[][] = [];
+		for (let weekStart = firstSunday; weekStart <= dec31; weekStart += 7 * DAY_MS) {
+			const week: Cell[] = [];
+			for (let i = 0; i < 7; i++) {
+				const day = new Date(weekStart + i * DAY_MS);
+				const date = day.toISOString().slice(0, 10);
+				week.push({ date, count: counts[date] ?? 0, inYear: day.getUTCFullYear() === year });
 			}
-			curr.setDate(curr.getDate() + 1);
+			result.push(week);
 		}
 		return result;
 	});
@@ -58,9 +49,9 @@
 	</h3>
 	
 	<div class="flex gap-1 min-w-max">
-		{#each weeks as week}
+		{#each weeks as week (week[0].date)}
 			<div class="flex flex-col gap-1">
-				{#each week as day}
+				{#each week as day (day.date)}
 					<div 
 						class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm {getColor(day.count)} {day.inYear ? '' : 'opacity-10'}"
 						title="{day.date}: {day.count} actions"
