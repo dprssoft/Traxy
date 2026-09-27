@@ -30,6 +30,13 @@
 			href: '/settings/search',
 		},
 		{
+			id: 'sync',
+			label: 'Sync',
+			icon: '🔄',
+			desc: 'Sync devices through your drive',
+			href: '/settings/sync',
+		},
+		{
 			id: 'data',
 			label: 'Data & Backup',
 			icon: '💾',

@@ -33,6 +33,17 @@ export class SyncConflictError extends Error {
 	}
 }
 
+/**
+ * The drive needs the user to sign in again (never connected, access revoked, or — on the web —
+ * the short-lived token expired and renewing it needs a click). Auto-sync waits for the user.
+ */
+export class SyncAuthError extends Error {
+	constructor(message = 'Sign in to your drive again to keep syncing') {
+		super(message);
+		this.name = 'SyncAuthError';
+	}
+}
+
 /** An in-memory provider: a stand-in drive for tests, shared by several simulated devices. */
 export class MemoryProvider implements SyncProvider {
 	readonly id = 'memory';

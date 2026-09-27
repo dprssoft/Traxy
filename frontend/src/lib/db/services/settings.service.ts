@@ -149,6 +149,17 @@ export async function setWikiEnrichmentEnabled(enabled: boolean): Promise<void> 
 	await setAppSettingBool(WIKI_ENRICHMENT_FLAG, enabled);
 }
 
+/** Feature flag for cloud sync. Per device: it is never synced itself. */
+export const CLOUD_SYNC_FLAG = 'feat_cloud_sync';
+
+export async function getCloudSyncEnabled(): Promise<boolean> {
+	return getAppSettingBool(CLOUD_SYNC_FLAG, false);
+}
+
+export async function setCloudSyncEnabled(enabled: boolean): Promise<void> {
+	await setAppSettingBool(CLOUD_SYNC_FLAG, enabled);
+}
+
 export interface SearchPrefs {
 	/** AniList wins over TMDB for anime/TV overlap (e.g. Jujutsu Kaisen won't show as TV) */
 	anilistWinsAnime: boolean;

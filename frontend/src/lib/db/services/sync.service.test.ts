@@ -11,7 +11,12 @@ import {
 	getCollectionEntries,
 } from './collection.service';
 import { getMediaByExternalId } from './media.service';
-import { setAppSetting, getAppSetting } from './settings.service';
+import {
+	setAppSetting,
+	getAppSetting,
+	getCloudSyncEnabled,
+	setCloudSyncEnabled,
+} from './settings.service';
 
 let db: SQLiteDBConnection;
 
@@ -120,6 +125,22 @@ describe('syncing two devices (real schema)', () => {
 			const entries = await on(device, () => getCollectionEntries(favs.id));
 			expect(entries.map((e) => e.media.title).sort()).toEqual(['Dune', 'Heat']);
 		}
+	});
+
+	it('keeps the sync switch on each device', async () => {
+		await on(phone, () => setCloudSyncEnabled(true));
+		await on(phone, () => setAppSetting('tracking_view', 'grid'));
+		await on(phone, () => syncWith(drive));
+
+		await on(laptop, () => syncWith(drive));
+		expect(await on(laptop, getCloudSyncEnabled)).toBe(false);
+		expect(await on(laptop, () => getAppSetting('tracking_view'))).toBe('grid');
+
+		await on(laptop, () => setAppSetting('tracking_view', 'list'));
+		await on(laptop, () => syncWith(drive));
+		await on(phone, () => syncWith(drive));
+		expect(await on(phone, getCloudSyncEnabled)).toBe(true);
+		expect(await on(phone, () => getAppSetting('tracking_view'))).toBe('list');
 	});
 
 	it('carries goals across', async () => {

@@ -13,13 +13,17 @@ import {
 	serializeSyncDoc,
 	type SyncDoc,
 } from '../sync/document';
-import { SyncConflictError, type SyncProvider } from '../sync/provider';
+import { SyncAuthError, SyncConflictError, type SyncProvider } from '../sync/provider';
 import { DETAIL_COLUMNS } from './media.service';
 import { ANIME_MERGE_LEFTOVER_KEYS } from './backup.service';
 import { collectionItemKey, collectionKey, mediaKey } from './syncLog.service';
+import { CLOUD_SYNC_FLAG } from './settings.service';
 import { GOALS_STORAGE_PREFIX } from '$lib/constants';
 
 type Row = Record<string, unknown>;
+
+/** Settings that stay on this device (and survive applying a synced document). */
+const DEVICE_LOCAL_SETTINGS = [CLOUD_SYNC_FLAG];
 
 /** Title fields that travel; provider details reload per title (see `detailsPending`). */
 const MEDIA_SYNC_COLUMNS = [
@@ -140,7 +144,7 @@ export async function buildLocalSyncDoc(): Promise<SyncDoc> {
 
 	for (const s of await rows('SELECT * FROM AppSettings')) {
 		const key = String(s.key);
-		if (ANIME_MERGE_LEFTOVER_KEYS.includes(key)) continue;
+		if (ANIME_MERGE_LEFTOVER_KEYS.includes(key) || DEVICE_LOCAL_SETTINGS.includes(key)) continue;
 		doc.settings[key] = { value: s.value ?? null, updatedAt: str(s.updatedAt) };
 	}
 
@@ -223,11 +227,14 @@ export async function applySyncDoc(doc: SyncDoc): Promise<void> {
 		'TrackingStatus',
 		'Collection',
 		'ActivityLog',
-		'AppSettings',
 		'SyncTombstone',
 	]) {
 		statements.push({ statement: `DELETE FROM ${table}`, values: [] });
 	}
+	statements.push({
+		statement: `DELETE FROM AppSettings WHERE key NOT IN (${DEVICE_LOCAL_SETTINGS.map(() => '?').join(', ')})`,
+		values: DEVICE_LOCAL_SETTINGS,
+	});
 
 	for (const [key, c] of Object.entries(doc.collections)) {
 		const id = collectionIds.get(key) ?? (c.systemKey ? uuidv4() : key);
@@ -275,6 +282,7 @@ export async function applySyncDoc(doc: SyncDoc): Promise<void> {
 		);
 	}
 	for (const [key, s] of Object.entries(doc.settings)) {
+		if (DEVICE_LOCAL_SETTINGS.includes(key)) continue;
 		statements.push(
 			insert('AppSettings', { key, value: s.value ?? null, updatedAt: s.updatedAt ?? null }),
 		);
@@ -331,5 +339,26 @@ export async function syncWith(provider: SyncProvider): Promise<SyncResult> {
 		} catch (err) {
 			if (!(err instanceof SyncConflictError) || attempt >= MAX_ATTEMPTS) throw err;
 		}
+	}
+}
+
+/**
+ * Sync once through `provider`. With `interactive` (a user tapped something) the user may be asked
+ * to sign in; otherwise a missing or expired sign-in throws `SyncAuthError` right away.
+ */
+export async function runSync(
+	provider: SyncProvider,
+	{ interactive }: { interactive: boolean },
+): Promise<SyncResult> {
+	if (!provider.isConnected()) {
+		if (!interactive) throw new SyncAuthError();
+		await provider.connect();
+	}
+	try {
+		return await syncWith(provider);
+	} catch (err) {
+		if (!(err instanceof SyncAuthError) || !interactive) throw err;
+		await provider.connect();
+		return syncWith(provider);
 	}
 }
