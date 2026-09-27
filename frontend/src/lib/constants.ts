@@ -1,4 +1,5 @@
 import type { MediaType } from '$lib/types/mediaTypes';
+import type { SystemCollectionKey } from '$lib/db/schema';
 
 export const DEFAULT_COLLECTION_NAME = 'Favorites';
 
@@ -103,6 +104,29 @@ export const MEDIA_TYPE_LABELS: Record<MediaType, string> = {
 	comic: 'Comic',
 	book: 'Book',
 };
+
+export const MEDIA_TYPE_PLURAL_LABELS: Record<MediaType, string> = {
+	film: 'Films',
+	tv: 'TV Series',
+	game: 'Games',
+	anime: 'Anime',
+	manga: 'Manga',
+	manhwa: 'Manhwa',
+	manhua: 'Manhua',
+	comic: 'Comics',
+	book: 'Books',
+};
+
+// ---------------------------------------------------------------------------
+// System collections
+// ---------------------------------------------------------------------------
+
+/** Media types that get a Wishlist ("want to own") collection. */
+export const WISHLIST_MEDIA_TYPES: readonly MediaType[] = ['game'];
+
+export function getSystemCollectionName(key: SystemCollectionKey, type: MediaType): string {
+	return key === 'wishlist' ? 'Wishlist' : `Favorite ${MEDIA_TYPE_PLURAL_LABELS[type]}`;
+}
 
 // ---------------------------------------------------------------------------
 // Report / moderation labels (kept for any remaining usages)

@@ -98,11 +98,19 @@ export interface WatchCycle {
   finishedAt?: string; // ISO date
 }
 
+/** Built-in collections the app creates on demand; they can't be renamed or deleted. */
+export type SystemCollectionKey = 'favorites' | 'wishlist';
+
 export interface Collection {
   id: string; // UUID
   name: string;
   description?: string;
   createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+  mediaType: MediaType | null; // null = shared across all media types
+  systemKey: SystemCollectionKey | null;
+  isRanked: boolean; // items shown as a numbered "Top N" list in manual order
+  sortOrder: number;
 }
 
 export interface CollectionItem {
@@ -111,6 +119,7 @@ export interface CollectionItem {
   mediaId: string;
   sortOrder: number;
   addedAt: string; // ISO string
+  note?: string;
 }
 
 export interface ActivityLog {

@@ -1,5 +1,8 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { Capacitor } from '@capacitor/core';
+import { v4 as uuidv4 } from 'uuid';
+import type { MediaType } from './schema';
+import { getSystemCollectionName } from '$lib/constants';
 
 const DB_NAME = 'tracklist_db';
 let sqlite: SQLiteConnection;
@@ -36,7 +39,13 @@ export const initDb = async () => {
     }
 
     await db.open();
+    await applySchema(db);
+};
 
+type SchemaConnection = Pick<SQLiteDBConnection, 'execute' | 'query' | 'run'>;
+
+/** Creates the tables and migrates older databases. Exported so tests can apply the real schema. */
+export const applySchema = async (db: SchemaConnection) => {
     const schema = `
     CREATE TABLE IF NOT EXISTS Media (
         id TEXT PRIMARY KEY,
@@ -95,7 +104,12 @@ export const initDb = async () => {
         id TEXT PRIMARY KEY,
         name TEXT,
         description TEXT,
-        createdAt TEXT
+        createdAt TEXT,
+        updatedAt TEXT,
+        mediaType TEXT,
+        systemKey TEXT,
+        isRanked INTEGER,
+        sortOrder INTEGER
     );
     CREATE TABLE IF NOT EXISTS CollectionItem (
         id TEXT PRIMARY KEY,
@@ -103,6 +117,7 @@ export const initDb = async () => {
         mediaId TEXT,
         sortOrder INTEGER,
         addedAt TEXT,
+        note TEXT,
         FOREIGN KEY(collectionId) REFERENCES Collection(id),
         FOREIGN KEY(mediaId) REFERENCES Media(id)
     );
@@ -162,7 +177,83 @@ export const initDb = async () => {
             // Ignore if column already exists
         }
     }
+
+    const collectionColumns = [
+        'Collection ADD COLUMN updatedAt TEXT',
+        'Collection ADD COLUMN mediaType TEXT',
+        'Collection ADD COLUMN systemKey TEXT',
+        'Collection ADD COLUMN isRanked INTEGER',
+        'Collection ADD COLUMN sortOrder INTEGER',
+        'CollectionItem ADD COLUMN note TEXT',
+    ];
+    for (const col of collectionColumns) {
+        try {
+            await db.execute(`ALTER TABLE ${col};`);
+        } catch {
+            // Ignore if column already exists
+        }
+    }
+
+    // Older builds inserted items without an id and allowed duplicates — repair both
+    // before the unique index goes on.
+    await db.execute(`
+        UPDATE CollectionItem SET id = lower(hex(randomblob(16))) WHERE id IS NULL;
+        DELETE FROM CollectionItem WHERE rowid NOT IN (
+            SELECT MIN(rowid) FROM CollectionItem GROUP BY collectionId, mediaId
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_collection_item_unique
+            ON CollectionItem(collectionId, mediaId);
+    `);
+
+    await migrateLegacyFavorites(db);
 };
+
+const LEGACY_FAVORITES_NAME = 'Favorites';
+
+/** Splits the old mixed-type "Favorites" collection into one Favorite <Type> collection per type. */
+async function migrateLegacyFavorites(db: SchemaConnection) {
+    const legacy = await db.query(
+        'SELECT id FROM Collection WHERE name = ? AND systemKey IS NULL',
+        [LEGACY_FAVORITES_NAME],
+    );
+    for (const row of legacy.values ?? []) {
+        const legacyId = (row as { id: string }).id;
+        const items = await db.query(
+            `SELECT ci.mediaId, ci.addedAt, m.type FROM CollectionItem ci
+             JOIN Media m ON m.id = ci.mediaId
+             WHERE ci.collectionId = ?`,
+            [legacyId],
+        );
+        const targetByType = new Map<MediaType, string>();
+        for (const item of (items.values ?? []) as { mediaId: string; addedAt: string; type: MediaType }[]) {
+            let targetId = targetByType.get(item.type);
+            if (!targetId) {
+                const existing = await db.query(
+                    "SELECT id FROM Collection WHERE systemKey = 'favorites' AND mediaType = ?",
+                    [item.type],
+                );
+                targetId = (existing.values?.[0] as { id: string } | undefined)?.id;
+                if (!targetId) {
+                    targetId = uuidv4();
+                    const now = new Date().toISOString();
+                    await db.run(
+                        `INSERT INTO Collection (id, name, createdAt, updatedAt, mediaType, systemKey, isRanked, sortOrder)
+                         VALUES (?, ?, ?, ?, ?, 'favorites', 0, 0)`,
+                        [targetId, getSystemCollectionName('favorites', item.type), now, now, item.type],
+                    );
+                }
+                targetByType.set(item.type, targetId);
+            }
+            await db.run(
+                `INSERT OR IGNORE INTO CollectionItem (id, collectionId, mediaId, sortOrder, addedAt)
+                 VALUES (?, ?, ?, 0, ?)`,
+                [uuidv4(), targetId, item.mediaId, item.addedAt],
+            );
+        }
+        await db.run('DELETE FROM CollectionItem WHERE collectionId = ?', [legacyId]);
+        await db.run('DELETE FROM Collection WHERE id = ?', [legacyId]);
+    }
+}
 
 export const getDb = () => {
     if (!db) throw new Error('Database not initialized');
