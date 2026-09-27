@@ -144,6 +144,8 @@ describe('slim v3 backup (real schema)', () => {
 
 	beforeEach(async () => {
 		db = await createTestDb();
+		// Android's SQLite enforces foreign keys; the web driver doesn't.
+		await db.execute('PRAGMA foreign_keys = ON');
 		await db.run(
 			`INSERT INTO Media (id, source, externalId, type, title, year, posterUrl, totalEpisodes, description, genres, seasonData)
 			 VALUES ('p1', 'tmdb', '1396', 'tv', 'Breaking Bad', 2008, 'https://img/bb.jpg', 62, ?, '["Drama"]', '[{"season":1}]'),
@@ -215,6 +217,21 @@ describe('slim v3 backup (real schema)', () => {
 			},
 			{ id: 'a2', mediaTitle: 'Deleted Show', mediaPosterUrl: null, mediaType: 'tv' },
 		]);
+	});
+
+	it('skips rows that point at a title missing from the backup', async () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const backup = JSON.parse(await exportDatabaseJson());
+		const tracking = backup.data.TrackingStatus;
+		tracking.rows.push([...tracking.rows[0]]);
+		tracking.rows[1][tracking.columns.indexOf('id')] = 't2';
+		tracking.rows[1][tracking.columns.indexOf('mediaId')] = 'missing';
+
+		await importDatabaseJson(JSON.stringify(backup));
+
+		const rows = (await db.query('SELECT id FROM TrackingStatus')).values;
+		expect(rows).toEqual([{ id: 't1' }]);
+		expect(console.warn).toHaveBeenCalled();
 	});
 
 	it('still restores full details from an older backup', async () => {

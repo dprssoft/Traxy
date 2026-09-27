@@ -144,8 +144,8 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 		const data = parsed.data;
 		const statements: capSQLiteSet[] = [];
 
-		// Foreign keys are off by default in capacitor-sqlite, so table order doesn't matter here.
-		const tables = [
+		// Android enforces foreign keys: clear children before parents, insert parents first.
+		const deleteOrder = [
 			'Goal',
 			'ActivityLog',
 			'WatchCycle',
@@ -154,14 +154,28 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 			'Collection',
 			'Media',
 		];
-
-		for (const table of tables) {
+		for (const table of deleteOrder) {
 			statements.push({ statement: `DELETE FROM ${table}`, values: [] });
+		}
 
-			const rows = backupRows(data[table]);
-			if (rows.length === 0) continue;
-
+		const parentIds: Record<string, Set<unknown>> = {};
+		for (const table of [...deleteOrder].reverse()) {
 			const columns = await getColumns(table);
+			const value = (row: BackupRow, column: string) =>
+				Array.isArray(row) ? row[columns.indexOf(column)] : row[column];
+
+			const rows = backupRows(data[table]).filter((row) => {
+				// A row pointing at a title or collection missing from the backup would fail the whole
+				// restore on a foreign-key check; skip it instead.
+				const orphan = (FOREIGN_KEYS[table] ?? []).some(
+					([column, parent]) => !parentIds[parent]?.has(value(row, column)),
+				);
+				if (orphan) console.warn(`[backup] skipping ${table} row with a missing parent`, row);
+				return !orphan;
+			});
+			if (table === 'Media' || table === 'Collection') {
+				parentIds[table] = new Set(rows.map((row) => value(row, 'id')));
+			}
 			for (const row of rows) statements.push(toInsert(table, row, columns));
 		}
 
@@ -224,6 +238,16 @@ function restoreLocalSettings(local: Record<string, string>): void {
 		if (isLocalSettingKey(key)) localStorage.setItem(key, value);
 	}
 }
+
+// Child column → parent table, per the FOREIGN KEY clauses in db/index.ts.
+const FOREIGN_KEYS: Record<string, [string, string][]> = {
+	TrackingStatus: [['mediaId', 'Media']],
+	WatchCycle: [['mediaId', 'Media']],
+	CollectionItem: [
+		['collectionId', 'Collection'],
+		['mediaId', 'Media'],
+	],
+};
 
 // v1/v2 backups hold rows as the driver returned them: objects keyed by column, or positional
 // arrays (oldest exports). v3 tables are converted to keyed objects by `backupRows`.
