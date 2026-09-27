@@ -9,8 +9,11 @@ navigates to (and imports, if needed) the linked season's own media page.
 	import type { LocalTrackingStatus } from '$lib/types/trackingTypes';
 	import { updateProgress, upsertTracking } from '$lib/db/services/tracking.service';
 
-	import { getMediaByExternalId, upsertMedia } from '$lib/db/services/media.service';
-	import { getAnilistDetails } from '$lib/db/sources/anilist';
+	import {
+		fetchProviderDetails,
+		getMediaByExternalId,
+		upsertMedia,
+	} from '$lib/db/services/media.service';
 	import { goto } from '$app/navigation';
 
 	interface Props {
@@ -76,29 +79,20 @@ navigates to (and imports, if needed) the linked season's own media page.
 
 		isUpdating = true;
 		try {
-			let existing = await getMediaByExternalId('anilist', nextSeason.linkedMediaId);
+			const existing = await getMediaByExternalId('anilist', nextSeason.linkedMediaId);
 			if (existing) {
 				goto(`/media/${existing.id}`);
 				return;
 			}
-			const fullDetails = await getAnilistDetails(parseInt(nextSeason.linkedMediaId));
+			// Each anime season is its own AniList entry; skip (don't stub) if AniList is unreachable.
+			const fullDetails = await fetchProviderDetails({
+				source: 'anilist',
+				externalId: nextSeason.linkedMediaId,
+				type: 'anime',
+			});
 			if (!fullDetails) return;
 
-			const inserted = await upsertMedia({
-				id: crypto.randomUUID(),
-				source: fullDetails.source,
-				externalId: fullDetails.externalId,
-				type: fullDetails.type,
-				title: fullDetails.title,
-				year: fullDetails.year,
-				posterUrl: fullDetails.posterUrl,
-				description: fullDetails.description,
-				totalEpisodes: fullDetails.totalEpisodes,
-				totalSeasons: fullDetails.totalSeasons,
-				totalPages: fullDetails.totalPages,
-				seasonData: fullDetails.seasonData,
-				isAdult: fullDetails.isAdult,
-			});
+			const inserted = await upsertMedia(fullDetails);
 			goto(`/media/${inserted.id}`);
 		} finally {
 			isUpdating = false;
