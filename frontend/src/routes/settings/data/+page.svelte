@@ -8,10 +8,9 @@
 		resetAllUserData,
 	} from '$lib/db/services/backup.service';
 	import { getAutosave, type AutosaveRecord } from '$lib/services/autosave.service';
-	import { downloadFile } from '$lib/utils/download';
+	import { downloadFile, isShareCancelled, shareFile } from '$lib/utils/download';
 	import { formatBytes } from '$lib/utils/format';
 	import { Capacitor } from '@capacitor/core';
-	import { Share } from '@capacitor/share';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -111,26 +110,15 @@
 			sharing = true;
 			backupStatus = '';
 			const json = await exportDatabaseJson();
-			if (isNative) {
-				await Share.share({
-					title: filename,
-					text: json,
-					dialogTitle: 'Share Traxy Backup',
-				});
+			if (await shareFile(filename, json, 'application/json', 'Share Traxy Backup')) {
 				backupStatus = 'success:Backup shared!';
 			} else {
-				const file = new File([json], filename, { type: 'application/json' });
-				if (navigator.canShare?.({ files: [file] })) {
-					await navigator.share({ files: [file], title: 'Traxy Backup' });
-					backupStatus = 'success:Backup shared!';
-				} else {
-					await downloadFile(filename, json, 'application/json');
-					backupStatus = 'success:Export successful!';
-				}
+				await downloadFile(filename, json, 'application/json');
+				backupStatus = 'success:Export successful!';
 			}
 			setTimeout(() => (backupStatus = ''), 4000);
 		} catch (err: unknown) {
-			if (err instanceof Error && err.name !== 'AbortError') {
+			if (!isShareCancelled(err)) {
 				console.error(err);
 				backupStatus = 'error:Share failed.';
 			}
