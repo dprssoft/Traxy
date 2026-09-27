@@ -2,10 +2,11 @@ import type { capSQLiteSet } from '@capacitor-community/sqlite';
 import { getDb } from '../index';
 import { DETAIL_COLUMNS } from './media.service';
 import { ACTIVITY_LOG_LIMIT, pruneActivityLog } from './activity.service';
+import { GOALS_STORAGE_PREFIX } from '$lib/constants';
 
 // Settings kept in localStorage by the stores (goals per year, shell layout). API keys
 // (`traxy:apiKeys`) are deliberately left out: backups land in the public Download folder.
-const LOCAL_SETTING_PREFIXES = ['traxy:goals:'];
+const LOCAL_SETTING_PREFIXES = [GOALS_STORAGE_PREFIX];
 const LOCAL_SETTING_KEYS = ['traxy_topbar_mirrored', 'traxy_sidebar_collapsed'];
 
 function isLocalSettingKey(key: string): boolean {
@@ -335,7 +336,7 @@ export async function resetAllUserData(): Promise<void> {
 
 // Left behind by the reverted anime season merge (bba2783): a pre-merge backup of the library.
 const ANIME_MERGE_BACKUP_KEY = 'anime_merge_backup';
-const ANIME_MERGE_LEFTOVER_KEYS = [
+export const ANIME_MERGE_LEFTOVER_KEYS = [
 	ANIME_MERGE_BACKUP_KEY,
 	'anime_merge_pending',
 	'anime_series_ids',

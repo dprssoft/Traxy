@@ -1,4 +1,5 @@
 import { nowIso } from '$lib/utils/format';
+import { GOALS_STORAGE_PREFIX } from '$lib/constants';
 
 interface YearlyGoal {
 	year: number;
@@ -20,7 +21,7 @@ const DEFAULT_GOALS: YearlyGoal = {
 
 function loadGoals(): YearlyGoal {
 	const year = currentYear();
-	const stored = localStorage.getItem(`traxy:goals:${year}`);
+	const stored = localStorage.getItem(`${GOALS_STORAGE_PREFIX}${year}`);
 	if (stored) {
 		try {
 			return { ...DEFAULT_GOALS, ...JSON.parse(stored), year };
@@ -44,5 +45,5 @@ if (typeof window !== 'undefined') {
 export function saveGoals(goals: Partial<YearlyGoal>) {
 	const year = currentYear();
 	goalStore.current = { ...goalStore.current, ...goals, year, updatedAt: nowIso() };
-	localStorage.setItem(`traxy:goals:${year}`, JSON.stringify(goalStore.current));
+	localStorage.setItem(`${GOALS_STORAGE_PREFIX}${year}`, JSON.stringify(goalStore.current));
 }

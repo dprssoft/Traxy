@@ -158,3 +158,6 @@ export const LANG_LABELS: Record<string, string> = {
 	uk: 'Ukrainian',
 	en: 'English',
 };
+
+/** localStorage key prefix for yearly goals (`traxy:goals:<year>`). */
+export const GOALS_STORAGE_PREFIX = 'traxy:goals:';
