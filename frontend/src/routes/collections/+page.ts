@@ -2,6 +2,6 @@
 // Loads collections from local SQLite.
 export const load = async () => {
 	return {
-		collections: [] as import('$lib/types/collectionTypes').CollectionResponseDto[],
+		collections: [] as import('$lib/types/collectionTypes').CollectionSummary[],
 	};
 };

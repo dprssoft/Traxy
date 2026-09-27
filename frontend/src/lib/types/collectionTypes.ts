@@ -1,59 +1,36 @@
-export type CollectionPrivacyLevel = 'public' | 'private';
+import type { MediaType, SystemCollectionKey } from '$lib/db/schema';
+import type { LocalMedia } from './mediaTypes';
 
-export interface CollectionResponseDto {
+export type { SystemCollectionKey };
+
+/** A collection as shown in lists and pickers. */
+export interface CollectionSummary {
 	id: string;
 	name: string;
 	description?: string;
-	privacyLevel: CollectionPrivacyLevel;
-	ownerId: string;
-	ownerUsername: string;
+	/** null = shared: accepts any media type. */
+	mediaType: MediaType | null;
+	systemKey: SystemCollectionKey | null;
+	isRanked: boolean;
 	itemCount: number;
+	/** Up to four poster URLs, in collection order, for the cover mosaic. */
+	coverUrls: string[];
 	createdAt: string;
+	updatedAt: string;
 }
 
-export interface CollectionItemDto {
-	id: string;
-	mediaId: string;
-	mediaTitle?: string;
-	mediaPosterUrl?: string;
-	order?: number;
-	createdAt: string;
+/** One media item inside a collection. */
+export interface CollectionEntry {
+	itemId: string;
+	media: LocalMedia;
+	sortOrder: number;
+	addedAt: string;
+	note?: string;
 }
 
-export interface CollectionAccessDto {
-	id: string;
-	userId: string;
-	username: string;
-	createdAt: string;
-}
-
-export interface CollectionDetailResponseDto {
-	id: string;
+export interface CollectionInput {
 	name: string;
 	description?: string;
-	privacyLevel: CollectionPrivacyLevel;
-	ownerId: string;
-	ownerUsername: string;
-	items: CollectionItemDto[];
-	sharedWith: CollectionAccessDto[];
-	createdAt: string;
-}
-
-export interface CreateCollectionBody {
-	name: string;
-	description?: string;
-	privacyLevel?: CollectionPrivacyLevel;
-}
-
-export interface UpdateCollectionBody {
-	name?: string;
-	description?: string;
-	privacyLevel?: CollectionPrivacyLevel;
-}
-
-export interface PagedCollections {
-	items: CollectionResponseDto[];
-	totalCount: number;
-	pageNumber: number;
-	pageSize: number;
+	mediaType: MediaType | null;
+	isRanked?: boolean;
 }

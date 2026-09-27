@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import type { CollectionResponseDto } from '$lib/types/collectionTypes';
+	import type { CollectionSummary } from '$lib/types/collectionTypes';
 	import {
-		getUserCollections,
-		getCollectionItemIds,
-		addItemToCollection,
-		removeItemFromCollection,
+		listCollections,
+		getCollectionIdsForMedia,
+		addToCollection,
+		removeFromCollection,
 		createCollection,
 	} from '$lib/db/services/collection.service';
 
@@ -17,7 +17,7 @@
 
 	let { mediaId, onClose }: Props = $props();
 
-	let collections = $state<CollectionResponseDto[]>([]);
+	let collections = $state<CollectionSummary[]>([]);
 	const selectedIds = new SvelteSet<string>();
 	let isLoading = $state(true);
 	let newName = $state('');
@@ -25,14 +25,8 @@
 
 	onMount(async () => {
 		try {
-			const list = await getUserCollections('local');
-			collections = list;
-			for (const c of list) {
-				const itemIds = await getCollectionItemIds(c.id);
-				if (itemIds.includes(mediaId)) {
-					selectedIds.add(c.id);
-				}
-			}
+			collections = await listCollections();
+			for (const id of await getCollectionIdsForMedia(mediaId)) selectedIds.add(id);
 		} catch (err) {
 			console.error('Failed to load collections', err);
 		} finally {
@@ -43,10 +37,10 @@
 	async function toggleCollection(colId: string) {
 		if (selectedIds.has(colId)) {
 			selectedIds.delete(colId);
-			await removeItemFromCollection(colId, mediaId);
+			await removeFromCollection(colId, mediaId);
 		} else {
 			selectedIds.add(colId);
-			await addItemToCollection(colId, mediaId);
+			await addToCollection(colId, mediaId);
 		}
 	}
 
@@ -55,8 +49,8 @@
 		if (!name || isCreating) return;
 		isCreating = true;
 		try {
-			const created = await createCollection('local', name);
-			await addItemToCollection(created.id, mediaId);
+			const created = await createCollection({ name, mediaType: null });
+			await addToCollection(created.id, mediaId);
 			collections = [...collections, created];
 			selectedIds.add(created.id);
 			newName = '';
