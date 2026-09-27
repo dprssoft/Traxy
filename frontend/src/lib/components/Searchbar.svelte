@@ -1,3 +1,9 @@
+<!--
+@component
+Global search: queries every provider that matches the type filter in parallel, merges
+cross-provider duplicates (`search-dedup`) and applies the adult-content filter. Picking a result
+imports it locally and opens its media page.
+-->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';

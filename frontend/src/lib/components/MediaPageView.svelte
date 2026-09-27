@@ -1,3 +1,8 @@
+<!--
+@component
+Media detail page body: hero, status/score/progress, note, collections and rewatch history.
+Takes loaded data as props and keeps local copies so edits show without a reload.
+-->
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import type { LocalMedia } from '$lib/types/mediaTypes';
@@ -48,7 +53,7 @@
 	let showCollectionModal = $state(false);
 	let shareCopied = $state(false);
 
-	// User note (item 14)
+	// User note
 	// eslint-disable-next-line svelte/prefer-writable-derived
 	let userNote = $state(untrack(() => initialTracking?.note ?? ''));
 	let noteSaved = $state(false);
@@ -77,7 +82,7 @@
 	});
 
 	// -------------------------------------------------------------------------
-	// Share (Item 16)
+	// Share
 	// -------------------------------------------------------------------------
 
 	function handleShare() {

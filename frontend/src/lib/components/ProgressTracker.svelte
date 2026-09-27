@@ -1,3 +1,9 @@
+<!--
+@component
+Progress controls for a tracked item — episodes/seasons, chapters/volumes, pages, issues or hours,
+depending on media type. Anime seasons are separate AniList entries, so changing season
+navigates to (and imports, if needed) the linked season's own media page.
+-->
 <script lang="ts">
 	import type { LocalMedia } from '$lib/types/mediaTypes';
 	import type { LocalTrackingStatus } from '$lib/types/trackingTypes';

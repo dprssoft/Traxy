@@ -1,3 +1,8 @@
+<!--
+@component
+One Activity feed row: a single event, or a run of consecutive progress events for one media,
+grouped by `utils/feed.ts`. Picks icon, message and details by category (user action, system, media update).
+-->
 <script lang="ts">
 	import type { FeedItem, ActivityItem, GroupedActivityItem } from '$lib/types/activityTypes';
 	import { isGrouped } from '$lib/types/activityTypes';
@@ -13,7 +18,7 @@
 	let { activity }: Props = $props();
 
 	// ---------------------------------------------------------------------------
-	// 5. Timestamp formatting (seconds/minutes/hours/days/month/years ago)
+	// Timestamp formatting (seconds/minutes/hours/days/month/years ago)
 	// ---------------------------------------------------------------------------
 	function formatTimestamp(dateString: string): string {
 		const date = new Date(dateString);
@@ -57,7 +62,7 @@
 	const title = $derived(activity.mediaTitle || 'Media');
 
 	// ---------------------------------------------------------------------------
-	// 6. Icon (User action, System message, Media message)
+	// Icon (User action, System message, Media message)
 	// ---------------------------------------------------------------------------
 	const icon = $derived(() => {
 		if (single?.icon) return single.icon;
@@ -114,7 +119,7 @@
 	});
 
 	// ---------------------------------------------------------------------------
-	// 3. Entry Message (User action, System message, Media message)
+	// Entry Message (User action, System message, Media message)
 	// ---------------------------------------------------------------------------
 	const message = $derived(() => {
 		if (single?.actionText) return single.actionText;
@@ -281,7 +286,7 @@
 	});
 
 	// ---------------------------------------------------------------------------
-	// 4. Entry Details (User action details, System details, Media message details)
+	// Entry Details (User action details, System details, Media message details)
 	// ---------------------------------------------------------------------------
 	const details = $derived(() => {
 		if (single?.details) return single.details;
@@ -324,7 +329,7 @@
 	});
 
 	// ---------------------------------------------------------------------------
-	// 1. Entry Body (Inline first 20 symbols with ellipsis)
+	// Entry Body (Inline first 20 symbols with ellipsis)
 	// ---------------------------------------------------------------------------
 	const rawBody = $derived(
 		single?.body ??
@@ -341,7 +346,7 @@
 	});
 
 	// ---------------------------------------------------------------------------
-	// 2. Entry Image (Media poster or System image)
+	// Entry Image (Media poster or System image)
 	// ---------------------------------------------------------------------------
 	const posterUrl = $derived(activity.mediaPosterUrl || single?.imageUrl);
 	const imageKind = $derived< 'poster' | 'system' >(
