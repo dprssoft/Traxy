@@ -14,7 +14,7 @@ describe('discoverOpenLibraryTrending', () => {
 
 	it('skips the network fetch on a cache hit', async () => {
 		const { getCached } = await import('../apiCache');
-		(getCached as any).mockResolvedValueOnce([{ title: 'Cached Book' }]);
+		(getCached as Mock).mockResolvedValueOnce([{ title: 'Cached Book' }]);
 
 		const result = await discoverOpenLibraryTrending();
 
@@ -23,7 +23,7 @@ describe('discoverOpenLibraryTrending', () => {
 	});
 
 	it('fetches and caches on a cache miss', async () => {
-		(fetch as any).mockResolvedValue({
+		(fetch as Mock).mockResolvedValue({
 			ok: true,
 			json: async () => ({ works: [{ key: '/works/OL1W', title: 'New Book', first_publish_year: 2020 }] }),
 		});
@@ -39,8 +39,8 @@ describe('discoverOpenLibraryTrending', () => {
 
 	it('bypasses the cache and re-fetches when forceRefresh is true', async () => {
 		const { getCached } = await import('../apiCache');
-		(getCached as any).mockResolvedValueOnce([{ title: 'Stale' }]);
-		(fetch as any).mockResolvedValue({ ok: true, json: async () => ({ works: [] }) });
+		(getCached as Mock).mockResolvedValueOnce([{ title: 'Stale' }]);
+		(fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ works: [] }) });
 
 		await discoverOpenLibraryTrending(true);
 

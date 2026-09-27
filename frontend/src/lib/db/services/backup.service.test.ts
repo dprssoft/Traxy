@@ -29,13 +29,13 @@ let appSettingsRows: unknown[] = [];
 
 vi.mock('../index', () => ({
 	getDb: () => ({
-		query: vi.fn(async (sql: string, values: any[] = []) => {
+		query: vi.fn(async (sql: string, values: unknown[] = []) => {
 			executedQueries.push({ type: 'query', sql, values });
 			if (sql.startsWith('PRAGMA table_info')) return { values: tableColumns };
 			if (sql.includes('FROM AppSettings')) return { values: appSettingsRows };
 			return { values: [] };
 		}),
-		run: vi.fn(async (sql: string, values: any[] = []) => {
+		run: vi.fn(async (sql: string, values: unknown[] = []) => {
 			executedQueries.push({ type: 'run', sql, values });
 			return { changes: 0 };
 		}),

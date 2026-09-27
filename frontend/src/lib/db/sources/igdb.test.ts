@@ -40,7 +40,7 @@ describe('discoverIgdbTrending', () => {
 			expect.objectContaining({ externalId: '1', source: 'igdb', title: 'Trending Game' }),
 		]);
 		expect(fetch).toHaveBeenCalledTimes(2);
-		expect((fetch as any).mock.calls[0][0]).toContain('oauth2/token');
+		expect((fetch as Mock).mock.calls[0][0]).toContain('oauth2/token');
 	});
 
 	it('requests themes and flags games with the Erotic theme as adult', async () => {
@@ -65,15 +65,15 @@ describe('discoverIgdbTrending', () => {
 
 	it('returns [] without ever calling fetch when no IGDB credentials are configured', async () => {
 		const { apiKeyStore } = await import('$lib/stores/apiKeys.svelte');
-		(apiKeyStore as any).current.igdbClientId = '';
-		(apiKeyStore as any).current.igdbClientSecret = '';
+		apiKeyStore.current.igdbClientId = '';
+		apiKeyStore.current.igdbClientSecret = '';
 
 		const result = await discoverIgdbTrending();
 
 		expect(result).toEqual([]);
 		expect(fetch).not.toHaveBeenCalled();
 
-		(apiKeyStore as any).current.igdbClientId = 'client-id';
-		(apiKeyStore as any).current.igdbClientSecret = 'client-secret';
+		apiKeyStore.current.igdbClientId = 'client-id';
+		apiKeyStore.current.igdbClientSecret = 'client-secret';
 	});
 });

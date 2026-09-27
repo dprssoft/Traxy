@@ -34,7 +34,7 @@ describe('anilist posterUrl mapping', () => {
 	});
 
 	it('discover results use the smaller "large" cover requested by DISCOVER_QUERY', async () => {
-		(fetch as any).mockResolvedValue({
+		(fetch as Mock).mockResolvedValue({
 			ok: true,
 			json: async () => ({
 				data: { Page: { media: [anilistItem({ coverImage: { large: 'https://example.com/large.jpg' } })] } },
@@ -47,7 +47,7 @@ describe('anilist posterUrl mapping', () => {
 	});
 
 	it('detail results fall back to "extraLarge" (DETAIL_QUERY does not request "large")', async () => {
-		(fetch as any).mockResolvedValue({
+		(fetch as Mock).mockResolvedValue({
 			ok: true,
 			json: async () => ({
 				data: { Media: anilistItem({ coverImage: { extraLarge: 'https://example.com/xl.jpg' } }) },

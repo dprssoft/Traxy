@@ -18,7 +18,7 @@ describe('discoverComicVineNew', () => {
 
 	it('skips the network fetch on a cache hit', async () => {
 		const { getCached } = await import('../apiCache');
-		(getCached as any).mockResolvedValueOnce([{ title: 'Cached Comic' }]);
+		(getCached as Mock).mockResolvedValueOnce([{ title: 'Cached Comic' }]);
 
 		const result = await discoverComicVineNew();
 
@@ -27,7 +27,7 @@ describe('discoverComicVineNew', () => {
 	});
 
 	it('fetches and caches on a cache miss', async () => {
-		(fetch as any).mockResolvedValue({
+		(fetch as Mock).mockResolvedValue({
 			ok: true,
 			json: async () => ({ results: [{ id: 1, name: 'New Comic', start_year: '2022' }] }),
 		});
@@ -58,8 +58,8 @@ describe('discoverComicVineNew', () => {
 
 	it('bypasses the cache and re-fetches when forceRefresh is true', async () => {
 		const { getCached } = await import('../apiCache');
-		(getCached as any).mockResolvedValueOnce([{ title: 'Stale' }]);
-		(fetch as any).mockResolvedValue({ ok: true, json: async () => ({ results: [] }) });
+		(getCached as Mock).mockResolvedValueOnce([{ title: 'Stale' }]);
+		(fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ results: [] }) });
 
 		await discoverComicVineNew(true);
 

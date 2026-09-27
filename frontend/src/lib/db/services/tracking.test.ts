@@ -7,18 +7,17 @@ import {
 	updateNote,
 	deleteTracking,
 } from './tracking.service';
-import type { LocalTrackingStatus } from '$lib/types/trackingTypes';
 
 // Mock DB layer
-let dbTrackingRecords: Map<string, any> = new Map();
-let executedQueries: { sql: string; values?: any[] }[] = [];
+const dbTrackingRecords = new Map<string, Record<string, unknown>>();
+let executedQueries: { sql: string; values?: unknown[] }[] = [];
 
 vi.mock('../index', () => ({
 	getDb: () => ({
-		query: vi.fn(async (sql: string, values: any[] = []) => {
+		query: vi.fn(async (sql: string, values: unknown[] = []) => {
 			executedQueries.push({ sql, values });
 			if (sql.includes('FROM TrackingStatus WHERE mediaId = ?')) {
-				const mediaId = values[0];
+				const mediaId = values[0] as string;
 				const record = dbTrackingRecords.get(mediaId);
 				return { values: record ? [record] : [] };
 			}
@@ -27,11 +26,11 @@ vi.mock('../index', () => ({
 			}
 			return { values: [] };
 		}),
-		run: vi.fn(async (sql: string, values: any[] = []) => {
+		run: vi.fn(async (sql: string, values: unknown[] = []) => {
 			executedQueries.push({ sql, values });
 			if (sql.includes('UPDATE TrackingStatus SET')) {
 				if (sql.includes('WHERE mediaId = ?')) {
-					const mediaId = values[values.length - 1];
+					const mediaId = values[values.length - 1] as string;
 					const existing = dbTrackingRecords.get(mediaId) || {};
 					// Parse dynamic field updates like `UPDATE TrackingStatus SET field = ?, updatedAt = ? WHERE mediaId = ?`
 					if (
@@ -99,7 +98,7 @@ vi.mock('../index', () => ({
 					createdAt,
 					updatedAt,
 				] = values;
-				dbTrackingRecords.set(mediaId, {
+				dbTrackingRecords.set(mediaId as string, {
 					id,
 					mediaId,
 					status,
@@ -117,7 +116,7 @@ vi.mock('../index', () => ({
 					updatedAt,
 				});
 			} else if (sql.includes('DELETE FROM TrackingStatus WHERE mediaId = ?')) {
-				dbTrackingRecords.delete(values[0]);
+				dbTrackingRecords.delete(values[0] as string);
 			}
 			return { changes: 1 };
 		}),
@@ -127,7 +126,7 @@ vi.mock('../index', () => ({
 // Mock related services
 const mockLogActivity = vi.fn();
 vi.mock('./activity.service', () => ({
-	logActivity: (entry: any) => mockLogActivity(entry),
+	logActivity: (entry: unknown) => mockLogActivity(entry),
 	handleProgressDecrement: vi.fn(async () => ({
 		highestRemaining: 100,
 		highestRemainingOccurredAt: null,
@@ -170,7 +169,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('media-1', 'currentEpisode', 2);
 
-			const saved = dbTrackingRecords.get('media-1');
+			const saved = dbTrackingRecords.get('media-1')!;
 			expect(saved.currentEpisode).toBe(2);
 
 			expect(mockLogActivity).toHaveBeenCalledTimes(1);
@@ -193,7 +192,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('manga-1', 'currentChapter', 11);
 
-			expect(dbTrackingRecords.get('manga-1').currentChapter).toBe(11);
+			expect(dbTrackingRecords.get('manga-1')!.currentChapter).toBe(11);
 			expect(mockLogActivity).toHaveBeenCalledTimes(1);
 			expect(mockLogActivity).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -215,7 +214,7 @@ describe('tracking.service Scenarios', () => {
 			// User corrects from episode 5 back to episode 4
 			await updateProgress('media-1', 'currentEpisode', 4);
 
-			expect(dbTrackingRecords.get('media-1').currentEpisode).toBe(4);
+			expect(dbTrackingRecords.get('media-1')!.currentEpisode).toBe(4);
 			// But NO activity log should be emitted
 			expect(mockLogActivity).not.toHaveBeenCalled();
 		});
@@ -230,7 +229,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('manga-1', 'currentChapter', 9);
 
-			expect(dbTrackingRecords.get('manga-1').currentChapter).toBe(9);
+			expect(dbTrackingRecords.get('manga-1')!.currentChapter).toBe(9);
 			expect(mockLogActivity).not.toHaveBeenCalled();
 		});
 
@@ -246,7 +245,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('manga-1', 'currentChapter', 3);
 
-			expect(dbTrackingRecords.get('manga-1').currentChapter).toBe(3);
+			expect(dbTrackingRecords.get('manga-1')!.currentChapter).toBe(3);
 			expect(handleProgressDecrement).toHaveBeenCalledWith(
 				'manga-1',
 				'chapter_read',
@@ -268,7 +267,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('media-1', 'currentEpisode', 0);
 
-			expect(dbTrackingRecords.get('media-1').currentEpisode).toBe(0);
+			expect(dbTrackingRecords.get('media-1')!.currentEpisode).toBe(0);
 			expect(handleProgressDecrement).toHaveBeenCalledWith(
 				'media-1',
 				'episode_watched',
@@ -309,7 +308,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('media-1', 'currentEpisode', 0);
 
-			expect(dbTrackingRecords.get('media-1').currentEpisode).toBe(0);
+			expect(dbTrackingRecords.get('media-1')!.currentEpisode).toBe(0);
 			expect(mockLogActivity).not.toHaveBeenCalled();
 		});
 
@@ -324,7 +323,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('media-1', 'currentSeason', 2);
 
-			expect(dbTrackingRecords.get('media-1').currentSeason).toBe(2);
+			expect(dbTrackingRecords.get('media-1')!.currentSeason).toBe(2);
 			expect(mockLogActivity).not.toHaveBeenCalled();
 		});
 
@@ -338,7 +337,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('book-1', 'currentPage', 120);
 
-			expect(dbTrackingRecords.get('book-1').currentPage).toBe(120);
+			expect(dbTrackingRecords.get('book-1')!.currentPage).toBe(120);
 			expect(mockLogActivity).toHaveBeenCalledWith(
 				expect.objectContaining({
 					eventType: 'pages_updated',
@@ -357,7 +356,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateProgress('game-1', 'hoursPlayed', 8.0);
 
-			expect(dbTrackingRecords.get('game-1').hoursPlayed).toBe(8.0);
+			expect(dbTrackingRecords.get('game-1')!.hoursPlayed).toBe(8.0);
 			expect(mockLogActivity).toHaveBeenCalledWith(
 				expect.objectContaining({
 					eventType: 'hours_updated',
@@ -490,7 +489,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateScore('media-1', 9);
 
-			expect(dbTrackingRecords.get('media-1').score).toBe(9);
+			expect(dbTrackingRecords.get('media-1')!.score).toBe(9);
 			expect(mockLogActivity).toHaveBeenCalledWith(
 				expect.objectContaining({
 					eventType: 'score_set',
@@ -509,7 +508,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateScore('media-1', 10);
 
-			expect(dbTrackingRecords.get('media-1').score).toBe(10);
+			expect(dbTrackingRecords.get('media-1')!.score).toBe(10);
 			expect(mockLogActivity).toHaveBeenCalledWith(
 				expect.objectContaining({
 					eventType: 'score_changed',
@@ -527,7 +526,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateScore('media-1', null);
 
-			expect(dbTrackingRecords.get('media-1').score).toBeNull();
+			expect(dbTrackingRecords.get('media-1')!.score).toBeNull();
 		});
 
 		it('updates note and emits note_updated', async () => {
@@ -539,7 +538,7 @@ describe('tracking.service Scenarios', () => {
 
 			await updateNote('media-1', 'Masterpiece ending!');
 
-			expect(dbTrackingRecords.get('media-1').note).toBe('Masterpiece ending!');
+			expect(dbTrackingRecords.get('media-1')!.note).toBe('Masterpiece ending!');
 			expect(mockLogActivity).toHaveBeenCalledWith(
 				expect.objectContaining({
 					eventType: 'note_updated',

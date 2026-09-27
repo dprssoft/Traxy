@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { importFromMal, importFromAnilist, importFromTmdb } from './import.service';
 
 // upsertMedia dedups on (source, externalId) and can return an id that differs from the
@@ -6,19 +7,19 @@ import { importFromMal, importFromAnilist, importFromTmdb } from './import.servi
 // return a fixed canonical id regardless of the input id, to catch any regression where a
 // caller uses its own locally-generated id instead of upsertMedia's return value.
 const CANONICAL_MEDIA_ID = 'canonical-media-id';
-const mockUpsertMedia = vi.fn(async (data: any) => ({ ...data, id: CANONICAL_MEDIA_ID }));
+const mockUpsertMedia = vi.fn(async (data: Record<string, unknown>) => ({ ...data, id: CANONICAL_MEDIA_ID }));
 vi.mock('./media.service', () => ({
-	upsertMedia: (data: any) => mockUpsertMedia(data),
+	upsertMedia: (data: Record<string, unknown>) => mockUpsertMedia(data),
 }));
 
-const mockUpsertTracking = vi.fn(async (data: any) => data);
+const mockUpsertTracking = vi.fn(async (data: Record<string, unknown>) => data);
 vi.mock('./tracking.service', () => ({
-	upsertTracking: (data: any) => mockUpsertTracking(data),
+	upsertTracking: (data: Record<string, unknown>) => mockUpsertTracking(data),
 }));
 
 const mockLogActivity = vi.fn();
 vi.mock('./activity.service', () => ({
-	logActivity: (entry: any) => mockLogActivity(entry),
+	logActivity: (entry: unknown) => mockLogActivity(entry),
 }));
 
 const mockGetAnilistDetails = vi.fn();
@@ -97,8 +98,8 @@ describe('import.service', () => {
 	});
 
 	describe('importFromAnilist', () => {
-		function mockAnilistFetch(entries: any[]) {
-			(fetch as any).mockResolvedValue({
+		function mockAnilistFetch(entries: unknown[]) {
+			(fetch as Mock).mockResolvedValue({
 				ok: true,
 				json: async () => ({
 					data: { MediaListCollection: { lists: [{ entries }] } },
@@ -128,7 +129,7 @@ describe('import.service', () => {
 
 			await importFromAnilist('someuser');
 
-			const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+			const body = JSON.parse((fetch as Mock).mock.calls[0][1].body);
 			expect(body.query).toContain('score(format: POINT_10)');
 		});
 

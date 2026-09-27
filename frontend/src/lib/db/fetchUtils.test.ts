@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { fetchJson, parseYear, withCache } from './fetchUtils';
 
 vi.mock('./apiCache', () => ({
@@ -12,7 +13,7 @@ describe('fetchJson', () => {
 	});
 
 	it('sends the given method/body/headers via the init param', async () => {
-		(fetch as any).mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+		(fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
 
 		await fetchJson('https://example.com', 4000, { 'X-Foo': 'bar' }, {
 			method: 'POST',
@@ -30,23 +31,23 @@ describe('fetchJson', () => {
 	});
 
 	it('defaults to a GET request when no init is given', async () => {
-		(fetch as any).mockResolvedValue({ ok: true, json: async () => ({}) });
+		(fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({}) });
 
 		await fetchJson('https://example.com');
 
-		const callInit = (fetch as any).mock.calls[0][1];
+		const callInit = (fetch as Mock).mock.calls[0][1];
 		expect(callInit.method).toBeUndefined();
 	});
 
 	it('throws on a non-OK response', async () => {
-		(fetch as any).mockResolvedValue({ ok: false, status: 500 });
+		(fetch as Mock).mockResolvedValue({ ok: false, status: 500 });
 
 		await expect(fetchJson('https://example.com')).rejects.toThrow('HTTP 500');
 	});
 
 	it('aborts and rejects once the timeout elapses', async () => {
 		vi.useFakeTimers();
-		(fetch as any).mockImplementation(
+		(fetch as Mock).mockImplementation(
 			(_url: string, init: { signal: AbortSignal }) =>
 				new Promise((_resolve, reject) => {
 					init.signal.addEventListener('abort', () => reject(new Error('aborted')));
@@ -84,7 +85,7 @@ describe('withCache', () => {
 
 	it('returns the cached value without calling the fetcher on a cache hit', async () => {
 		const { getCached } = await import('./apiCache');
-		(getCached as any).mockResolvedValueOnce(['cached']);
+		(getCached as Mock).mockResolvedValueOnce(['cached']);
 		const fetcher = vi.fn(async () => ['fresh']);
 
 		const result = await withCache('key', fetcher);
@@ -95,7 +96,7 @@ describe('withCache', () => {
 
 	it('calls the fetcher and caches the result on a cache miss', async () => {
 		const { getCached, setCache } = await import('./apiCache');
-		(getCached as any).mockResolvedValueOnce(null);
+		(getCached as Mock).mockResolvedValueOnce(null);
 		const fetcher = vi.fn(async () => ['fresh']);
 
 		const result = await withCache('key', fetcher);
