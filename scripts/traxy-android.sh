@@ -5,7 +5,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 ANDROID_DIR="$FRONTEND_DIR/android"
 APK_PATH="$ANDROID_DIR/app/build/outputs/apk/debug/app-debug.apk"
-APP_ID="com.yourname.tracklist"
+APP_ID="vc.dprssoft.traxy"
 PHONE_IP="192.168.0.195"
 
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"

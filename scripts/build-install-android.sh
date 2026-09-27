@@ -94,7 +94,7 @@ if [ -n "$TARGET_DEVICE" ]; then
     adb -s "$TARGET_DEVICE" install -r "${APK_PATH}"
     echo ""
     echo "🚀 Launching Traxy on device..."
-    adb -s "$TARGET_DEVICE" shell monkey -p com.yourname.tracklist -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
+    adb -s "$TARGET_DEVICE" shell monkey -p vc.dprssoft.traxy -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
     echo "✅ Installation complete!"
     if command -v notify-send >/dev/null 2>&1; then
         notify-send -a "Traxy" "Android Build & Install" "Successfully installed and launched on ${TARGET_DEVICE}"

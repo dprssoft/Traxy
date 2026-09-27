@@ -1,4 +1,4 @@
-package com.yourname.tracklist;
+package vc.dprssoft.traxy;
 
 import com.getcapacitor.BridgeActivity;
 
