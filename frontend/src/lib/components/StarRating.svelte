@@ -7,15 +7,19 @@
 		class?: string;
 	}
 
-	let { value, interactive = false, size = 'md', onchange, class: className = '' }: Props = $props();
+	let {
+		value,
+		interactive = false,
+		size = 'md',
+		onchange,
+		class: className = '',
+	}: Props = $props();
 
 	let hoverValue = $state(0);
 
 	const effective = $derived(hoverValue || value);
 
-	const starClass = $derived(
-		size === 'sm' ? 'text-sm' : size === 'lg' ? 'text-3xl' : 'text-xl',
-	);
+	const starClass = $derived(size === 'sm' ? 'text-sm' : size === 'lg' ? 'text-3xl' : 'text-xl');
 
 	// Tailwind yellow-400 / gray-600
 	const YELLOW = 'rgb(250 204 21)';
@@ -38,7 +42,9 @@
 
 <div
 	class="flex items-center gap-0.5 {className}"
-	onmouseleave={() => { if (interactive) hoverValue = 0; }}
+	onmouseleave={() => {
+		if (interactive) hoverValue = 0;
+	}}
 	role="group"
 	aria-label="Rating {value}/10"
 >

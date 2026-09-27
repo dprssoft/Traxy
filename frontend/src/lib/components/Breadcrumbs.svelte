@@ -77,10 +77,7 @@
 			{#each crumbs as crumb, i (crumb.href)}
 				<li class="flex items-center gap-1">
 					{#if i < crumbs.length - 1}
-						<a
-							href={resolve(crumb.href as '/')}
-							class="hover:text-white/95 transition-colors"
-						>
+						<a href={resolve(crumb.href as '/')} class="hover:text-white/95 transition-colors">
 							{crumb.label}
 						</a>
 						<span class="text-gray-600">/</span>

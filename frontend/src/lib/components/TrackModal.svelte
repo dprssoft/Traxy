@@ -38,7 +38,13 @@
 	{#snippet footer()}
 		<div class="flex items-center justify-between gap-3">
 			{#if tracking}
-				<Button variant="ghost" size="sm" class="text-rose-400" loading={removing} onclick={handleRemove}>
+				<Button
+					variant="ghost"
+					size="sm"
+					class="text-rose-400"
+					loading={removing}
+					onclick={handleRemove}
+				>
 					Remove from list
 				</Button>
 			{:else}

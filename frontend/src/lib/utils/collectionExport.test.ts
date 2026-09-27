@@ -23,7 +23,13 @@ const collection = (overrides: Partial<CollectionSummary> = {}): CollectionSumma
 
 const entry = (media: Partial<LocalMedia>, note?: string): CollectionEntry => ({
 	itemId: `i-${media.id}`,
-	media: { source: 'igdb', externalId: `x-${media.id}`, type: 'game', title: '', ...media } as LocalMedia,
+	media: {
+		source: 'igdb',
+		externalId: `x-${media.id}`,
+		type: 'game',
+		title: '',
+		...media,
+	} as LocalMedia,
 	sortOrder: 0,
 	addedAt: '2026-02-01',
 	note,
@@ -70,6 +76,8 @@ describe('collection export', () => {
 
 	it('builds a safe filename', () => {
 		expect(collectionExportFilename(collection(), 'json')).toBe('traxy-cozy-games.json');
-		expect(collectionExportFilename(collection({ name: '???' }), 'txt')).toBe('traxy-collection.txt');
+		expect(collectionExportFilename(collection({ name: '???' }), 'txt')).toBe(
+			'traxy-collection.txt',
+		);
 	});
 });

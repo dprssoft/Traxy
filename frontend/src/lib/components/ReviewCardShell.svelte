@@ -14,7 +14,8 @@
 
 <article
 	id={anchorId}
-	class="scroll-mt-28 bg-bkg-header rounded-xl border border-gray-700/50 target:ring-2 target:ring-yellow-400/60 transition-shadow {variant === 'compact'
+	class="scroll-mt-28 bg-bkg-header rounded-xl border border-gray-700/50 target:ring-2 target:ring-yellow-400/60 transition-shadow {variant ===
+	'compact'
 		? 'px-3 py-2'
 		: 'p-5'} {cls}"
 >

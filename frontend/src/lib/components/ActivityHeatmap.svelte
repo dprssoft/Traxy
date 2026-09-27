@@ -38,29 +38,34 @@
 	function getColor(count: number): string {
 		if (count === 0) return 'bg-[#181b2e] border border-white/[0.04]';
 		if (count < 3) return 'bg-indigo-600/40 border border-indigo-500/30';
-		if (count < 6) return 'bg-indigo-500/70 border border-indigo-400/40 shadow-sm shadow-indigo-500/20';
+		if (count < 6)
+			return 'bg-indigo-500/70 border border-indigo-400/40 shadow-sm shadow-indigo-500/20';
 		return 'bg-indigo-400 border border-indigo-300/50 shadow-md shadow-indigo-400/40';
 	}
 </script>
 
-<div class="bg-[#121422]/80 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 sm:p-8 overflow-x-auto shadow-xl">
+<div
+	class="bg-[#121422]/80 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 sm:p-8 overflow-x-auto shadow-xl"
+>
 	<h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
 		<span>📅</span> Activity in {year}
 	</h3>
-	
+
 	<div class="flex gap-1 min-w-max">
 		{#each weeks as week (week[0].date)}
 			<div class="flex flex-col gap-1">
 				{#each week as day (day.date)}
-					<div 
-						class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm {getColor(day.count)} {day.inYear ? '' : 'opacity-10'}"
+					<div
+						class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm {getColor(day.count)} {day.inYear
+							? ''
+							: 'opacity-10'}"
 						title="{day.date}: {day.count} actions"
 					></div>
 				{/each}
 			</div>
 		{/each}
 	</div>
-	
+
 	<div class="flex items-center gap-2 mt-5 text-xs text-slate-400">
 		<span>Less</span>
 		<div class="w-3 h-3 rounded-sm bg-[#181b2e] border border-white/[0.04]"></div>

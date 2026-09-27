@@ -35,10 +35,7 @@ export async function getCycles(mediaId: string): Promise<LocalWatchCycle[]> {
 }
 
 /** Create a new cycle with the next available cycleNumber. */
-export async function createCycle(
-	mediaId: string,
-	startedAt?: string,
-): Promise<LocalWatchCycle> {
+export async function createCycle(mediaId: string, startedAt?: string): Promise<LocalWatchCycle> {
 	const db = getDb();
 	const maxResult = await db.query(
 		'SELECT MAX(cycleNumber) AS maxCycle FROM WatchCycle WHERE mediaId = ?',

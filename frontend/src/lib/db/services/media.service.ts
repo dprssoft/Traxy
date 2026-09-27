@@ -11,11 +11,31 @@ import { getFlashpointDetails } from '../sources/flashpoint';
 
 // Column names in the order defined in CREATE TABLE — used for positional→named conversion
 export const MEDIA_COLUMNS = [
-	'id', 'source', 'externalId', 'type', 'title', 'year', 'posterUrl', 'description',
-	'originalTitle', 'serializationYears', 'author', 'country', 'genres', 'releaseStatus',
-	'totalEpisodes', 'totalSeasons', 'totalVolumes', 'totalChapters',
-	'platforms', 'totalPages', 'seasonData', 'timeToBeat', 'runtimeMinutes',
-	'isAdult', 'wikiMeta',
+	'id',
+	'source',
+	'externalId',
+	'type',
+	'title',
+	'year',
+	'posterUrl',
+	'description',
+	'originalTitle',
+	'serializationYears',
+	'author',
+	'country',
+	'genres',
+	'releaseStatus',
+	'totalEpisodes',
+	'totalSeasons',
+	'totalVolumes',
+	'totalChapters',
+	'platforms',
+	'totalPages',
+	'seasonData',
+	'timeToBeat',
+	'runtimeMinutes',
+	'isAdult',
+	'wikiMeta',
 ];
 
 /** Convert a `Media` row into a `LocalMedia`, parsing the JSON-encoded columns. */
@@ -50,9 +70,9 @@ interface MediaRow {
 
 export function rowToMedia(row: unknown[] | Record<string, unknown>): LocalMedia {
 	// Joined queries hand over positional slices; plain queries return named rows.
-	const r = (
-		Array.isArray(row) ? Object.fromEntries(MEDIA_COLUMNS.map((col, i) => [col, row[i]])) : row
-	) as unknown as MediaRow;
+	const r = (Array.isArray(row)
+		? Object.fromEntries(MEDIA_COLUMNS.map((col, i) => [col, row[i]]))
+		: row) as unknown as MediaRow;
 
 	return {
 		id: r.id,
@@ -88,7 +108,9 @@ export function rowToMedia(row: unknown[] | Record<string, unknown>): LocalMedia
  * If the (source, externalId) pair already exists, the existing record is
  * patched with any non-null fields from the incoming data (backfill), then returned.
  */
-export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }): Promise<LocalMedia> {
+export async function upsertMedia(
+	data: Omit<LocalMedia, 'id'> & { id?: string },
+): Promise<LocalMedia> {
 	const db = getDb();
 
 	// Deduplicate on (source, externalId)
@@ -99,7 +121,8 @@ export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }
 		if (!existing.author && data.author) patch.author = data.author;
 		if (!existing.country && data.country) patch.country = data.country;
 		if (!existing.releaseStatus && data.releaseStatus) patch.releaseStatus = data.releaseStatus;
-		if ((!existing.genres || existing.genres.length === 0) && data.genres?.length) patch.genres = data.genres;
+		if ((!existing.genres || existing.genres.length === 0) && data.genres?.length)
+			patch.genres = data.genres;
 		if (!existing.originalTitle && data.originalTitle) patch.originalTitle = data.originalTitle;
 		if (!existing.totalEpisodes && data.totalEpisodes) patch.totalEpisodes = data.totalEpisodes;
 		if (!existing.totalSeasons && data.totalSeasons) patch.totalSeasons = data.totalSeasons;
@@ -109,8 +132,10 @@ export async function upsertMedia(data: Omit<LocalMedia, 'id'> & { id?: string }
 		if (!existing.seasonData && data.seasonData) patch.seasonData = data.seasonData;
 		if (!existing.timeToBeat && data.timeToBeat) patch.timeToBeat = data.timeToBeat;
 		if (!existing.runtimeMinutes && data.runtimeMinutes) patch.runtimeMinutes = data.runtimeMinutes;
-		if (data.isAdult !== undefined && existing.isAdult !== data.isAdult) patch.isAdult = data.isAdult;
-		if ((!existing.platforms || existing.platforms.length === 0) && data.platforms?.length) patch.platforms = data.platforms;
+		if (data.isAdult !== undefined && existing.isAdult !== data.isAdult)
+			patch.isAdult = data.isAdult;
+		if ((!existing.platforms || existing.platforms.length === 0) && data.platforms?.length)
+			patch.platforms = data.platforms;
 
 		if (Object.keys(patch).length > 0) {
 			await updateMediaMeta(existing.id, patch);
@@ -171,10 +196,10 @@ export async function getMediaByExternalId(
 	externalId: string,
 ): Promise<LocalMedia | null> {
 	const db = getDb();
-	const result = await db.query(
-		'SELECT * FROM Media WHERE source = ? AND externalId = ?',
-		[source, externalId],
-	);
+	const result = await db.query('SELECT * FROM Media WHERE source = ? AND externalId = ?', [
+		source,
+		externalId,
+	]);
 	if (!result.values || result.values.length === 0) return null;
 	return rowToMedia(result.values[0]);
 }
@@ -201,11 +226,23 @@ export async function updateMediaMeta(id: string, patch: MediaMetaPatch): Promis
 	const db = getDb();
 	const updates: string[] = [];
 	const values: unknown[] = [];
-	
+
 	const fields = [
-		'title', 'year', 'posterUrl', 'description',
-		'originalTitle', 'serializationYears', 'author', 'country', 'releaseStatus',
-		'totalEpisodes', 'totalSeasons', 'totalVolumes', 'totalChapters', 'totalPages', 'timeToBeat',
+		'title',
+		'year',
+		'posterUrl',
+		'description',
+		'originalTitle',
+		'serializationYears',
+		'author',
+		'country',
+		'releaseStatus',
+		'totalEpisodes',
+		'totalSeasons',
+		'totalVolumes',
+		'totalChapters',
+		'totalPages',
+		'timeToBeat',
 		'runtimeMinutes',
 	];
 	for (const field of fields) {
@@ -214,12 +251,12 @@ export async function updateMediaMeta(id: string, patch: MediaMetaPatch): Promis
 			values.push(patch[field as keyof LocalMedia] ?? null);
 		}
 	}
-	
+
 	if (patch.platforms !== undefined) {
 		updates.push('platforms = ?');
 		values.push(patch.platforms ? JSON.stringify(patch.platforms) : null);
 	}
-	
+
 	if (patch.seasonData !== undefined) {
 		updates.push('seasonData = ?');
 		values.push(patch.seasonData ? JSON.stringify(patch.seasonData) : null);
@@ -241,7 +278,7 @@ export async function updateMediaMeta(id: string, patch: MediaMetaPatch): Promis
 	}
 
 	if (updates.length === 0) return;
-	
+
 	values.push(id);
 	await db.run(`UPDATE Media SET ${updates.join(', ')} WHERE id = ?`, values);
 }
@@ -287,7 +324,10 @@ export async function ensureLocalMedia(item: SearchResult): Promise<LocalMedia> 
 export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia> {
 	const patch: MediaMetaPatch = {};
 	try {
-		if ((media.type === 'tv' && !media.seasonData) || (media.type === 'film' && !media.runtimeMinutes)) {
+		if (
+			(media.type === 'tv' && !media.seasonData) ||
+			(media.type === 'film' && !media.runtimeMinutes)
+		) {
 			if (media.source === 'tmdb') {
 				const details = await getTmdbDetails(media.externalId, media.type);
 				if (details?.seasonData) {
@@ -297,7 +337,11 @@ export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia>
 				}
 				if (details?.runtimeMinutes) patch.runtimeMinutes = details.runtimeMinutes;
 			}
-		} else if (media.type === 'anime' && media.source === 'anilist' && (!media.seasonData || !media.runtimeMinutes)) {
+		} else if (
+			media.type === 'anime' &&
+			media.source === 'anilist' &&
+			(!media.seasonData || !media.runtimeMinutes)
+		) {
 			const details = await getAnilistDetails(parseInt(media.externalId));
 			if (details?.seasonData) {
 				patch.totalSeasons = details.totalSeasons;
@@ -305,9 +349,10 @@ export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia>
 			}
 			if (details?.runtimeMinutes) patch.runtimeMinutes = details.runtimeMinutes;
 		} else if (media.type === 'game' && !media.timeToBeat) {
-			const ttb = media.source === 'igdb'
-				? await fetchIgdbTimeToBeat(media.externalId)
-				: await fetchIgdbTimeToBeatByTitle(media.title);
+			const ttb =
+				media.source === 'igdb'
+					? await fetchIgdbTimeToBeat(media.externalId)
+					: await fetchIgdbTimeToBeatByTitle(media.title);
 			if (ttb) patch.timeToBeat = JSON.stringify(ttb);
 		}
 	} catch (e) {

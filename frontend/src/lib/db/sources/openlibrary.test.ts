@@ -25,13 +25,22 @@ describe('discoverOpenLibraryTrending', () => {
 	it('fetches and caches on a cache miss', async () => {
 		(fetch as Mock).mockResolvedValue({
 			ok: true,
-			json: async () => ({ works: [{ key: '/works/OL1W', title: 'New Book', first_publish_year: 2020 }] }),
+			json: async () => ({
+				works: [{ key: '/works/OL1W', title: 'New Book', first_publish_year: 2020 }],
+			}),
 		});
 
 		const result = await discoverOpenLibraryTrending();
 
 		expect(result).toEqual([
-			{ externalId: '/works/OL1W', source: 'openlibrary', type: 'book', title: 'New Book', year: 2020, posterUrl: undefined },
+			{
+				externalId: '/works/OL1W',
+				source: 'openlibrary',
+				type: 'book',
+				title: 'New Book',
+				year: 2020,
+				posterUrl: undefined,
+			},
 		]);
 		const { setCache } = await import('../apiCache');
 		expect(setCache).toHaveBeenCalledWith('openlibrary:discover:trending', result);

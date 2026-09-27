@@ -32,7 +32,8 @@ function getCategoryForEventType(eventType: ActivityItem['eventType']): Activity
 }
 
 // ActivityLog columns plus the linked media's adult flag, so feed posters can be blurred.
-const ACTIVITY_SELECT = 'SELECT a.*, m.isAdult AS mediaIsAdult FROM ActivityLog a LEFT JOIN Media m ON m.id = a.mediaId';
+const ACTIVITY_SELECT =
+	'SELECT a.*, m.isAdult AS mediaIsAdult FROM ActivityLog a LEFT JOIN Media m ON m.id = a.mediaId';
 
 // One row of ACTIVITY_SELECT. `payload` is JSON text as stored.
 interface ActivityRow {
@@ -48,8 +49,17 @@ interface ActivityRow {
 }
 
 function rowToItem(row: ActivityRow): ActivityItem {
-	const { id, mediaId, mediaTitle, mediaPosterUrl, mediaType, eventType, payload, occurredAt, mediaIsAdult } =
-		row;
+	const {
+		id,
+		mediaId,
+		mediaTitle,
+		mediaPosterUrl,
+		mediaType,
+		eventType,
+		payload,
+		occurredAt,
+		mediaIsAdult,
+	} = row;
 	const parsedPayload = payload
 		? ((typeof payload === 'string' ? JSON.parse(payload) : payload) as ActivityPayload)
 		: ({} as ActivityPayload);

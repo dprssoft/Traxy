@@ -25,7 +25,7 @@ export function normalizeTitle(title: string): string {
 		.toLowerCase()
 		.normalize('NFD')
 		.replace(/[\u0300-\u036f]/g, '') // strip combining diacritics
-		.replace(/[^a-z0-9\s]/g, '')     // strip punctuation
+		.replace(/[^a-z0-9\s]/g, '') // strip punctuation
 		.replace(/\s+/g, ' ')
 		.trim();
 }
@@ -45,7 +45,12 @@ export function normalizeTitle(title: string): string {
  */
 export function deduplicateResults(
 	results: SearchResult[],
-	prefs: SearchPrefs = { anilistWinsAnime: true, anilistWinsManga: true, suppressMangaVolumes: true, flashpointEnabled: false },
+	prefs: SearchPrefs = {
+		anilistWinsAnime: true,
+		anilistWinsManga: true,
+		suppressMangaVolumes: true,
+		flashpointEnabled: false,
+	},
 ): SearchResult[] {
 	// Build separate sets for anime and manga/manhwa/manhua covered by AniList.
 	const anilistAnime = new Set<string>();
@@ -69,7 +74,7 @@ export function deduplicateResults(
 		const normalized = normalizeTitle(r.title);
 
 		// Anime suppression: TMDB TV/film that AniList covers as anime.
-		if (prefs.anilistWinsAnime && (r.source === 'tmdb')) {
+		if (prefs.anilistWinsAnime && r.source === 'tmdb') {
 			if (anilistAnime.has(normalized)) return true;
 		}
 

@@ -16,11 +16,6 @@ export function getMediaTitle(
 /**
  * Build resolved media URL — external or internal.
  */
-export function getMediaUrl(
-	id: string,
-	externalApiId?: string | null,
-): string {
-	return resolve(
-		externalApiId ? `/media/external/${externalApiId}` : `/media/${id}`,
-	);
+export function getMediaUrl(id: string, externalApiId?: string | null): string {
+	return resolve(externalApiId ? `/media/external/${externalApiId}` : `/media/${id}`);
 }

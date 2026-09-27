@@ -47,9 +47,10 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api-proxy\/hltb/, ''),
 				headers: {
-					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-					'Referer': 'https://howlongtobeat.com/',
-					'Origin': 'https://howlongtobeat.com',
+					'User-Agent':
+						'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+					Referer: 'https://howlongtobeat.com/',
+					Origin: 'https://howlongtobeat.com',
 				},
 			},
 		},
@@ -79,15 +80,15 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api-proxy\/hltb/, ''),
 				headers: {
-					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-					'Referer': 'https://howlongtobeat.com/',
-					'Origin': 'https://howlongtobeat.com',
+					'User-Agent':
+						'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+					Referer: 'https://howlongtobeat.com/',
+					Origin: 'https://howlongtobeat.com',
 				},
 			},
 		},
 	},
 	optimizeDeps: {
-		exclude: ['jeep-sqlite', '@capacitor-community/sqlite', 'sql.js']
-	}
+		exclude: ['jeep-sqlite', '@capacitor-community/sqlite', 'sql.js'],
+	},
 });
-

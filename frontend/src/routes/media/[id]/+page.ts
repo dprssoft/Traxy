@@ -8,7 +8,9 @@ import { getAppSettingBool, getWikiEnrichmentEnabled } from '$lib/db/services/se
 import { enrichMediaFromWiki } from '$lib/db/services/wiki.service';
 
 /** Network-bound enrichment, run after the page is shown. */
-async function enrich(media: LocalMedia): Promise<{ media: LocalMedia; wikipediaUrl: string | null }> {
+async function enrich(
+	media: LocalMedia,
+): Promise<{ media: LocalMedia; wikipediaUrl: string | null }> {
 	media = await fillMissingDetails(media);
 	if (await getWikiEnrichmentEnabled()) return enrichMediaFromWiki(media);
 	return { media, wikipediaUrl: null };

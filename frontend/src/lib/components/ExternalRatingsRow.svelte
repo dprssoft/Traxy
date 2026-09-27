@@ -15,7 +15,9 @@
 
 <div class="flex flex-wrap items-center gap-2">
 	<!-- Our rating -->
-	<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-brand-accent/40 bg-brand-accent/10 text-brand-accent text-xs font-semibold">
+	<span
+		class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-brand-accent/40 bg-brand-accent/10 text-brand-accent text-xs font-semibold"
+	>
 		<span class="font-extrabold">★ Ours</span>
 		<span>{ourRating !== null ? ourRating.toFixed(1) : '—'}</span>
 		<span class="text-text-muted">· {ourCount}</span>

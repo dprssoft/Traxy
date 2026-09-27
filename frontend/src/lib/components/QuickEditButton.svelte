@@ -34,9 +34,16 @@
 	class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-black/60 hover:bg-indigo-600 backdrop-blur-md border border-white/15 text-white shadow-md transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/60 {extraClass}"
 >
 	{#if busy}
-		<span class="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+		<span class="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"
+		></span>
 	{:else}
-		<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+		<svg
+			class="w-3.5 h-3.5"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke="currentColor"
+			stroke-width="2.2"
+		>
 			<path
 				stroke-linecap="round"
 				stroke-linejoin="round"

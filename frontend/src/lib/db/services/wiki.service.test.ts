@@ -62,7 +62,9 @@ describe('planWikiUpdate', () => {
 
 	it('records fields on a first match without clearing provider data', () => {
 		const fresh = { ...vagabond, country: undefined, wikiMeta: undefined } as LocalMedia;
-		expect(planWikiUpdate(fresh, { wikidataId: 'Q1244799', country: 'Japan', author: 'X' })).toEqual({
+		expect(
+			planWikiUpdate(fresh, { wikidataId: 'Q1244799', country: 'Japan', author: 'X' }),
+		).toEqual({
 			country: 'Japan',
 			wikiMeta: { wikidataId: 'Q1244799', fields: ['country'] },
 		});

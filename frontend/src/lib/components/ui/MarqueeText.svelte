@@ -10,10 +10,10 @@
 
 	let containerNode: HTMLElement | undefined = $state();
 	let textNode: HTMLElement | undefined = $state();
-	
+
 	let isOverflowing = $state(false);
 	let overflowAmount = $state(0);
-	
+
 	// How long a full loop (left and back) takes in seconds
 	// We scale it based on how much it needs to scroll so it's not too fast
 	let animationDuration = $state(8);
@@ -35,14 +35,14 @@
 				}
 			}
 		};
-		
+
 		// Use ResizeObserver for accurate container resizing detection
 		const observer = new ResizeObserver(checkOverflow);
 		if (containerNode) observer.observe(containerNode);
-		
+
 		// Initial check
 		setTimeout(checkOverflow, 100);
-		
+
 		return () => {
 			observer.disconnect();
 		};
@@ -50,12 +50,14 @@
 </script>
 
 <div bind:this={containerNode} class="relative overflow-hidden w-full {className}" {title}>
-	<div 
+	<div
 		bind:this={textNode}
 		class="whitespace-nowrap inline-block"
 		class:animate-marquee={isOverflowing}
 		class:truncate={!isOverflowing}
-		style={isOverflowing ? `--overflow: -${overflowAmount}px; --duration: ${animationDuration}s;` : ''}
+		style={isOverflowing
+			? `--overflow: -${overflowAmount}px; --duration: ${animationDuration}s;`
+			: ''}
 	>
 		{text}
 	</div>
@@ -63,11 +65,20 @@
 
 <style>
 	@keyframes marquee-ping-pong {
-		0%, 15% { transform: translateX(0); }
-		45%, 55% { transform: translateX(var(--overflow)); }
-		85%, 100% { transform: translateX(0); }
+		0%,
+		15% {
+			transform: translateX(0);
+		}
+		45%,
+		55% {
+			transform: translateX(var(--overflow));
+		}
+		85%,
+		100% {
+			transform: translateX(0);
+		}
 	}
-	
+
 	.animate-marquee {
 		/* Start after 3s delay once loaded */
 		animation: marquee-ping-pong var(--duration) ease-in-out infinite;

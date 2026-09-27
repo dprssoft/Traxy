@@ -113,7 +113,7 @@ export async function discoverComicVineNew(forceRefresh = false): Promise<Search
 
 	const cacheKey = 'comicvine:discover:new';
 	const baseUrl = getComicVineBaseUrl();
-	
+
 	const fetcher = async (): Promise<SearchResult[]> => {
 		const data = await fetchJson<ComicVineSearchResponse>(
 			`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=date_added:desc&limit=20`,
@@ -144,7 +144,7 @@ export async function discoverComicVineTrending(forceRefresh = false): Promise<S
 
 	const cacheKey = 'comicvine:discover:trending';
 	const baseUrl = getComicVineBaseUrl();
-	
+
 	const fetcher = async (): Promise<SearchResult[]> => {
 		const data = await fetchJson<ComicVineSearchResponse>(
 			`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=count_of_issues:desc&limit=20`,
@@ -182,7 +182,7 @@ export async function discoverComicVineRandom(): Promise<SearchResult[]> {
 
 	const baseUrl = getComicVineBaseUrl();
 	const randomOffset = Math.floor(Math.random() * 200) * 20; // 200 random pages, limit 20
-	
+
 	try {
 		const data = await fetchJson<ComicVineSearchResponse>(
 			`${baseUrl}/volumes/?api_key=${apiKey}&format=json&sort=date_added:desc&offset=${randomOffset}&limit=20`,
@@ -190,13 +190,13 @@ export async function discoverComicVineRandom(): Promise<SearchResult[]> {
 			CV_HEADERS,
 		);
 		const results = data.results.map(mapVolume);
-		
+
 		// Shuffle results
 		for (let i = results.length - 1; i > 0; i--) {
 			const j = Math.floor(Math.random() * (i + 1));
 			[results[i], results[j]] = [results[j], results[i]];
 		}
-		
+
 		return results;
 	} catch {
 		return [];

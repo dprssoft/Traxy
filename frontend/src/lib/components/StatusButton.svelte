@@ -1,7 +1,12 @@
 <script lang="ts">
 	import type { LocalMedia } from '$lib/types/mediaTypes';
 	import type { LocalTrackingStatus, TrackingStatusType } from '$lib/types/trackingTypes';
-	import { STATUS_LABELS_BY_GROUP, REWATCH_LABELS, getMediaTypeGroup, getStatusOptions } from '$lib/constants';
+	import {
+		STATUS_LABELS_BY_GROUP,
+		REWATCH_LABELS,
+		getMediaTypeGroup,
+		getStatusOptions,
+	} from '$lib/constants';
 	import { upsertTracking, deleteTracking } from '$lib/db/services/tracking.service';
 	import { startRewatch } from '$lib/db/services/cycle.service';
 
@@ -35,7 +40,8 @@
 		}
 		const r = buttonEl.getBoundingClientRect();
 		const left = Math.max(8, Math.min(r.left, window.innerWidth - MENU_WIDTH - 8));
-		const openUp = window.innerHeight - r.bottom < MENU_MAX_HEIGHT && r.top > window.innerHeight - r.bottom;
+		const openUp =
+			window.innerHeight - r.bottom < MENU_MAX_HEIGHT && r.top > window.innerHeight - r.bottom;
 		const vertical = openUp
 			? `bottom:${window.innerHeight - r.top + 6}px;max-height:${r.top - 14}px`
 			: `top:${r.bottom + 6}px;max-height:${window.innerHeight - r.bottom - 14}px`;
@@ -106,11 +112,19 @@
 		bind:this={buttonEl}
 		onclick={toggleMenu}
 		disabled={isUpdating}
-		class="flex items-center justify-between {variant === 'compact' ? 'px-2.5 py-1 text-xs gap-1' : 'px-4 py-2.5 text-sm'} bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer active:scale-95
-			{variant === 'full' ? 'w-full' : variant === 'compact' ? 'w-auto max-w-full' : 'w-full sm:w-auto min-w-[160px]'}"
+		class="flex items-center justify-between {variant === 'compact'
+			? 'px-2.5 py-1 text-xs gap-1'
+			: 'px-4 py-2.5 text-sm'} bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer active:scale-95
+			{variant === 'full'
+			? 'w-full'
+			: variant === 'compact'
+				? 'w-auto max-w-full'
+				: 'w-full sm:w-auto min-w-[160px]'}"
 	>
 		{#if isUpdating}
-			<span class="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto"></span>
+			<span
+				class="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto"
+			></span>
 		{:else}
 			<span>{currentLabel}</span>
 			<svg class="ml-2 w-4 h-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,36 +137,43 @@
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div use:portal>
-			<div class="fixed inset-0 z-[100]" onclick={() => isOpen = false}></div>
-			<div style={menuStyle} class="fixed bg-[#141727] border border-white/[0.1] rounded-2xl shadow-2xl z-[101] overflow-y-auto py-1.5 space-y-0.5">
-			{#each options as opt (opt.value)}
-				<button
-					class="w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer {tracking?.status === opt.value ? 'bg-indigo-600/20 text-indigo-400 font-bold' : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'}"
-					onclick={() => updateStatus(opt.value)}
-				>
-					{opt.label}
-				</button>
-			{/each}
+			<div class="fixed inset-0 z-[100]" onclick={() => (isOpen = false)}></div>
+			<div
+				style={menuStyle}
+				class="fixed bg-[#141727] border border-white/[0.1] rounded-2xl shadow-2xl z-[101] overflow-y-auto py-1.5 space-y-0.5"
+			>
+				{#each options as opt (opt.value)}
+					<button
+						class="w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer {tracking?.status ===
+						opt.value
+							? 'bg-indigo-600/20 text-indigo-400 font-bold'
+							: 'text-slate-300 hover:bg-white/[0.06] hover:text-white'}"
+						onclick={() => updateStatus(opt.value)}
+					>
+						{opt.label}
+					</button>
+				{/each}
 
-			{#if tracking?.status === 'completed'}
-				<div class="border-t border-white/[0.06] my-1"></div>
-				<button
-					class="w-full text-left px-4 py-2.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer flex items-center gap-2"
-					onclick={doRewatch}
-				>
-					<span>🔄</span> {REWATCH_LABELS[media.type] ?? 'Play again'}
-				</button>
-			{/if}
+				{#if tracking?.status === 'completed'}
+					<div class="border-t border-white/[0.06] my-1"></div>
+					<button
+						class="w-full text-left px-4 py-2.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer flex items-center gap-2"
+						onclick={doRewatch}
+					>
+						<span>🔄</span>
+						{REWATCH_LABELS[media.type] ?? 'Play again'}
+					</button>
+				{/if}
 
-			{#if tracking}
-				<div class="border-t border-white/[0.06] my-1"></div>
-				<button
-					class="w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center gap-2"
-					onclick={doRemove}
-				>
-					<span>🗑️</span> Remove from list
-				</button>
-			{/if}
+				{#if tracking}
+					<div class="border-t border-white/[0.06] my-1"></div>
+					<button
+						class="w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center gap-2"
+						onclick={doRemove}
+					>
+						<span>🗑️</span> Remove from list
+					</button>
+				{/if}
 			</div>
 		</div>
 	{/if}

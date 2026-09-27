@@ -56,21 +56,21 @@ interface WikidataClaim {
 
 // Wikidata property IDs for structured data extraction
 const PROPS = {
-	CREATOR: 'P170',       // creator
-	AUTHOR: 'P50',         // author
-	DIRECTOR: 'P57',       // director
-	DEVELOPER: 'P178',     // developer (for games)
-	PUBLISHER: 'P123',     // publisher
-	COUNTRY: 'P495',       // country of origin
-	GENRE: 'P136',         // genre
-	EPISODES: 'P1113',     // number of episodes
-	SEASONS: 'P2437',      // number of seasons
-	VOLUMES: 'P2635',      // number of volumes
-	CHAPTERS: 'P4135',     // number of parts (chapters)
-	PAGES: 'P1104',        // number of pages
-	STATUS: 'P8345',       // media franchise status
-	INSTANCE_OF: 'P31',    // instance of
-	DURATION: 'P2047',     // duration
+	CREATOR: 'P170', // creator
+	AUTHOR: 'P50', // author
+	DIRECTOR: 'P57', // director
+	DEVELOPER: 'P178', // developer (for games)
+	PUBLISHER: 'P123', // publisher
+	COUNTRY: 'P495', // country of origin
+	GENRE: 'P136', // genre
+	EPISODES: 'P1113', // number of episodes
+	SEASONS: 'P2437', // number of seasons
+	VOLUMES: 'P2635', // number of volumes
+	CHAPTERS: 'P4135', // number of parts (chapters)
+	PAGES: 'P1104', // number of pages
+	STATUS: 'P8345', // media franchise status
+	INSTANCE_OF: 'P31', // instance of
+	DURATION: 'P2047', // duration
 } as const;
 
 const TYPE_KEYWORDS: Record<string, string[]> = {
@@ -257,10 +257,17 @@ async function buildEnrichment(
 
 	// Author / Creator / Director — depends on type
 	const authorProp =
-		type === 'film' ? PROPS.DIRECTOR :
-		type === 'game' ? PROPS.DEVELOPER :
-		type === 'book' || type === 'manga' || type === 'manhwa' || type === 'manhua' || type === 'comic' ? PROPS.AUTHOR :
-		PROPS.CREATOR;
+		type === 'film'
+			? PROPS.DIRECTOR
+			: type === 'game'
+				? PROPS.DEVELOPER
+				: type === 'book' ||
+					  type === 'manga' ||
+					  type === 'manhwa' ||
+					  type === 'manhua' ||
+					  type === 'comic'
+					? PROPS.AUTHOR
+					: PROPS.CREATOR;
 
 	const authorRef = getEntityRef(entity, authorProp) ?? getEntityRef(entity, PROPS.CREATOR);
 	const countryRef = getEntityRef(entity, PROPS.COUNTRY);

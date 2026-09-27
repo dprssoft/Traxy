@@ -17,8 +17,7 @@
 <Modal bind:open title="Adult content" size="sm" onclose={() => choose(true)}>
 	<div class="space-y-3 text-sm text-slate-300">
 		<p>
-			Some search and catalogue results can include adult (18+) titles. Do you want to hide
-			them?
+			Some search and catalogue results can include adult (18+) titles. Do you want to hide them?
 		</p>
 		<p class="text-xs text-slate-400">
 			You can change this anytime in <span class="text-slate-200 font-semibold"

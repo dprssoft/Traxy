@@ -22,9 +22,7 @@
 	let containerEl = $state<HTMLDivElement | undefined>();
 
 	const buttonLabel = $derived(
-		selected.length === 0
-			? placeholder
-			: `${placeholder}: ${selected.length}`,
+		selected.length === 0 ? placeholder : `${placeholder}: ${selected.length}`,
 	);
 
 	function toggle(value: T) {

@@ -36,16 +36,14 @@
 			label: 'Suppress manga volume entries from OpenLibrary',
 			hint: 'Hides "Gantz Volume 1", "Berserk Vol 38" etc. from OpenLibrary when AniList has the series. Disable if you track a non-manga book series that shares a name.',
 			get: () => searchPrefsStore.current.suppressMangaVolumes,
-			set: (v) =>
-				searchPrefsStore.save({ ...searchPrefsStore.current, suppressMangaVolumes: v }),
+			set: (v) => searchPrefsStore.save({ ...searchPrefsStore.current, suppressMangaVolumes: v }),
 		},
 		{
 			id: 'pref-flashpoint',
 			label: 'Include Flashpoint Archive in game search',
 			hint: 'Search the Flashpoint Archive (~200k Flash, HTML5, and Shockwave games) alongside IGDB. Disabled by default. No API key required.',
 			get: () => searchPrefsStore.current.flashpointEnabled,
-			set: (v) =>
-				searchPrefsStore.save({ ...searchPrefsStore.current, flashpointEnabled: v }),
+			set: (v) => searchPrefsStore.save({ ...searchPrefsStore.current, flashpointEnabled: v }),
 		},
 	];
 </script>
@@ -62,7 +60,8 @@
 				class="flex items-start justify-between gap-4 p-4 rounded-xl bg-[#16192b]/60 border border-white/[0.06]"
 			>
 				<div class="min-w-0">
-					<label for={s.id} class="text-sm font-semibold text-white cursor-pointer">{s.label}</label>
+					<label for={s.id} class="text-sm font-semibold text-white cursor-pointer">{s.label}</label
+					>
 					<p class="text-xs text-slate-400 mt-0.5 leading-relaxed">{s.hint}</p>
 				</div>
 				<Toggle id={s.id} checked={s.get()} onchange={s.set} label={s.label} />

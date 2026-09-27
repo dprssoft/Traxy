@@ -11,14 +11,13 @@ export const DEFAULT_MAX_GROUP_GAP_MS = 2 * 60 * 60 * 1000; // 2 hours
  */
 export function groupConsecutiveProgress(
 	items: ActivityItem[],
-	maxGapMs: number = DEFAULT_MAX_GROUP_GAP_MS
+	maxGapMs: number = DEFAULT_MAX_GROUP_GAP_MS,
 ): FeedItem[] {
 	const result: FeedItem[] = [];
 	let i = 0;
 	while (i < items.length) {
 		const cur = items[i];
-		const isProgress =
-			cur.eventType === 'episode_watched' || cur.eventType === 'chapter_read';
+		const isProgress = cur.eventType === 'episode_watched' || cur.eventType === 'chapter_read';
 
 		if (!isProgress) {
 			result.push(cur);
@@ -31,14 +30,10 @@ export function groupConsecutiveProgress(
 		let j = i + 1;
 		while (j < items.length) {
 			const next = items[j];
-			if (
-				next.eventType !== cur.eventType ||
-				next.mediaId !== cur.mediaId
-			) break;
+			if (next.eventType !== cur.eventType || next.mediaId !== cur.mediaId) break;
 			// Note: items are newest-first, so run[run.length - 1] is MORE recent than next
 			const gap =
-				new Date(run[run.length - 1].occurredAt).getTime() -
-				new Date(next.occurredAt).getTime();
+				new Date(run[run.length - 1].occurredAt).getTime() - new Date(next.occurredAt).getTime();
 			if (gap > maxGapMs || gap < 0) break;
 			run.push(next);
 			j++;
@@ -68,7 +63,7 @@ export function groupConsecutiveProgress(
 			for (const r of run) result.push(r);
 		} else {
 			const minNum = nums[nums.length - 1]; // oldest = lowest episode/chapter
-			const maxNum = nums[0];               // newest = highest episode/chapter
+			const maxNum = nums[0]; // newest = highest episode/chapter
 
 			// Season: only set if all episodes share the same season
 			let season: number | undefined;

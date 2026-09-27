@@ -74,9 +74,7 @@
 <div class="space-y-5">
 	<!-- 1. Status Selection -->
 	<div>
-		<div class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-			Status
-		</div>
+		<div class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Status</div>
 		<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
 			{#each options as opt (opt.value)}
 				{@const isSelected = tracking?.status === opt.value}
@@ -86,8 +84,8 @@
 					onclick={() => selectStatus(opt.value)}
 					class="px-3 py-2 rounded-xl text-xs font-bold transition-all text-left truncate cursor-pointer
 						{isSelected
-							? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400'
-							: 'bg-[#181b2e] hover:bg-[#20243d] text-slate-300 border border-white/[0.06]'}"
+						? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400'
+						: 'bg-[#181b2e] hover:bg-[#20243d] text-slate-300 border border-white/[0.06]'}"
 				>
 					{opt.label}
 				</button>
@@ -100,7 +98,8 @@
 				onclick={handleRewatch}
 				class="w-full mt-2.5 py-2 px-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
 			>
-				<span>🔄</span> {REWATCH_LABELS[media.type] ?? 'Rewatch'}
+				<span>🔄</span>
+				{REWATCH_LABELS[media.type] ?? 'Rewatch'}
 			</button>
 		{/if}
 	</div>
@@ -115,7 +114,8 @@
 						type="button"
 						onclick={() => adjustProgress('currentEpisode', -1, media.totalEpisodes)}
 						class="w-7 h-7 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-					>-</button>
+						>-</button
+					>
 					<span class="text-sm font-bold text-white min-w-[3rem] text-center">
 						{tracking?.currentEpisode ?? 0}{media.totalEpisodes ? ` / ${media.totalEpisodes}` : ''}
 					</span>
@@ -123,7 +123,8 @@
 						type="button"
 						onclick={() => adjustProgress('currentEpisode', 1, media.totalEpisodes)}
 						class="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-					>+</button>
+						>+</button
+					>
 				</div>
 			</div>
 		</div>
@@ -136,7 +137,8 @@
 						type="button"
 						onclick={() => adjustProgress('currentChapter', -1, media.totalChapters)}
 						class="w-7 h-7 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-					>-</button>
+						>-</button
+					>
 					<span class="text-sm font-bold text-white min-w-[3rem] text-center">
 						{tracking?.currentChapter ?? 0}{media.totalChapters ? ` / ${media.totalChapters}` : ''}
 					</span>
@@ -144,7 +146,8 @@
 						type="button"
 						onclick={() => adjustProgress('currentChapter', 1, media.totalChapters)}
 						class="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-					>+</button>
+						>+</button
+					>
 				</div>
 			</div>
 			{#if media.totalVolumes || tracking?.currentVolume}
@@ -155,7 +158,8 @@
 							type="button"
 							onclick={() => adjustProgress('currentVolume', -1, media.totalVolumes)}
 							class="w-7 h-7 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-						>-</button>
+							>-</button
+						>
 						<span class="text-sm font-bold text-white min-w-[3rem] text-center">
 							{tracking?.currentVolume ?? 0}{media.totalVolumes ? ` / ${media.totalVolumes}` : ''}
 						</span>
@@ -163,7 +167,8 @@
 							type="button"
 							onclick={() => adjustProgress('currentVolume', 1, media.totalVolumes)}
 							class="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-						>+</button>
+							>+</button
+						>
 					</div>
 				</div>
 			{/if}
@@ -177,7 +182,8 @@
 						type="button"
 						onclick={() => adjustProgress('currentPage', -10, media.totalPages)}
 						class="w-7 h-7 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center text-xs font-bold cursor-pointer"
-					>-10</button>
+						>-10</button
+					>
 					<span class="text-sm font-bold text-white min-w-[3rem] text-center">
 						{tracking?.currentPage ?? 0}{media.totalPages ? ` / ${media.totalPages}` : ''}
 					</span>
@@ -185,7 +191,8 @@
 						type="button"
 						onclick={() => adjustProgress('currentPage', 10, media.totalPages)}
 						class="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs font-bold cursor-pointer"
-					>+10</button>
+						>+10</button
+					>
 				</div>
 			</div>
 		</div>
@@ -198,7 +205,8 @@
 						type="button"
 						onclick={() => adjustProgress('hoursPlayed', -1)}
 						class="w-7 h-7 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-					>-</button>
+						>-</button
+					>
 					<span class="text-sm font-bold text-white min-w-[3rem] text-center">
 						{tracking?.hoursPlayed ?? 0} hrs
 					</span>
@@ -206,7 +214,8 @@
 						type="button"
 						onclick={() => adjustProgress('hoursPlayed', 1)}
 						class="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-					>+</button>
+						>+</button
+					>
 				</div>
 			</div>
 		</div>

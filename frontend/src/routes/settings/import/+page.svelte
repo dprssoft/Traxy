@@ -28,7 +28,9 @@
 
 	<div class="space-y-4">
 		<!-- MAL -->
-		<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+		<div
+			class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+		>
 			<div>
 				<h4 class="font-bold text-white text-sm">{importers[0].title}</h4>
 				<p class="text-xs text-slate-400 mt-0.5">{importers[0].desc}</p>
@@ -37,7 +39,9 @@
 		</div>
 
 		<!-- AniList -->
-		<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+		<div
+			class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+		>
 			<div>
 				<h4 class="font-bold text-white text-sm">{importers[1].title}</h4>
 				<p class="text-xs text-slate-400 mt-0.5">{importers[1].desc}</p>
@@ -46,7 +50,9 @@
 		</div>
 
 		<!-- TMDB -->
-		<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+		<div
+			class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+		>
 			<div>
 				<h4 class="font-bold text-white text-sm">{importers[2].title}</h4>
 				<p class="text-xs text-slate-400 mt-0.5">{importers[2].desc}</p>

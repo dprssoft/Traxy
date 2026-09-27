@@ -39,9 +39,7 @@
 			type="button"
 			onclick={() => onchange(tab.id)}
 			class="flex items-center gap-3 rounded-xl text-left transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/40
-				{isVertical
-				? 'p-3 w-full whitespace-normal'
-				: 'px-4 py-2.5 whitespace-nowrap shrink-0'}
+				{isVertical ? 'p-3 w-full whitespace-normal' : 'px-4 py-2.5 whitespace-nowrap shrink-0'}
 				{isActive
 				? 'bg-[#181b2e] border border-indigo-500/40 text-white shadow-md shadow-indigo-500/10'
 				: 'bg-[#121422]/60 hover:bg-[#181b2e]/60 border border-white/[0.04] text-slate-400 hover:text-slate-200'}"

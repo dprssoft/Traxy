@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { exportDatabaseJson, importDatabaseJson, clearMediaCache, resetAllUserData } from '$lib/db/services/backup.service';
+	import {
+		exportDatabaseJson,
+		importDatabaseJson,
+		clearMediaCache,
+		resetAllUserData,
+	} from '$lib/db/services/backup.service';
 	import { downloadFile } from '$lib/utils/download';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -90,7 +95,11 @@
 	async function handleImport(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
-		if (!confirm('Warning: this will overwrite all current local data with the backup file. Continue?')) {
+		if (
+			!confirm(
+				'Warning: this will overwrite all current local data with the backup file. Continue?',
+			)
+		) {
 			if (fileInput) fileInput.value = '';
 			return;
 		}
@@ -123,10 +132,14 @@
 
 	<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 		<!-- Export Card -->
-		<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between gap-4">
+		<div
+			class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between gap-4"
+		>
 			<div>
 				<h3 class="font-bold text-white text-sm mb-1">Export Local Backup</h3>
-				<p class="text-xs text-slate-400">Download a full snapshot of your lists, history, and notes as a portable JSON file.</p>
+				<p class="text-xs text-slate-400">
+					Download a full snapshot of your lists, history, and notes as a portable JSON file.
+				</p>
 			</div>
 			<Button onclick={handleExport} loading={exporting} class="w-full">
 				📥 Export JSON Backup
@@ -134,13 +147,28 @@
 		</div>
 
 		<!-- Restore Card -->
-		<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between gap-4">
+		<div
+			class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex flex-col justify-between gap-4"
+		>
 			<div>
 				<h3 class="font-bold text-white text-sm mb-1">Restore from Backup</h3>
-				<p class="text-xs text-slate-400">Restore your library from a previously exported JSON backup file.</p>
+				<p class="text-xs text-slate-400">
+					Restore your library from a previously exported JSON backup file.
+				</p>
 			</div>
-			<input type="file" accept=".json" class="hidden" bind:this={fileInput} onchange={handleImport} />
-			<Button variant="secondary" loading={importing} onclick={() => fileInput?.click()} class="w-full">
+			<input
+				type="file"
+				accept=".json"
+				class="hidden"
+				bind:this={fileInput}
+				onchange={handleImport}
+			/>
+			<Button
+				variant="secondary"
+				loading={importing}
+				onclick={() => fileInput?.click()}
+				class="w-full"
+			>
 				📤 Choose Backup File
 			</Button>
 		</div>
@@ -158,29 +186,52 @@
 	{/if}
 
 	<div class="pt-8">
-		<SectionHeader
-			title="Danger Zone"
-			subtitle="Destructive actions that cannot be undone."
-		/>
+		<SectionHeader title="Danger Zone" subtitle="Destructive actions that cannot be undone." />
 		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
 			<!-- Clear Cache Card -->
-			<div class="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex flex-col justify-between gap-4">
+			<div
+				class="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex flex-col justify-between gap-4"
+			>
 				<div>
 					<h3 class="font-bold text-rose-500 text-sm mb-1">Clear Media Cache</h3>
-					<p class="text-xs text-slate-400">Clears cached API search results and metadata. Useful if media info (country, runtime, etc.) is incorrect.</p>
+					<p class="text-xs text-slate-400">
+						Clears cached API search results and metadata. Useful if media info (country, runtime,
+						etc.) is incorrect.
+					</p>
 				</div>
-				<Button variant="danger" onclick={() => { showCacheModal = true; startCacheTimer(); }} class="w-full">
+				<Button
+					variant="danger"
+					onclick={() => {
+						showCacheModal = true;
+						startCacheTimer();
+					}}
+					class="w-full"
+				>
 					🗑 Clear Media Cache
 				</Button>
 			</div>
 
 			<!-- Reset App Card -->
-			<div class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col justify-between gap-4">
+			<div
+				class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col justify-between gap-4"
+			>
 				<div>
 					<h3 class="font-bold text-rose-500 text-sm mb-1">Factory Reset</h3>
-					<p class="text-xs text-slate-400">Permanently deletes all your tracked media, reviews, collections, history, and settings. This cannot be undone.</p>
+					<p class="text-xs text-slate-400">
+						Permanently deletes all your tracked media, reviews, collections, history, and settings.
+						This cannot be undone.
+					</p>
 				</div>
-				<Button variant="danger" onclick={() => { showResetModal = true; resetInput = ''; resetTimer = 5; clearInterval(resetInterval); }} class="w-full">
+				<Button
+					variant="danger"
+					onclick={() => {
+						showResetModal = true;
+						resetInput = '';
+						resetTimer = 5;
+						clearInterval(resetInterval);
+					}}
+					class="w-full"
+				>
 					⚠️ Reset All Data
 				</Button>
 			</div>
@@ -191,10 +242,12 @@
 <Modal bind:open={showCacheModal} title="Clear Media Cache" size="md">
 	<div class="space-y-4">
 		<p class="text-sm text-slate-300">
-			This will delete all cached API responses and temporary metadata. It will <strong>not</strong> delete any of your tracked media, reviews, or lists.
+			This will delete all cached API responses and temporary metadata. It will <strong>not</strong> delete
+			any of your tracked media, reviews, or lists.
 		</p>
 		<p class="text-sm text-slate-300">
-			The app will simply re-fetch the latest data from sources like TMDB, AniList, and Wikipedia the next time it needs them.
+			The app will simply re-fetch the latest data from sources like TMDB, AniList, and Wikipedia
+			the next time it needs them.
 		</p>
 	</div>
 	{#snippet footer()}
@@ -213,10 +266,14 @@
 			This action will permanently erase all your data.
 		</p>
 		<p class="text-sm text-slate-300">
-			Your entire library, watch history, custom collections, reviews, and settings will be deleted forever. <strong>This cannot be undone.</strong>
+			Your entire library, watch history, custom collections, reviews, and settings will be deleted
+			forever. <strong>This cannot be undone.</strong>
 		</p>
 		<div class="pt-2">
-			<label for="reset-confirm" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+			<label
+				for="reset-confirm"
+				class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+			>
 				Type "RESET" to confirm
 			</label>
 			<input

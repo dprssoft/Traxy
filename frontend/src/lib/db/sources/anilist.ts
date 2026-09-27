@@ -122,11 +122,11 @@ function mapAnilistType(item: AnilistMedia): import('$lib/db/schema').MediaType 
 function mapAnilistStatus(status?: string): string | undefined {
 	if (!status) return undefined;
 	const map: Record<string, string> = {
-		'RELEASING': 'Airing',
-		'FINISHED': 'Finished',
-		'NOT_YET_RELEASED': 'Upcoming',
-		'CANCELLED': 'Cancelled',
-		'HIATUS': 'Hiatus',
+		RELEASING: 'Airing',
+		FINISHED: 'Finished',
+		NOT_YET_RELEASED: 'Upcoming',
+		CANCELLED: 'Cancelled',
+		HIATUS: 'Hiatus',
 	};
 	return map[status] ?? status;
 }
@@ -135,11 +135,11 @@ function mapAnilistStatus(status?: string): string | undefined {
 function mapAnilistCountry(code?: string): string | undefined {
 	if (!code) return undefined;
 	const map: Record<string, string> = {
-		'JP': 'Japan',
-		'KR': 'South Korea',
-		'CN': 'China',
-		'TW': 'Taiwan',
-		'US': 'USA',
+		JP: 'Japan',
+		KR: 'South Korea',
+		CN: 'China',
+		TW: 'Taiwan',
+		US: 'USA',
 	};
 	return map[code] ?? code;
 }
@@ -182,13 +182,15 @@ function mapAnilistItem(item: AnilistMedia): SearchResult {
 		totalVolumes: item.volumes || undefined,
 		totalChapters: item.chapters || undefined,
 		totalPages: undefined,
-		runtimeMinutes: item.format === 'MOVIE' ? (item.duration || undefined) : undefined,
+		runtimeMinutes: item.format === 'MOVIE' ? item.duration || undefined : undefined,
 	};
 }
 
-async function getAnilistSeasonChain(startId: number): Promise<import('$lib/db/schema').MediaSeasonData[] | undefined> {
+async function getAnilistSeasonChain(
+	startId: number,
+): Promise<import('$lib/db/schema').MediaSeasonData[] | undefined> {
 	const visited = new Set<number>();
-	const chain = new Map<number, { episodes: number, prequel?: number, sequel?: number }>();
+	const chain = new Map<number, { episodes: number; prequel?: number; sequel?: number }>();
 
 	async function fetchRelations(id: number) {
 		if (visited.has(id)) return;
@@ -197,7 +199,7 @@ async function getAnilistSeasonChain(startId: number): Promise<import('$lib/db/s
 		try {
 			const res = await fetch(BASE_URL, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 				body: JSON.stringify({ query: RELATIONS_QUERY, variables: { id } }),
 			});
 			if (!res.ok) return;
@@ -250,9 +252,11 @@ async function getAnilistSeasonChain(startId: number): Promise<import('$lib/db/s
 	return seasonData.length > 1 ? seasonData : undefined;
 }
 
-
 /** Search anime or manga (manhwa/manhua are told apart by country of origin). Empty on error. */
-export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Promise<SearchResult[]> {
+export async function searchAnilist(
+	query: string,
+	type: 'ANIME' | 'MANGA',
+): Promise<SearchResult[]> {
 	if (!query.trim()) return [];
 
 	const cacheKey = `anilist:search:${type}:${query}`;
@@ -262,7 +266,10 @@ export async function searchAnilist(query: string, type: 'ANIME' | 'MANGA'): Pro
 				BASE_URL,
 				ANILIST_TIMEOUT_MS,
 				{ 'Content-Type': 'application/json', Accept: 'application/json' },
-				{ method: 'POST', body: JSON.stringify({ query: SEARCH_QUERY, variables: { query, type } }) },
+				{
+					method: 'POST',
+					body: JSON.stringify({ query: SEARCH_QUERY, variables: { query, type } }),
+				},
 			);
 			return data.data.Page.media.map(mapAnilistItem);
 		});
@@ -404,9 +411,7 @@ export function discoverAnilistTopRated(
 }
 
 /** Random anime or manga — fetches a random page from popular results. */
-export async function discoverAnilistRandom(
-	mediaType: 'ANIME' | 'MANGA',
-): Promise<SearchResult[]> {
+export async function discoverAnilistRandom(mediaType: 'ANIME' | 'MANGA'): Promise<SearchResult[]> {
 	const randomPage = Math.floor(Math.random() * 50) + 1;
 	// Don't cache random results so they vary per visit
 	try {

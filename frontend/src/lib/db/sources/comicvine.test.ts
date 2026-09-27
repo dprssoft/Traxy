@@ -34,7 +34,12 @@ describe('discoverComicVineNew', () => {
 
 		const result = await discoverComicVineNew();
 
-		expect(result[0]).toMatchObject({ externalId: '1', source: 'comicvine', title: 'New Comic', year: 2022 });
+		expect(result[0]).toMatchObject({
+			externalId: '1',
+			source: 'comicvine',
+			title: 'New Comic',
+			year: 2022,
+		});
 		const { setCache } = await import('../apiCache');
 		expect(setCache).toHaveBeenCalledWith('comicvine:discover:new', result);
 	});

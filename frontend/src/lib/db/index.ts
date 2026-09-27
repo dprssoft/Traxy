@@ -1,4 +1,8 @@
-import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from '@capacitor-community/sqlite';
+import {
+	CapacitorSQLite,
+	SQLiteConnection,
+	type SQLiteDBConnection,
+} from '@capacitor-community/sqlite';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import type { MediaType } from './schema';
@@ -14,44 +18,44 @@ let db: SQLiteDBConnection;
  * connection is reused rather than recreated.
  */
 export const initDb = async () => {
-    sqlite = new SQLiteConnection(CapacitorSQLite);
+	sqlite = new SQLiteConnection(CapacitorSQLite);
 
-    // On web, jeep-sqlite needs explicit plugin initialization after the
-    // custom element is in the DOM (done in +layout.svelte).
-    if (Capacitor.getPlatform() === 'web') {
-        await sqlite.initWebStore();
-    }
+	// On web, jeep-sqlite needs explicit plugin initialization after the
+	// custom element is in the DOM (done in +layout.svelte).
+	if (Capacitor.getPlatform() === 'web') {
+		await sqlite.initWebStore();
+	}
 
-    try {
-        await sqlite.checkConnectionsConsistency().catch(() => {});
-        const isConn = (await sqlite.isConnection(DB_NAME, false)).result;
-        if (isConn) {
-            db = await sqlite.retrieveConnection(DB_NAME, false);
-        } else {
-            try {
-                db = await sqlite.createConnection(DB_NAME, false, 'no-encryption', 1, false);
-            } catch (err) {
-                if ((err as { message?: string })?.message?.includes('already exists')) {
-                    db = await sqlite.retrieveConnection(DB_NAME, false);
-                } else {
-                    throw err;
-                }
-            }
-        }
-    } catch (e) {
-        console.error("DB init failed", e);
-        throw e;
-    }
+	try {
+		await sqlite.checkConnectionsConsistency().catch(() => {});
+		const isConn = (await sqlite.isConnection(DB_NAME, false)).result;
+		if (isConn) {
+			db = await sqlite.retrieveConnection(DB_NAME, false);
+		} else {
+			try {
+				db = await sqlite.createConnection(DB_NAME, false, 'no-encryption', 1, false);
+			} catch (err) {
+				if ((err as { message?: string })?.message?.includes('already exists')) {
+					db = await sqlite.retrieveConnection(DB_NAME, false);
+				} else {
+					throw err;
+				}
+			}
+		}
+	} catch (e) {
+		console.error('DB init failed', e);
+		throw e;
+	}
 
-    await db.open();
-    await applySchema(db);
+	await db.open();
+	await applySchema(db);
 };
 
 type SchemaConnection = Pick<SQLiteDBConnection, 'execute' | 'query' | 'run'>;
 
 /** Creates the tables and migrates older databases. Exported so tests can apply the real schema. */
 export const applySchema = async (db: SchemaConnection) => {
-    const schema = `
+	const schema = `
     CREATE TABLE IF NOT EXISTS Media (
         id TEXT PRIMARY KEY,
         source TEXT,
@@ -154,54 +158,54 @@ export const applySchema = async (db: SchemaConnection) => {
     );
     `;
 
-    await db.execute(schema);
+	await db.execute(schema);
 
-    // ── Migrations for existing databases ────────────────────────────────
-    const newColumns = [
-        'seasonData TEXT',
-        'timeToBeat TEXT',
-        'originalTitle TEXT',
-        'serializationYears TEXT',
-        'author TEXT',
-        'country TEXT',
-        'genres TEXT',
-        'releaseStatus TEXT',
-        'totalVolumes INTEGER',
-        'totalChapters INTEGER',
-        'runtimeMinutes INTEGER',
-        'isAdult INTEGER',
-        'wikiMeta TEXT',
-    ];
-    for (const col of newColumns) {
-        try {
-            await db.execute(`ALTER TABLE Media ADD COLUMN ${col};`);
-            // Cached provider responses predate adult-content flags — drop them once so
-            // results get re-fetched with `isAdult` set.
-            if (col.startsWith('isAdult')) await db.execute('DELETE FROM ApiCache;');
-        } catch {
-            // Ignore if column already exists
-        }
-    }
+	// ── Migrations for existing databases ────────────────────────────────
+	const newColumns = [
+		'seasonData TEXT',
+		'timeToBeat TEXT',
+		'originalTitle TEXT',
+		'serializationYears TEXT',
+		'author TEXT',
+		'country TEXT',
+		'genres TEXT',
+		'releaseStatus TEXT',
+		'totalVolumes INTEGER',
+		'totalChapters INTEGER',
+		'runtimeMinutes INTEGER',
+		'isAdult INTEGER',
+		'wikiMeta TEXT',
+	];
+	for (const col of newColumns) {
+		try {
+			await db.execute(`ALTER TABLE Media ADD COLUMN ${col};`);
+			// Cached provider responses predate adult-content flags — drop them once so
+			// results get re-fetched with `isAdult` set.
+			if (col.startsWith('isAdult')) await db.execute('DELETE FROM ApiCache;');
+		} catch {
+			// Ignore if column already exists
+		}
+	}
 
-    const collectionColumns = [
-        'Collection ADD COLUMN updatedAt TEXT',
-        'Collection ADD COLUMN mediaType TEXT',
-        'Collection ADD COLUMN systemKey TEXT',
-        'Collection ADD COLUMN isRanked INTEGER',
-        'Collection ADD COLUMN sortOrder INTEGER',
-        'CollectionItem ADD COLUMN note TEXT',
-    ];
-    for (const col of collectionColumns) {
-        try {
-            await db.execute(`ALTER TABLE ${col};`);
-        } catch {
-            // Ignore if column already exists
-        }
-    }
+	const collectionColumns = [
+		'Collection ADD COLUMN updatedAt TEXT',
+		'Collection ADD COLUMN mediaType TEXT',
+		'Collection ADD COLUMN systemKey TEXT',
+		'Collection ADD COLUMN isRanked INTEGER',
+		'Collection ADD COLUMN sortOrder INTEGER',
+		'CollectionItem ADD COLUMN note TEXT',
+	];
+	for (const col of collectionColumns) {
+		try {
+			await db.execute(`ALTER TABLE ${col};`);
+		} catch {
+			// Ignore if column already exists
+		}
+	}
 
-    // Older builds inserted items without an id and allowed duplicates — repair both
-    // before the unique index goes on.
-    await db.execute(`
+	// Older builds inserted items without an id and allowed duplicates — repair both
+	// before the unique index goes on.
+	await db.execute(`
         UPDATE CollectionItem SET id = lower(hex(randomblob(16))) WHERE id IS NULL;
         DELETE FROM CollectionItem WHERE rowid NOT IN (
             SELECT MIN(rowid) FROM CollectionItem GROUP BY collectionId, mediaId
@@ -210,7 +214,7 @@ export const applySchema = async (db: SchemaConnection) => {
             ON CollectionItem(collectionId, mediaId);
     `);
 
-    await migrateLegacyFavorites(db);
+	await migrateLegacyFavorites(db);
 };
 
 // Name of the single mixed-type favorites list older builds created as a user collection.
@@ -218,51 +222,54 @@ const LEGACY_FAVORITES_NAME = 'Favorites';
 
 /** Splits the old mixed-type "Favorites" collection into one Favorite <Type> collection per type. */
 async function migrateLegacyFavorites(db: SchemaConnection) {
-    const legacy = await db.query(
-        'SELECT id FROM Collection WHERE name = ? AND systemKey IS NULL',
-        [LEGACY_FAVORITES_NAME],
-    );
-    for (const row of legacy.values ?? []) {
-        const legacyId = (row as { id: string }).id;
-        const items = await db.query(
-            `SELECT ci.mediaId, ci.addedAt, m.type FROM CollectionItem ci
+	const legacy = await db.query('SELECT id FROM Collection WHERE name = ? AND systemKey IS NULL', [
+		LEGACY_FAVORITES_NAME,
+	]);
+	for (const row of legacy.values ?? []) {
+		const legacyId = (row as { id: string }).id;
+		const items = await db.query(
+			`SELECT ci.mediaId, ci.addedAt, m.type FROM CollectionItem ci
              JOIN Media m ON m.id = ci.mediaId
              WHERE ci.collectionId = ?`,
-            [legacyId],
-        );
-        const targetByType = new Map<MediaType, string>();
-        for (const item of (items.values ?? []) as { mediaId: string; addedAt: string; type: MediaType }[]) {
-            let targetId = targetByType.get(item.type);
-            if (!targetId) {
-                const existing = await db.query(
-                    "SELECT id FROM Collection WHERE systemKey = 'favorites' AND mediaType = ?",
-                    [item.type],
-                );
-                targetId = (existing.values?.[0] as { id: string } | undefined)?.id;
-                if (!targetId) {
-                    targetId = uuidv4();
-                    const now = new Date().toISOString();
-                    await db.run(
-                        `INSERT INTO Collection (id, name, createdAt, updatedAt, mediaType, systemKey, isRanked, sortOrder)
+			[legacyId],
+		);
+		const targetByType = new Map<MediaType, string>();
+		for (const item of (items.values ?? []) as {
+			mediaId: string;
+			addedAt: string;
+			type: MediaType;
+		}[]) {
+			let targetId = targetByType.get(item.type);
+			if (!targetId) {
+				const existing = await db.query(
+					"SELECT id FROM Collection WHERE systemKey = 'favorites' AND mediaType = ?",
+					[item.type],
+				);
+				targetId = (existing.values?.[0] as { id: string } | undefined)?.id;
+				if (!targetId) {
+					targetId = uuidv4();
+					const now = new Date().toISOString();
+					await db.run(
+						`INSERT INTO Collection (id, name, createdAt, updatedAt, mediaType, systemKey, isRanked, sortOrder)
                          VALUES (?, ?, ?, ?, ?, 'favorites', 0, 0)`,
-                        [targetId, getSystemCollectionName('favorites', item.type), now, now, item.type],
-                    );
-                }
-                targetByType.set(item.type, targetId);
-            }
-            await db.run(
-                `INSERT OR IGNORE INTO CollectionItem (id, collectionId, mediaId, sortOrder, addedAt)
+						[targetId, getSystemCollectionName('favorites', item.type), now, now, item.type],
+					);
+				}
+				targetByType.set(item.type, targetId);
+			}
+			await db.run(
+				`INSERT OR IGNORE INTO CollectionItem (id, collectionId, mediaId, sortOrder, addedAt)
                  VALUES (?, ?, ?, 0, ?)`,
-                [uuidv4(), targetId, item.mediaId, item.addedAt],
-            );
-        }
-        await db.run('DELETE FROM CollectionItem WHERE collectionId = ?', [legacyId]);
-        await db.run('DELETE FROM Collection WHERE id = ?', [legacyId]);
-    }
+				[uuidv4(), targetId, item.mediaId, item.addedAt],
+			);
+		}
+		await db.run('DELETE FROM CollectionItem WHERE collectionId = ?', [legacyId]);
+		await db.run('DELETE FROM Collection WHERE id = ?', [legacyId]);
+	}
 }
 
 /** The open connection. Throws until `initDb` has completed. */
 export const getDb = () => {
-    if (!db) throw new Error('Database not initialized');
-    return db;
+	if (!db) throw new Error('Database not initialized');
+	return db;
 };

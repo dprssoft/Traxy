@@ -64,7 +64,9 @@
 
 		<!-- Panel -->
 		<div
-			class="relative w-full {sizes[size]} max-h-[90vh] flex flex-col bg-[#0d0e1a] border border-white/[0.10] rounded-3xl shadow-2xl shadow-black/60 animate-in"
+			class="relative w-full {sizes[
+				size
+			]} max-h-[90vh] flex flex-col bg-[#0d0e1a] border border-white/[0.10] rounded-3xl shadow-2xl shadow-black/60 animate-in"
 		>
 			{#if title}
 				<div

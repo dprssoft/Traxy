@@ -30,9 +30,7 @@
 </script>
 
 <div class="relative overflow-hidden {extraClass}">
-	<div
-		class="w-full h-full transition-[filter] duration-300 {blurred ? 'blur-xl scale-110' : ''}"
-	>
+	<div class="w-full h-full transition-[filter] duration-300 {blurred ? 'blur-xl scale-110' : ''}">
 		{@render children()}
 	</div>
 	{#if blurred}

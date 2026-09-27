@@ -8,7 +8,11 @@ export function truncate(text: string, maxLen: number, opts?: { smart?: boolean 
 	if (!text || text.length <= maxLen) return text ?? '';
 	const slice = text.slice(0, maxLen);
 	if (opts?.smart === false) return slice.trimEnd() + '…';
-	const lastDot = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
+	const lastDot = Math.max(
+		slice.lastIndexOf('. '),
+		slice.lastIndexOf('! '),
+		slice.lastIndexOf('? '),
+	);
 	const minBoundary = Math.floor(maxLen * 0.6);
 	const cut = lastDot > minBoundary ? lastDot + 1 : maxLen;
 	return text.slice(0, cut).trimEnd() + '…';

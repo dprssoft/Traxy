@@ -46,15 +46,23 @@ describe('fetchWikidataEnrichment', () => {
 
 	it('builds enrichment with labels and the article link, then caches it', async () => {
 		(fetch as Mock)
-			.mockResolvedValueOnce(ok({ search: [{ id: 'Q2', label: 'Dune', description: '2021 film' }] }))
+			.mockResolvedValueOnce(
+				ok({ search: [{ id: 'Q2', label: 'Dune', description: '2021 film' }] }),
+			)
 			.mockResolvedValueOnce(
 				ok({
 					entities: {
 						Q2: {
 							claims: {
-								P57: [{ mainsnak: { datavalue: { type: 'wikibase-entityid', value: { id: 'Q10' } } } }],
-								P495: [{ mainsnak: { datavalue: { type: 'wikibase-entityid', value: { id: 'Q30' } } } }],
-								P2047: [{ mainsnak: { datavalue: { type: 'quantity', value: { amount: '+155' } } } }],
+								P57: [
+									{ mainsnak: { datavalue: { type: 'wikibase-entityid', value: { id: 'Q10' } } } },
+								],
+								P495: [
+									{ mainsnak: { datavalue: { type: 'wikibase-entityid', value: { id: 'Q30' } } } },
+								],
+								P2047: [
+									{ mainsnak: { datavalue: { type: 'quantity', value: { amount: '+155' } } } },
+								],
 							},
 							descriptions: { en: { value: '2021 film' } },
 							sitelinks: { enwiki: { url: 'https://en.wikipedia.org/wiki/Dune_(2021_film)' } },

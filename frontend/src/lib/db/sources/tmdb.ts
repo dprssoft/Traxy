@@ -55,17 +55,17 @@ function posterUrl(path?: string | null): string | undefined {
 function mapTmdbStatus(status?: string): string | undefined {
 	if (!status) return undefined;
 	const map: Record<string, string> = {
-		'Released': 'Released',
+		Released: 'Released',
 		'Post Production': 'Post Production',
 		'In Production': 'In Production',
-		'Planned': 'Planned',
-		'Canceled': 'Cancelled',
-		'Rumored': 'Rumored',
+		Planned: 'Planned',
+		Canceled: 'Cancelled',
+		Rumored: 'Rumored',
 		// TV statuses
 		'Returning Series': 'Airing',
-		'Ended': 'Finished',
-		'Cancelled': 'Cancelled',
-		'Pilot': 'Pilot',
+		Ended: 'Finished',
+		Cancelled: 'Cancelled',
+		Pilot: 'Pilot',
 	};
 	return map[status] ?? status;
 }
@@ -241,9 +241,8 @@ export async function discoverTmdbNew(
 	const endpoint = type === 'film' ? 'movie' : 'tv';
 	const today = new Date().toISOString().split('T')[0];
 	const sortField = type === 'film' ? 'primary_release_date' : 'first_air_date';
-	const dateFilter = type === 'film'
-		? `&primary_release_date.lte=${today}`
-		: `&first_air_date.lte=${today}`;
+	const dateFilter =
+		type === 'film' ? `&primary_release_date.lte=${today}` : `&first_air_date.lte=${today}`;
 
 	const fetcher = async (): Promise<SearchResult[]> => {
 		const data = await fetchJson<TmdbDiscoverResponse>(

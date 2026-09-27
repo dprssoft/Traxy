@@ -40,7 +40,12 @@
 			<label for="tmdbKey" class="block text-xs font-medium text-slate-400 mb-1.5">
 				TMDB API Key (v3 auth)
 			</label>
-			<SecretInput id="tmdbKey" bind:value={tmdbKey} placeholder="Leave blank to use built-in default" class={inputClass} />
+			<SecretInput
+				id="tmdbKey"
+				bind:value={tmdbKey}
+				placeholder="Leave blank to use built-in default"
+				class={inputClass}
+			/>
 		</div>
 	</div>
 
@@ -58,13 +63,23 @@
 				<label for="igdbClientId" class="block text-xs font-medium text-slate-400 mb-1.5">
 					Client ID
 				</label>
-				<SecretInput id="igdbClientId" bind:value={igdbClientId} placeholder="Twitch Client ID" class={inputClass} />
+				<SecretInput
+					id="igdbClientId"
+					bind:value={igdbClientId}
+					placeholder="Twitch Client ID"
+					class={inputClass}
+				/>
 			</div>
 			<div>
 				<label for="igdbClientSecret" class="block text-xs font-medium text-slate-400 mb-1.5">
 					Client Secret
 				</label>
-				<SecretInput id="igdbClientSecret" bind:value={igdbClientSecret} placeholder="Twitch Client Secret" class={inputClass} />
+				<SecretInput
+					id="igdbClientSecret"
+					bind:value={igdbClientSecret}
+					placeholder="Twitch Client Secret"
+					class={inputClass}
+				/>
 			</div>
 		</div>
 		<p class="text-[11px] text-slate-500">
@@ -89,7 +104,12 @@
 			<label for="comicvineKey" class="block text-xs font-medium text-slate-400 mb-1.5">
 				ComicVine API Key
 			</label>
-			<SecretInput id="comicvineKey" bind:value={comicvineKey} placeholder="Leave blank to use built-in default" class={inputClass} />
+			<SecretInput
+				id="comicvineKey"
+				bind:value={comicvineKey}
+				placeholder="Leave blank to use built-in default"
+				class={inputClass}
+			/>
 		</div>
 	</div>
 

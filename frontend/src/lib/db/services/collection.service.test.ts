@@ -50,7 +50,12 @@ describe('collections CRUD', () => {
 		const shared = await createCollection({ name: '  Comfort  ', mediaType: null });
 		const games = await createCollection({ name: 'RPGs', mediaType: 'game', isRanked: true });
 
-		expect(shared).toMatchObject({ name: 'Comfort', mediaType: null, systemKey: null, itemCount: 0 });
+		expect(shared).toMatchObject({
+			name: 'Comfort',
+			mediaType: null,
+			systemKey: null,
+			itemCount: 0,
+		});
 		expect(games).toMatchObject({ mediaType: 'game', isRanked: true });
 		expect(await activityEvents()).toEqual(['collection_created', 'collection_created']);
 	});
@@ -61,7 +66,11 @@ describe('collections CRUD', () => {
 
 	it('updates name, description and ranking', async () => {
 		const c = await createCollection({ name: 'A', mediaType: null });
-		const updated = await updateCollection(c.id, { name: 'B', description: 'desc', isRanked: true });
+		const updated = await updateCollection(c.id, {
+			name: 'B',
+			description: 'desc',
+			isRanked: true,
+		});
 		expect(updated).toMatchObject({ name: 'B', description: 'desc', isRanked: true });
 	});
 
@@ -69,7 +78,9 @@ describe('collections CRUD', () => {
 		const c = await createCollection({ name: 'Mixed', mediaType: null });
 		await addToCollection(c.id, 'g1');
 		await addToCollection(c.id, 'f1');
-		await expect(updateCollection(c.id, { mediaType: 'game' })).rejects.toThrow(/another media type/);
+		await expect(updateCollection(c.id, { mediaType: 'game' })).rejects.toThrow(
+			/another media type/,
+		);
 
 		await removeFromCollection(c.id, 'f1');
 		expect((await updateCollection(c.id, { mediaType: 'game' })).mediaType).toBe('game');

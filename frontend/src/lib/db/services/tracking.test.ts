@@ -246,12 +246,7 @@ describe('tracking.service Scenarios', () => {
 			await updateProgress('manga-1', 'currentChapter', 3);
 
 			expect(dbTrackingRecords.get('manga-1')!.currentChapter).toBe(3);
-			expect(handleProgressDecrement).toHaveBeenCalledWith(
-				'manga-1',
-				'chapter_read',
-				'chapter',
-				3,
-			);
+			expect(handleProgressDecrement).toHaveBeenCalledWith('manga-1', 'chapter_read', 'chapter', 3);
 			expect(mockLogActivity).not.toHaveBeenCalled();
 		});
 

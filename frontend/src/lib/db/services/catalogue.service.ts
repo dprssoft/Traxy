@@ -21,7 +21,7 @@ function getMemoryCacheKey(type: MediaType | 'all', category: DiscoverCategory):
 /** Category rows still fresh in this session's memory cache — lets the catalogue render instantly on revisit. */
 export function getMemoryCacheBatch(
 	type: MediaType | 'all',
-	categories: DiscoverCategory[]
+	categories: DiscoverCategory[],
 ): Partial<Record<DiscoverCategory, SearchResult[]>> {
 	const result: Partial<Record<DiscoverCategory, SearchResult[]>> = {};
 	const now = Date.now();
@@ -39,20 +39,16 @@ export function getMemoryCacheBatch(
 export function setMemoryCache(
 	type: MediaType | 'all',
 	category: DiscoverCategory,
-	data: SearchResult[]
+	data: SearchResult[],
 ) {
 	memoryCache.set(getMemoryCacheKey(type, category), {
 		data,
-		timestamp: Date.now()
+		timestamp: Date.now(),
 	});
 }
 
 // TMDB
-import {
-	discoverTmdbTrending,
-	discoverTmdbNew,
-	discoverTmdbTopRated,
-} from '$lib/db/sources/tmdb';
+import { discoverTmdbTrending, discoverTmdbNew, discoverTmdbTopRated } from '$lib/db/sources/tmdb';
 
 // AniList
 import {
@@ -117,7 +113,8 @@ export function recordVisitedMedia(item: SearchResult | LocalMedia): void {
 		let list: SearchResult[] = raw ? JSON.parse(raw) : [];
 		// Deduplicate
 		list = list.filter(
-			(x) => !(x.source === item.source && x.externalId === item.externalId) && x.title !== item.title,
+			(x) =>
+				!(x.source === item.source && x.externalId === item.externalId) && x.title !== item.title,
 		);
 		const entry: SearchResult = {
 			source: item.source,
@@ -168,18 +165,34 @@ export async function getVisitedMedia(type: MediaType | 'all' = 'all'): Promise<
 					results = queryResult.values.map((row: unknown) => {
 						const isArr = Array.isArray(row);
 						const arr = isArr ? (row as unknown[]) : [];
-						const obj = !isArr && typeof row === 'object' && row !== null ? (row as Record<string, unknown>) : {};
+						const obj =
+							!isArr && typeof row === 'object' && row !== null
+								? (row as Record<string, unknown>)
+								: {};
 
 						const source = (isArr ? (arr[1] as string) : (obj.source as string)) || 'manual';
-						const externalId = (isArr ? (arr[2] as string) : (obj.externalId as string)) || (isArr ? (arr[0] as string) : (obj.id as string)) || '';
+						const externalId =
+							(isArr ? (arr[2] as string) : (obj.externalId as string)) ||
+							(isArr ? (arr[0] as string) : (obj.id as string)) ||
+							'';
 						const type = (isArr ? (arr[3] as MediaType) : (obj.type as MediaType)) || 'film';
 						const title = (isArr ? (arr[4] as string) : (obj.title as string)) || '';
 						const year = isArr ? (arr[5] as number | undefined) : (obj.year as number | undefined);
-						const posterUrl = isArr ? (arr[6] as string | undefined) : (obj.posterUrl as string | undefined);
-						const description = isArr ? (arr[7] as string | undefined) : (obj.description as string | undefined);
-						const totalEpisodes = isArr ? (arr[8] as number | undefined) : (obj.totalEpisodes as number | undefined);
-						const totalSeasons = isArr ? (arr[9] as number | undefined) : (obj.totalSeasons as number | undefined);
-						const totalPages = isArr ? (arr[11] as number | undefined) : (obj.totalPages as number | undefined);
+						const posterUrl = isArr
+							? (arr[6] as string | undefined)
+							: (obj.posterUrl as string | undefined);
+						const description = isArr
+							? (arr[7] as string | undefined)
+							: (obj.description as string | undefined);
+						const totalEpisodes = isArr
+							? (arr[8] as number | undefined)
+							: (obj.totalEpisodes as number | undefined);
+						const totalSeasons = isArr
+							? (arr[9] as number | undefined)
+							: (obj.totalSeasons as number | undefined);
+						const totalPages = isArr
+							? (arr[11] as number | undefined)
+							: (obj.totalPages as number | undefined);
 
 						return {
 							source: source as SearchResult['source'],
@@ -236,7 +249,11 @@ function getCacheKeysForTypeAndCategory(
 
 	if (type === 'all') {
 		const anilistSort =
-			category === 'trending' ? 'TRENDING_DESC' : category === 'new' ? 'START_DATE_DESC' : 'SCORE_DESC';
+			category === 'trending'
+				? 'TRENDING_DESC'
+				: category === 'new'
+					? 'START_DATE_DESC'
+					: 'SCORE_DESC';
 		const anilistStatus = category === 'new' ? 'RELEASING' : 'any';
 		return [
 			`tmdb:${category}:film:en-US:1`,
@@ -259,7 +276,11 @@ function getCacheKeysForTypeAndCategory(
 			const aniType = toAnilistMediaType(type);
 			if (!aniType) return [];
 			const sort =
-				category === 'trending' ? 'TRENDING_DESC' : category === 'new' ? 'START_DATE_DESC' : 'SCORE_DESC';
+				category === 'trending'
+					? 'TRENDING_DESC'
+					: category === 'new'
+						? 'START_DATE_DESC'
+						: 'SCORE_DESC';
 			const status = category === 'new' ? 'RELEASING' : 'any';
 			return [`anilist:discover:${aniType}:${sort}:${status}:1`];
 		}
@@ -285,7 +306,9 @@ export async function getCatalogueFromCache(
 	const keys = getCacheKeysForTypeAndCategory(type, category);
 	if (keys.length === 0) return null;
 	const batch = await getCachedBatch<SearchResult[]>(keys);
-	const hits = keys.map((k) => batch.get(k)).filter((v): v is SearchResult[] => v != null && v.length > 0);
+	const hits = keys
+		.map((k) => batch.get(k))
+		.filter((v): v is SearchResult[] => v != null && v.length > 0);
 	if (hits.length === 0) return null;
 	if (type === 'all') return interleaveBySource(hits.flat());
 	return hits[0];
@@ -326,7 +349,9 @@ export async function getCatalogueCacheBatch(
 	const data: Partial<Record<DiscoverCategory, SearchResult[]>> = {};
 	const complete: Partial<Record<DiscoverCategory, boolean>> = {};
 	for (const [cat, keys] of keysByCat) {
-		const hits = keys.map((k) => batch.get(k)).filter((v): v is SearchResult[] => v != null && v.length > 0);
+		const hits = keys
+			.map((k) => batch.get(k))
+			.filter((v): v is SearchResult[] => v != null && v.length > 0);
 		complete[cat] = hits.length === keys.length;
 		if (hits.length === 0) continue;
 		data[cat] = type === 'all' ? interleaveBySource(hits.flat()) : hits[0];
@@ -395,7 +420,10 @@ export async function discoverMedia(
  * Run up to `limit` async tasks concurrently from `fns`, resolving when all finish.
  * Avoids saturating the browser's per-host connection pool (max 6).
  */
-export async function pooled<T>(fns: (() => Promise<T>)[], limit = 4): Promise<PromiseSettledResult<T>[]> {
+export async function pooled<T>(
+	fns: (() => Promise<T>)[],
+	limit = 4,
+): Promise<PromiseSettledResult<T>[]> {
 	const results: PromiseSettledResult<T>[] = [];
 	const queue = [...fns];
 
@@ -447,12 +475,23 @@ export async function discoverCategoriesPooled(
 		limit,
 	);
 	return settled
-		.filter((r): r is PromiseFulfilledResult<{ cat: DiscoverCategory; data: SearchResult[]; error: boolean }> => r.status === 'fulfilled')
+		.filter(
+			(
+				r,
+			): r is PromiseFulfilledResult<{
+				cat: DiscoverCategory;
+				data: SearchResult[];
+				error: boolean;
+			}> => r.status === 'fulfilled',
+		)
 		.map((r) => r.value);
 }
 
 /** When "All" is selected, fetch from all major sources and merge — max 4 concurrent. */
-async function discoverAll(category: DiscoverCategory, forceRefresh = false): Promise<SearchResult[]> {
+async function discoverAll(
+	category: DiscoverCategory,
+	forceRefresh = false,
+): Promise<SearchResult[]> {
 	const fns: (() => Promise<SearchResult[]>)[] = [
 		() => discoverTmdbByCategory('film', category, forceRefresh),
 		() => discoverTmdbByCategory('tv', category, forceRefresh),
@@ -516,7 +555,10 @@ function discoverAnilistByCategory(
 	}
 }
 
-function discoverIgdbByCategory(category: DiscoverCategory, forceRefresh = false): Promise<SearchResult[]> {
+function discoverIgdbByCategory(
+	category: DiscoverCategory,
+	forceRefresh = false,
+): Promise<SearchResult[]> {
 	switch (category) {
 		case 'trending':
 			return discoverIgdbTrending(forceRefresh);
@@ -531,7 +573,10 @@ function discoverIgdbByCategory(category: DiscoverCategory, forceRefresh = false
 	}
 }
 
-function discoverOpenLibraryByCategory(category: DiscoverCategory, forceRefresh = false): Promise<SearchResult[]> {
+function discoverOpenLibraryByCategory(
+	category: DiscoverCategory,
+	forceRefresh = false,
+): Promise<SearchResult[]> {
 	switch (category) {
 		case 'trending':
 			return discoverOpenLibraryTrending(forceRefresh);
@@ -546,7 +591,10 @@ function discoverOpenLibraryByCategory(category: DiscoverCategory, forceRefresh 
 	}
 }
 
-function discoverComicByCategory(category: DiscoverCategory, forceRefresh = false): Promise<SearchResult[]> {
+function discoverComicByCategory(
+	category: DiscoverCategory,
+	forceRefresh = false,
+): Promise<SearchResult[]> {
 	switch (category) {
 		case 'trending':
 			return discoverComicVineTrending(forceRefresh);

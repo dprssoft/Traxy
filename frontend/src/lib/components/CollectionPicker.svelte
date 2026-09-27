@@ -122,7 +122,13 @@
 								{isChecked ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-white/20 bg-black/20'}"
 						>
 							{#if isChecked}
-								<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+								<svg
+									class="w-3.5 h-3.5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="3"
+								>
 									<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 								</svg>
 							{/if}
@@ -144,7 +150,8 @@
 				aria-label="New collection name"
 				class="flex-1 min-w-0 px-3 py-2 bg-[#181b2e] border border-white/[0.08] focus:border-indigo-500 rounded-xl text-xs text-white placeholder-slate-500 outline-none"
 			/>
-			<Button type="submit" size="sm" disabled={!newName.trim()} loading={isCreating}>Create</Button>
+			<Button type="submit" size="sm" disabled={!newName.trim()} loading={isCreating}>Create</Button
+			>
 		</div>
 		<div class="flex items-center justify-between gap-2 text-xs text-slate-400">
 			<span>

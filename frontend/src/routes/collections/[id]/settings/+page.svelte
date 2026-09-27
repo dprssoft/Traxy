@@ -16,9 +16,7 @@
 	async function handleSave(input: CollectionInput) {
 		await updateCollection(
 			collection.id,
-			collection.systemKey
-				? { description: input.description, isRanked: input.isRanked }
-				: input,
+			collection.systemKey ? { description: input.description, isRanked: input.isRanked } : input,
 		);
 		await goto(resolve(`/collections/${collection.id}`));
 	}

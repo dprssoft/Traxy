@@ -214,16 +214,13 @@
 			<!-- Icon visuals: 4-square grid / launcher icon matching wireframe square icon -->
 			<div class="w-5 h-5 flex flex-col justify-center gap-1">
 				<div class="flex items-center justify-between gap-1">
-					<span
-						class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-indigo-400 to-purple-400"
+					<span class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-indigo-400 to-purple-400"
 					></span>
 					<span class="w-2 h-2 rounded-[4px] bg-white/80"></span>
 				</div>
 				<div class="flex items-center justify-between gap-1">
 					<span class="w-2 h-2 rounded-[4px] bg-white/80"></span>
-					<span
-						class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-purple-400 to-pink-400"
-					></span>
+					<span class="w-2 h-2 rounded-[4px] bg-gradient-to-br from-purple-400 to-pink-400"></span>
 				</div>
 			</div>
 

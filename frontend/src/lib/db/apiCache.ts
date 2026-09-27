@@ -10,10 +10,10 @@ export async function getCached<T>(cacheKey: string): Promise<T | null> {
 	try {
 		const db = getDb();
 		const cutoff = new Date(Date.now() - CACHE_MAX_AGE_DAYS * 86_400_000).toISOString();
-		const result = await db.query(
-			'SELECT data FROM ApiCache WHERE cacheKey = ? AND cachedAt > ?',
-			[cacheKey, cutoff],
-		);
+		const result = await db.query('SELECT data FROM ApiCache WHERE cacheKey = ? AND cachedAt > ?', [
+			cacheKey,
+			cutoff,
+		]);
 		if (result.values && result.values.length > 0) {
 			return JSON.parse((result.values[0] as { data: string }).data) as T;
 		}
@@ -61,10 +61,11 @@ export async function getCachedBatch<T>(cacheKeys: string[]): Promise<Map<string
 export async function setCache(cacheKey: string, data: unknown): Promise<void> {
 	try {
 		const db = getDb();
-		await db.run(
-			'INSERT OR REPLACE INTO ApiCache (cacheKey, data, cachedAt) VALUES (?, ?, ?)',
-			[cacheKey, JSON.stringify(data), new Date().toISOString()],
-		);
+		await db.run('INSERT OR REPLACE INTO ApiCache (cacheKey, data, cachedAt) VALUES (?, ?, ?)', [
+			cacheKey,
+			JSON.stringify(data),
+			new Date().toISOString(),
+		]);
 	} catch {
 		// Caching failures are non-fatal
 	}

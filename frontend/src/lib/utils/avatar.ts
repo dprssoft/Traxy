@@ -3,11 +3,7 @@
  * If picUrl is a bare filename (no protocol, no slash), treat it as a BE-stored
  * upload and prefix with the API avatar route.
  */
-export function getAvatarUrl(
-	name: string,
-	picUrl?: string | null,
-	size = 64,
-): string {
+export function getAvatarUrl(name: string, picUrl?: string | null, size = 64): string {
 	if (picUrl) {
 		const isAbsolute = /^https?:\/\//i.test(picUrl);
 		const isRooted = picUrl.startsWith('/');

@@ -8,12 +8,18 @@ import { fetchJson } from '../fetchUtils';
 // MAL export status codes (my_status); 5 is unused.
 function mapMalStatus(status: string): import('$lib/db/schema').TrackingStatusType {
 	switch (status) {
-		case '1': return 'in_progress';
-		case '2': return 'completed';
-		case '3': return 'paused';
-		case '4': return 'dropped';
-		case '6': return 'planned';
-		default: return 'planned';
+		case '1':
+			return 'in_progress';
+		case '2':
+			return 'completed';
+		case '3':
+			return 'paused';
+		case '4':
+			return 'dropped';
+		case '6':
+			return 'planned';
+		default:
+			return 'planned';
 	}
 }
 
@@ -24,7 +30,7 @@ function mapMalStatus(status: string): import('$lib/db/schema').TrackingStatusTy
 export async function importFromMal(xmlText: string): Promise<{ success: number; failed: number }> {
 	const parser = new DOMParser();
 	const xml = parser.parseFromString(xmlText, 'text/xml');
-	
+
 	const animes = xml.querySelectorAll('anime');
 	let success = 0;
 	let failed = 0;
@@ -81,18 +87,27 @@ export async function importFromMal(xmlText: string): Promise<{ success: number;
 
 function mapAnilistStatus(status: string): import('$lib/db/schema').TrackingStatusType {
 	switch (status) {
-		case 'CURRENT': return 'in_progress';
-		case 'COMPLETED': return 'completed';
-		case 'PAUSED': return 'paused';
-		case 'DROPPED': return 'dropped';
-		case 'PLANNING': return 'planned';
-		case 'REPEATING': return 'in_progress';
-		default: return 'planned';
+		case 'CURRENT':
+			return 'in_progress';
+		case 'COMPLETED':
+			return 'completed';
+		case 'PAUSED':
+			return 'paused';
+		case 'DROPPED':
+			return 'dropped';
+		case 'PLANNING':
+			return 'planned';
+		case 'REPEATING':
+			return 'in_progress';
+		default:
+			return 'planned';
 	}
 }
 
 /** Import a public AniList user's anime and manga lists, fetching full details for each entry. */
-export async function importFromAnilist(username: string): Promise<{ success: number; failed: number }> {
+export async function importFromAnilist(
+	username: string,
+): Promise<{ success: number; failed: number }> {
 	let success = 0;
 	let failed = 0;
 
@@ -120,23 +135,29 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 
 			const res = await fetch('https://graphql.anilist.co', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-				body: JSON.stringify({ query, variables: { userName: username, type } })
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				body: JSON.stringify({ query, variables: { userName: username, type } }),
 			});
 
 			if (!res.ok) throw new Error(`Anilist API error: ${res.status}`);
 			const data = await res.json();
 
 			const lists = data.data?.MediaListCollection?.lists || [];
-			
+
 			for (const list of lists) {
 				for (const entry of list.entries || []) {
 					try {
 						const anilistId = entry.media?.id;
-						if (!anilistId) { failed++; continue; }
+						if (!anilistId) {
+							failed++;
+							continue;
+						}
 
 						const details = await getAnilistDetails(anilistId);
-						if (!details) { failed++; continue; }
+						if (!details) {
+							failed++;
+							continue;
+						}
 
 						const media = await upsertMedia(details);
 
@@ -150,7 +171,7 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
 
 						success++;
 						// Small delay to avoid rate limits
-						await new Promise(r => setTimeout(r, 100));
+						await new Promise((r) => setTimeout(r, 100));
 					} catch (err) {
 						console.error('Failed to import anilist entry', err);
 						failed++;
@@ -179,19 +200,36 @@ export async function importFromAnilist(username: string): Promise<{ success: nu
  * Import a TMDB account's watchlists (as planned) and rated titles (as completed, with the
  * rating as score). Needs a session id from `tmdbAuth`.
  */
-export async function importFromTmdb(apiKey: string, sessionId: string): Promise<{ success: number; failed: number }> {
+export async function importFromTmdb(
+	apiKey: string,
+	sessionId: string,
+): Promise<{ success: number; failed: number }> {
 	let success = 0;
 	let failed = 0;
 	const BASE_URL = 'https://api.themoviedb.org/3';
 
 	try {
-		const accountData = await fetchJson<{ id: number }>(`${BASE_URL}/account?api_key=${apiKey}&session_id=${sessionId}`);
+		const accountData = await fetchJson<{ id: number }>(
+			`${BASE_URL}/account?api_key=${apiKey}&session_id=${sessionId}`,
+		);
 		const accountId = accountData.id;
 
 		const endpoints = [
-			{ url: `/account/${accountId}/watchlist/movies`, type: 'film' as const, status: 'planned' as const },
-			{ url: `/account/${accountId}/watchlist/tv`, type: 'tv' as const, status: 'planned' as const },
-			{ url: `/account/${accountId}/rated/movies`, type: 'film' as const, status: 'completed' as const },
+			{
+				url: `/account/${accountId}/watchlist/movies`,
+				type: 'film' as const,
+				status: 'planned' as const,
+			},
+			{
+				url: `/account/${accountId}/watchlist/tv`,
+				type: 'tv' as const,
+				status: 'planned' as const,
+			},
+			{
+				url: `/account/${accountId}/rated/movies`,
+				type: 'film' as const,
+				status: 'completed' as const,
+			},
 			{ url: `/account/${accountId}/rated/tv`, type: 'tv' as const, status: 'completed' as const },
 		];
 
@@ -200,15 +238,20 @@ export async function importFromTmdb(apiKey: string, sessionId: string): Promise
 			let totalPages = 1;
 
 			while (page <= totalPages) {
-				const data = await fetchJson<{ page: number; total_pages: number; results: { id: number; rating?: number }[] }>(
-					`${BASE_URL}${ep.url}?api_key=${apiKey}&session_id=${sessionId}&page=${page}`
-				);
+				const data = await fetchJson<{
+					page: number;
+					total_pages: number;
+					results: { id: number; rating?: number }[];
+				}>(`${BASE_URL}${ep.url}?api_key=${apiKey}&session_id=${sessionId}&page=${page}`);
 				totalPages = data.total_pages;
 
 				for (const item of data.results) {
 					try {
 						const details = await getTmdbDetails(item.id.toString(), ep.type);
-						if (!details) { failed++; continue; }
+						if (!details) {
+							failed++;
+							continue;
+						}
 
 						const media = await upsertMedia(details);
 
@@ -220,7 +263,7 @@ export async function importFromTmdb(apiKey: string, sessionId: string): Promise
 
 						success++;
 						// Delay to respect TMDB 40 req/s limit
-						await new Promise(r => setTimeout(r, 50));
+						await new Promise((r) => setTimeout(r, 50));
 					} catch (err) {
 						console.error('Failed to import TMDB entry', err);
 						failed++;
@@ -239,7 +282,6 @@ export async function importFromTmdb(apiKey: string, sessionId: string): Promise
 				payload: { count: success },
 			});
 		}
-
 	} catch (err) {
 		console.error('Failed to import from TMDB', err);
 	}

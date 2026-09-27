@@ -40,9 +40,9 @@ interface TrackingRow {
 
 function rowToTracking(row: unknown[] | Record<string, unknown>): LocalTrackingStatus {
 	// Joined queries hand over positional slices; plain queries return named rows.
-	const r = (
-		Array.isArray(row) ? Object.fromEntries(TRACKING_COLUMNS.map((col, i) => [col, row[i]])) : row
-	) as unknown as TrackingRow;
+	const r = (Array.isArray(row)
+		? Object.fromEntries(TRACKING_COLUMNS.map((col, i) => [col, row[i]]))
+		: row) as unknown as TrackingRow;
 	return {
 		id: r.id,
 		mediaId: r.mediaId,
@@ -82,10 +82,21 @@ export async function getAllTracking(): Promise<LocalTrackingStatus[]> {
 // back into its TrackingStatus and Media halves. `t.id` is aliased to avoid colliding with
 // `m.id` (the only column name shared by both tables) when the driver returns named rows.
 const TRACKING_COLUMNS = [
-	'id', 'mediaId', 'status', 'score', 'note',
-	'currentEpisode', 'currentSeason', 'currentChapter', 'currentVolume',
-	'currentPage', 'currentIssue', 'hoursPlayed', 'completionTier',
-	'createdAt', 'updatedAt',
+	'id',
+	'mediaId',
+	'status',
+	'score',
+	'note',
+	'currentEpisode',
+	'currentSeason',
+	'currentChapter',
+	'currentVolume',
+	'currentPage',
+	'currentIssue',
+	'hoursPlayed',
+	'completionTier',
+	'createdAt',
+	'updatedAt',
 ];
 
 /**

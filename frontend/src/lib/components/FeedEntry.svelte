@@ -71,16 +71,23 @@ grouped by `utils/feed.ts`. Picks icon, message and details by category (user ac
 		// System icons
 		if (category === 'system') {
 			switch (eventType) {
-				case 'backup_created': return '💾';
-				case 'backup_failed': return '⚠️';
+				case 'backup_created':
+					return '💾';
+				case 'backup_failed':
+					return '⚠️';
 				case 'mal_import':
 				case 'anilist_import':
 				case 'tmdb_import':
-				case 'import_completed': return '📥';
-				case 'import_failed': return '❌';
-				case 'app_error': return '❌';
-				case 'app_warning': return '⚠️';
-				default: return '⚙️';
+				case 'import_completed':
+					return '📥';
+				case 'import_failed':
+					return '❌';
+				case 'app_error':
+					return '❌';
+				case 'app_warning':
+					return '⚠️';
+				default:
+					return '⚙️';
 			}
 		}
 
@@ -88,33 +95,48 @@ grouped by `utils/feed.ts`. Picks icon, message and details by category (user ac
 		if (category === 'media_update') {
 			switch (eventType) {
 				case 'media_new_episode':
-				case 'media_new_season': return '📺';
+				case 'media_new_season':
+					return '📺';
 				case 'media_new_chapter':
-				case 'media_new_volume': return '📖';
-				case 'media_dropped': return '🛑';
-				case 'media_hiatus': return '⏸️';
-				default: return '📢';
+				case 'media_new_volume':
+					return '📖';
+				case 'media_dropped':
+					return '🛑';
+				case 'media_hiatus':
+					return '⏸️';
+				default:
+					return '📢';
 			}
 		}
 
 		// User action icons
 		switch (eventType) {
-			case 'status_changed': return '🏷️';
+			case 'status_changed':
+				return '🏷️';
 			case 'score_set':
-			case 'score_changed': return '⭐';
-			case 'episode_watched': return '📺';
+			case 'score_changed':
+				return '⭐';
+			case 'episode_watched':
+				return '📺';
 			case 'chapter_read':
 			case 'pages_updated':
-			case 'issue_read': return '📖';
-			case 'hours_updated': return '🎮';
+			case 'issue_read':
+				return '📖';
+			case 'hours_updated':
+				return '🎮';
 			case 'rewatch_started':
-			case 'rewatch_completed': return '🔄';
-			case 'note_updated': return '📝';
+			case 'rewatch_completed':
+				return '🔄';
+			case 'note_updated':
+				return '📝';
 			case 'collection_created':
 			case 'added_to_collection':
-			case 'removed_from_collection': return '📋';
-			case 'profile_updated': return '👤';
-			default: return '⏱️';
+			case 'removed_from_collection':
+				return '📋';
+			case 'profile_updated':
+				return '👤';
+			default:
+				return '⏱️';
 		}
 	});
 
@@ -304,7 +326,9 @@ grouped by `utils/feed.ts`. Picks icon, message and details by category (user ac
 		// Media update details
 		if (category === 'media_update') {
 			if (payload.details) return payload.details;
-			const typeLabel = activity.mediaType ? (MEDIA_TYPE_LABELS[activity.mediaType] ?? activity.mediaType) : '';
+			const typeLabel = activity.mediaType
+				? (MEDIA_TYPE_LABELS[activity.mediaType] ?? activity.mediaType)
+				: '';
 			return typeLabel ? `${typeLabel} update` : undefined;
 		}
 
@@ -331,12 +355,7 @@ grouped by `utils/feed.ts`. Picks icon, message and details by category (user ac
 	// ---------------------------------------------------------------------------
 	// Entry Body (Inline first 20 symbols with ellipsis)
 	// ---------------------------------------------------------------------------
-	const rawBody = $derived(
-		single?.body ??
-		payload.note ??
-		payload.message ??
-		null
-	);
+	const rawBody = $derived(single?.body ?? payload.note ?? payload.message ?? null);
 
 	const bodyPreview = $derived(() => {
 		if (!rawBody) return null;
@@ -349,13 +368,17 @@ grouped by `utils/feed.ts`. Picks icon, message and details by category (user ac
 	// Entry Image (Media poster or System image)
 	// ---------------------------------------------------------------------------
 	const posterUrl = $derived(activity.mediaPosterUrl || single?.imageUrl);
-	const imageKind = $derived< 'poster' | 'system' >(
-		posterUrl ? (single?.imageKind ?? 'poster') : 'system'
+	const imageKind = $derived<'poster' | 'system'>(
+		posterUrl ? (single?.imageKind ?? 'poster') : 'system',
 	);
 
 	const systemBgClass = $derived(() => {
 		if (category === 'system') {
-			if (eventType === 'app_error' || eventType === 'backup_failed' || eventType === 'import_failed') {
+			if (
+				eventType === 'app_error' ||
+				eventType === 'backup_failed' ||
+				eventType === 'import_failed'
+			) {
 				return 'bg-red-500/15 text-red-400 border-red-500/30';
 			}
 			if (eventType === 'app_warning') {
@@ -378,102 +401,102 @@ grouped by `utils/feed.ts`. Picks icon, message and details by category (user ac
 		const media = await getMediaById(activity.mediaId);
 		if (media) quickEdit.open(media);
 	}
-	const href = $derived(
-		single?.href ?? (activity.mediaId ? `/media/${activity.mediaId}` : null)
-	);
+	const href = $derived(single?.href ?? (activity.mediaId ? `/media/${activity.mediaId}` : null));
 </script>
 
 <div class="relative">
-<svelte:element
-	this={href ? 'a' : 'div'}
-	{href}
-	class="{activity.mediaId ? 'pr-12 sm:pr-14' : ''} group relative flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-[#131627]/85 hover:bg-[#191d33] border border-white/[0.08] hover:border-indigo-500/30 transition-all duration-200 shadow-sm hover:shadow-indigo-500/5 select-none"
->
-	<div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-		<!-- 2. Entry Image: Media poster or System image -->
-		<div class="relative shrink-0">
-			{#if imageKind === 'poster' && posterUrl}
-				<SensitiveContent
-					isAdult={activity.mediaIsAdult}
-					badge={false}
-					class="w-13 h-13 sm:w-15 sm:h-15 rounded-xl"
-				>
-					<img
-						src={posterUrl}
-						alt={title}
-						class="w-13 h-13 sm:w-15 sm:h-15 object-cover rounded-xl shadow-md bg-slate-900 border border-white/[0.08] group-hover:scale-105 transition-transform"
-					/>
-				</SensitiveContent>
-			{:else}
-				<div
-					class="w-13 h-13 sm:w-15 sm:h-15 rounded-xl border flex items-center justify-center shadow-inner group-hover:brightness-110 transition-all {systemBgClass()}"
-				>
-					<span class="text-xl sm:text-2xl">{icon()}</span>
-				</div>
-			{/if}
-
-			{#if grouped && groupedItem}
-				<!-- Count badge for grouped entries -->
-				<span
-					class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none shadow-md shadow-indigo-900/50 border border-indigo-400/40"
-				>
-					×{groupedItem.count}
-				</span>
-			{/if}
-		</div>
-
-		<!-- Center: 6 (Icon), 5 (Timestamp), 3 (Message), 4 (Details) -->
-		<div class="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-			<!-- Top line: 6 (Icon) + 5 (Timestamp) -->
-			<div class="flex items-center gap-1.5">
-				<span class="text-xs leading-none opacity-80">{icon()}</span>
-				<span class="text-[11px] font-medium text-slate-400">
-					{timeString}
-				</span>
-				{#if grouped && groupedItem}
-					<span
-						class="text-[10px] font-semibold text-indigo-400 bg-indigo-500/15 border border-indigo-500/25 rounded-full px-1.5 py-0.5 leading-none"
+	<svelte:element
+		this={href ? 'a' : 'div'}
+		{href}
+		class="{activity.mediaId
+			? 'pr-12 sm:pr-14'
+			: ''} group relative flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-[#131627]/85 hover:bg-[#191d33] border border-white/[0.08] hover:border-indigo-500/30 transition-all duration-200 shadow-sm hover:shadow-indigo-500/5 select-none"
+	>
+		<div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+			<!-- 2. Entry Image: Media poster or System image -->
+			<div class="relative shrink-0">
+				{#if imageKind === 'poster' && posterUrl}
+					<SensitiveContent
+						isAdult={activity.mediaIsAdult}
+						badge={false}
+						class="w-13 h-13 sm:w-15 sm:h-15 rounded-xl"
 					>
-						{groupedItem.count} in a row
+						<img
+							src={posterUrl}
+							alt={title}
+							class="w-13 h-13 sm:w-15 sm:h-15 object-cover rounded-xl shadow-md bg-slate-900 border border-white/[0.08] group-hover:scale-105 transition-transform"
+						/>
+					</SensitiveContent>
+				{:else}
+					<div
+						class="w-13 h-13 sm:w-15 sm:h-15 rounded-xl border flex items-center justify-center shadow-inner group-hover:brightness-110 transition-all {systemBgClass()}"
+					>
+						<span class="text-xl sm:text-2xl">{icon()}</span>
+					</div>
+				{/if}
+
+				{#if grouped && groupedItem}
+					<!-- Count badge for grouped entries -->
+					<span
+						class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none shadow-md shadow-indigo-900/50 border border-indigo-400/40"
+					>
+						×{groupedItem.count}
 					</span>
 				{/if}
 			</div>
 
-			<!-- 3. Entry Message (Bold) -->
-			<h3
-				class="text-white font-bold text-sm sm:text-base leading-snug group-hover:text-indigo-300 transition-colors truncate"
-			>
-				{message()}
-			</h3>
+			<!-- Center: 6 (Icon), 5 (Timestamp), 3 (Message), 4 (Details) -->
+			<div class="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+				<!-- Top line: 6 (Icon) + 5 (Timestamp) -->
+				<div class="flex items-center gap-1.5">
+					<span class="text-xs leading-none opacity-80">{icon()}</span>
+					<span class="text-[11px] font-medium text-slate-400">
+						{timeString}
+					</span>
+					{#if grouped && groupedItem}
+						<span
+							class="text-[10px] font-semibold text-indigo-400 bg-indigo-500/15 border border-indigo-500/25 rounded-full px-1.5 py-0.5 leading-none"
+						>
+							{groupedItem.count} in a row
+						</span>
+					{/if}
+				</div>
 
-			<!-- 4. Entry Details (Small) -->
-			{#if details()}
-				<p class="text-slate-400 text-xs font-normal truncate">
-					{details()}
-				</p>
-			{/if}
-		</div>
-	</div>
+				<!-- 3. Entry Message (Bold) -->
+				<h3
+					class="text-white font-bold text-sm sm:text-base leading-snug group-hover:text-indigo-300 transition-colors truncate"
+				>
+					{message()}
+				</h3>
 
-	<!-- 1. Entry Body (Inline first 20 symbols + ellipsis) -->
-	{#if bodyPreview()}
-		<div class="shrink-0 hidden xs:flex sm:flex items-center max-w-[130px] sm:max-w-[170px] pl-2">
-			<span
-				class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-300 text-xs italic truncate font-sans group-hover:border-indigo-500/20 group-hover:bg-indigo-950/20 transition-colors"
-				title={rawBody ?? ''}
-			>
-				<span class="text-indigo-400 font-serif not-italic">“</span>
-				<span class="truncate">{bodyPreview()}</span>
-				<span class="text-indigo-400 font-serif not-italic">”</span>
-			</span>
+				<!-- 4. Entry Details (Small) -->
+				{#if details()}
+					<p class="text-slate-400 text-xs font-normal truncate">
+						{details()}
+					</p>
+				{/if}
+			</div>
 		</div>
+
+		<!-- 1. Entry Body (Inline first 20 symbols + ellipsis) -->
+		{#if bodyPreview()}
+			<div class="shrink-0 hidden xs:flex sm:flex items-center max-w-[130px] sm:max-w-[170px] pl-2">
+				<span
+					class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-300 text-xs italic truncate font-sans group-hover:border-indigo-500/20 group-hover:bg-indigo-950/20 transition-colors"
+					title={rawBody ?? ''}
+				>
+					<span class="text-indigo-400 font-serif not-italic">“</span>
+					<span class="truncate">{bodyPreview()}</span>
+					<span class="text-indigo-400 font-serif not-italic">”</span>
+				</span>
+			</div>
+		{/if}
+	</svelte:element>
+	{#if activity.mediaId}
+		<QuickEditButton
+			label="Quick edit {title}"
+			onclick={openQuickEdit}
+			class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2"
+		/>
 	{/if}
-</svelte:element>
-{#if activity.mediaId}
-	<QuickEditButton
-		label="Quick edit {title}"
-		onclick={openQuickEdit}
-		class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2"
-	/>
-{/if}
 </div>

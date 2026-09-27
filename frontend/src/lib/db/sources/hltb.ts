@@ -13,8 +13,7 @@ interface HLTBToken {
 	hpVal: string;
 }
 
-const isNative = () =>
-	typeof window !== 'undefined' && Capacitor.getPlatform() !== 'web';
+const isNative = () => typeof window !== 'undefined' && Capacitor.getPlatform() !== 'web';
 
 function getHltbBaseUrl(): string {
 	if (!isNative()) {
@@ -35,8 +34,8 @@ function getNativeOnlyHeaders(): Record<string, string> {
 	return {
 		'User-Agent':
 			'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36',
-		'Referer': 'https://howlongtobeat.com/',
-		'Origin': 'https://howlongtobeat.com',
+		Referer: 'https://howlongtobeat.com/',
+		Origin: 'https://howlongtobeat.com',
 	};
 }
 

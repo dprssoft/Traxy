@@ -36,10 +36,7 @@ Given(
 
 		// 2. Логін через UI (або встановлення cookies, якщо API повертає токен)
 		await this.page!.goto(`${this.appUrl}/auth/login`);
-		await this.page!.fill(
-			'input[name="email"], input[type="email"]',
-			`${username}@app.com`,
-		);
+		await this.page!.fill('input[name="email"], input[type="email"]', `${username}@app.com`);
 		await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
 		await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
 
@@ -56,10 +53,7 @@ Given(
 	async function (this: CustomWorld, username: string, pageName: string) {
 		// Спочатку авторизація
 		await this.page!.goto(`${this.appUrl}/auth/login`);
-		await this.page!.fill(
-			'input[name="email"], input[type="email"]',
-			username,
-		);
+		await this.page!.fill('input[name="email"], input[type="email"]', username);
 		await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
 		await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
 		await this.page!.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
@@ -102,16 +96,17 @@ When(
 		// Known Ukrainian → input name mappings
 		const nameMap: Record<string, string> = {
 			'Нікнейм або Email': 'input[name="email"], input[placeholder*="Нікнейм або Email"]',
-			'Нікнейм': 'input[name="username"]',
-			'Email': 'input[name="email"]',
+			Нікнейм: 'input[name="username"]',
+			Email: 'input[name="email"]',
 			'Електронна пошта': 'input[name="email"]',
-			'Пароль': 'input[name="password"], input[type="password"]',
+			Пароль: 'input[name="password"], input[type="password"]',
 			'Підтвердження пароля': 'input[name="confirm_password"], input[name="confirmPassword"]',
 			"Ім'я": 'input[name="firstName"], input[name="name"]',
-			'Прізвище': 'input[name="lastName"]',
+			Прізвище: 'input[name="lastName"]',
 		};
-		const selector = nameMap[fieldName]
-			?? `input[placeholder*="${fieldName}"], label:has-text("${fieldName}") + input, input[name*="${fieldName}"], textarea[placeholder*="${fieldName}"]`;
+		const selector =
+			nameMap[fieldName] ??
+			`input[placeholder*="${fieldName}"], label:has-text("${fieldName}") + input, input[name*="${fieldName}"], textarea[placeholder*="${fieldName}"]`;
 		await this.page!.fill(selector, value);
 	},
 );
@@ -244,14 +239,15 @@ Then('Кнопка змінює назву на {string}', async function (this:
 // 5. СПЕЦИФІКА: МЕДІА ТА СТРІЧКА (Epic 3, 4)
 // ==========================================
 
-
 // Складний крок з часом (Regex)
 Given(
 	'{string} написав рецензію {string} \\({int} годин тому)',
 	async function (this: CustomWorld, author: string, _title: string, _hours: number) {
 		// Precondition: review assumed created via API seed or test setup
 		try {
-			await this.api!.post('debug/ensure-user', { data: { username: author, password: 'Password123' } });
+			await this.api!.post('debug/ensure-user', {
+				data: { username: author, password: 'Password123' },
+			});
 		} catch {
 			// Author may already exist
 		}
@@ -263,7 +259,9 @@ Given(
 	async function (this: CustomWorld, author: string, _title: string, _hours: number) {
 		// Precondition: review assumed created via API seed or test setup
 		try {
-			await this.api!.post('debug/ensure-user', { data: { username: author, password: 'Password123' } });
+			await this.api!.post('debug/ensure-user', {
+				data: { username: author, password: 'Password123' },
+			});
 		} catch {
 			// Author may already exist
 		}
@@ -383,9 +381,10 @@ When('Гість вводить пароль {string}', async function (this: Cu
 
 	await this.page!.fill('input[name="password"], input[type="password"]', password);
 
-	const confirmInput = this.page!.locator('input[name="confirm_password"], input[name="confirmPassword"]');
-	if ((await confirmInput.count()) > 0)
-		await confirmInput.fill(password);
+	const confirmInput = this.page!.locator(
+		'input[name="confirm_password"], input[name="confirmPassword"]',
+	);
+	if ((await confirmInput.count()) > 0) await confirmInput.fill(password);
 });
 
 // Given form: performs full login (used as precondition in collections/other features)
@@ -399,7 +398,9 @@ Given('Користувач {string} авторизований', async function
 	if (alreadyLoggedIn) return;
 
 	// Not logged in yet — do full login flow
-	await this.api!.post('debug/ensure-user', { data: { username, password: 'Password123' } }).catch(() => {});
+	await this.api!.post('debug/ensure-user', { data: { username, password: 'Password123' } }).catch(
+		() => {},
+	);
 	await this.page!.goto(`${this.appUrl}/auth/login`);
 	await this.page!.fill('input[name="email"], input[type="email"]', username);
 	await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
@@ -408,7 +409,6 @@ Given('Користувач {string} авторизований', async function
 	await expect(this.page!.locator('header')).toContainText(username);
 });
 
-
 Then('Сесія користувача завершена', async function (this: CustomWorld) {
 	// After logout: "Вхід" link visible in header (guest state)
 	await expect(this.page!.getByRole('link', { name: 'Вхід' })).toBeVisible();
@@ -416,16 +416,19 @@ Then('Сесія користувача завершена', async function (thi
 
 // --- ПРОФІЛЬ ТА СОЦІАЛЬНІ ФУНКЦІЇ ---
 
-Given('В базі даних існує інший користувач {string}', async function (this: CustomWorld, username: string) {
-	// Ensure user exists via API
-	try {
-		await this.api!.post('debug/ensure-user', {
-			data: { username, password: 'Password123' },
-		});
-	} catch {
-		// User may already exist
-	}
-});
+Given(
+	'В базі даних існує інший користувач {string}',
+	async function (this: CustomWorld, username: string) {
+		// Ensure user exists via API
+		try {
+			await this.api!.post('debug/ensure-user', {
+				data: { username, password: 'Password123' },
+			});
+		} catch {
+			// User may already exist
+		}
+	},
+);
 
 Given(
 	'Користувач {string} знаходиться на сторінці редагування профілю',
@@ -454,9 +457,12 @@ Given(
 	},
 );
 
-Given('{string} ще не підписаний на {string}', async function (this: CustomWorld, _user1: string, _user2: string) {
-	// Precondition: default state is not following — no action needed
-});
+Given(
+	'{string} ще не підписаний на {string}',
+	async function (this: CustomWorld, _user1: string, _user2: string) {
+		// Precondition: default state is not following — no action needed
+	},
+);
 
 When(
 	'Користувач {string} натискає кнопку {string}',
@@ -466,23 +472,28 @@ When(
 	},
 );
 
-Then("Система створює зв'язок {string} в базі даних", async function (this: CustomWorld, _relation: string) {
-	// Verify no error after relationship creation + page is stable
-	await this.page!.waitForLoadState('networkidle');
-	await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
-	// Verify success feedback (toast or UI state change)
-	const successToast = this.page!.locator('.toast-success, .alert-success');
-	const hasSuccess = await successToast.count();
-	if (hasSuccess > 0) {
-		await expect(successToast.first()).toBeVisible();
-	}
-});
+Then(
+	"Система створює зв'язок {string} в базі даних",
+	async function (this: CustomWorld, _relation: string) {
+		// Verify no error after relationship creation + page is stable
+		await this.page!.waitForLoadState('networkidle');
+		await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
+		// Verify success feedback (toast or UI state change)
+		const successToast = this.page!.locator('.toast-success, .alert-success');
+		const hasSuccess = await successToast.count();
+		if (hasSuccess > 0) {
+			await expect(successToast.first()).toBeVisible();
+		}
+	},
+);
 
 Then(
 	'Лічильник {string} у {string} збільшується на {int}',
 	async function (this: CustomWorld, counterName: string, user: string, value: number) {
 		// Find counter element and verify it contains a numeric value
-		const counterEl = this.page!.locator(`[data-testid="counter-${counterName.toLowerCase()}"], :has-text("${counterName}")`).first();
+		const counterEl = this.page!.locator(
+			`[data-testid="counter-${counterName.toLowerCase()}"], :has-text("${counterName}")`,
+		).first();
 		await expect(counterEl).toBeVisible();
 		const text = await counterEl.innerText();
 		const num = parseInt(text.replace(/\D/g, ''), 10);
@@ -495,8 +506,12 @@ Given(
 	async function (this: CustomWorld, user1: string, user2: string) {
 		// Ensure both users exist and user1 follows user2 via API
 		try {
-			await this.api!.post('debug/ensure-user', { data: { username: user1, password: 'Password123' } });
-			await this.api!.post('debug/ensure-user', { data: { username: user2, password: 'Password123' } });
+			await this.api!.post('debug/ensure-user', {
+				data: { username: user1, password: 'Password123' },
+			});
+			await this.api!.post('debug/ensure-user', {
+				data: { username: user2, password: 'Password123' },
+			});
 			await this.api!.post('debug/ensure-follow', { data: { follower: user1, following: user2 } });
 		} catch {
 			// Setup may fail if debug endpoints unavailable — continue with UI flow
@@ -510,38 +525,53 @@ Given(
 	},
 );
 
-Then("Система м'яко видаляє зв'язок {string} в базі даних", async function (this: CustomWorld, _relation: string) {
-	// Verify UI reflects unfollow — no error + button state changed
-	await this.page!.waitForLoadState('networkidle');
-	await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
-	// Button should revert to "follow" state after unfollow
-	const followBtn = this.page!.getByRole('button', { name: /Підписатися|Follow/i });
-	const hasFollowBtn = await followBtn.count();
-	if (hasFollowBtn > 0) {
-		await expect(followBtn.first()).toBeVisible();
-	}
-});
+Then(
+	"Система м'яко видаляє зв'язок {string} в базі даних",
+	async function (this: CustomWorld, _relation: string) {
+		// Verify UI reflects unfollow — no error + button state changed
+		await this.page!.waitForLoadState('networkidle');
+		await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
+		// Button should revert to "follow" state after unfollow
+		const followBtn = this.page!.getByRole('button', { name: /Підписатися|Follow/i });
+		const hasFollowBtn = await followBtn.count();
+		if (hasFollowBtn > 0) {
+			await expect(followBtn.first()).toBeVisible();
+		}
+	},
+);
 
 // --- СТРІЧКА (FEED) ---
 
-Given('{string} підписаний на {string}', async function (this: CustomWorld, u1: string, u2: string) {
-	// Precondition: ensure both users exist via API
-	try {
-		await this.api!.post('debug/ensure-user', { data: { username: u1, password: 'Password123' } });
-		await this.api!.post('debug/ensure-user', { data: { username: u2, password: 'Password123' } });
-	} catch {
-		// Users may already exist
-	}
-});
+Given(
+	'{string} підписаний на {string}',
+	async function (this: CustomWorld, u1: string, u2: string) {
+		// Precondition: ensure both users exist via API
+		try {
+			await this.api!.post('debug/ensure-user', {
+				data: { username: u1, password: 'Password123' },
+			});
+			await this.api!.post('debug/ensure-user', {
+				data: { username: u2, password: 'Password123' },
+			});
+		} catch {
+			// Users may already exist
+		}
+	},
+);
 
-Given('Користувач {string} ще ні на кого не підписаний', async function (this: CustomWorld, user: string) {
-	// Ensure user exists — fresh user has no subscriptions by default
-	try {
-		await this.api!.post('debug/ensure-user', { data: { username: user, password: 'Password123' } });
-	} catch {
-		// User may already exist
-	}
-});
+Given(
+	'Користувач {string} ще ні на кого не підписаний',
+	async function (this: CustomWorld, user: string) {
+		// Ensure user exists — fresh user has no subscriptions by default
+		try {
+			await this.api!.post('debug/ensure-user', {
+				data: { username: user, password: 'Password123' },
+			});
+		} catch {
+			// User may already exist
+		}
+	},
+);
 
 When(
 	'Користувач {string} відкриває головну сторінку',
@@ -564,39 +594,55 @@ Then(
 	},
 );
 
-Given('{string} бачить {string} у своїй стрічці', async function (this: CustomWorld, _user: string, review: string) {
-	// Verify review text visible on current page
-	await expect(this.page!.getByText(review).first()).toBeVisible();
-});
+Given(
+	'{string} бачить {string} у своїй стрічці',
+	async function (this: CustomWorld, _user: string, review: string) {
+		// Verify review text visible on current page
+		await expect(this.page!.getByText(review).first()).toBeVisible();
+	},
+);
 
-Given('{string} ще не лайкнув {string}', async function (this: CustomWorld, _user: string, _review: string) {
-	// Precondition — no action needed, default state is unliked
-});
+Given(
+	'{string} ще не лайкнув {string}',
+	async function (this: CustomWorld, _user: string, _review: string) {
+		// Precondition — no action needed, default state is unliked
+	},
+);
 
-When('Він натискає {string} на {string}', async function (this: CustomWorld, action: string, item: string) {
-	// Find card containing item text, then click action button within it
-	const card = this.page!.locator(`.review-card:has-text("${item}"), .feed-item:has-text("${item}"), [data-testid="review"]:has-text("${item}")`).first();
-	const cardExists = await card.count();
-	if (cardExists > 0) {
-		await card.getByRole('button', { name: new RegExp(action, 'i') }).click();
-	} else {
-		// Fallback: click any button with action text
-		await this.page!.click(`text=${action}`);
-	}
-});
+When(
+	'Він натискає {string} на {string}',
+	async function (this: CustomWorld, action: string, item: string) {
+		// Find card containing item text, then click action button within it
+		const card = this.page!.locator(
+			`.review-card:has-text("${item}"), .feed-item:has-text("${item}"), [data-testid="review"]:has-text("${item}")`,
+		).first();
+		const cardExists = await card.count();
+		if (cardExists > 0) {
+			await card.getByRole('button', { name: new RegExp(action, 'i') }).click();
+		} else {
+			// Fallback: click any button with action text
+			await this.page!.click(`text=${action}`);
+		}
+	},
+);
 
-Then('Лічильник вподобайок {string} збільшується на {int}', async function (this: CustomWorld, item: string, count: number) {
-	// Find item card and verify like counter has numeric value >= count
-	const itemCard = this.page!.locator(`.review-card:has-text("${item}"), .feed-item:has-text("${item}"), [data-testid="review"]:has-text("${item}")`).first();
-	await expect(itemCard).toBeVisible();
-	const likeCounter = itemCard.locator('[data-testid="like-count"], .like-count');
-	const counterExists = await likeCounter.count();
-	if (counterExists > 0) {
-		const text = await likeCounter.innerText();
-		const num = parseInt(text.replace(/\D/g, ''), 10);
-		expect(num).toBeGreaterThanOrEqual(count);
-	}
-});
+Then(
+	'Лічильник вподобайок {string} збільшується на {int}',
+	async function (this: CustomWorld, item: string, count: number) {
+		// Find item card and verify like counter has numeric value >= count
+		const itemCard = this.page!.locator(
+			`.review-card:has-text("${item}"), .feed-item:has-text("${item}"), [data-testid="review"]:has-text("${item}")`,
+		).first();
+		await expect(itemCard).toBeVisible();
+		const likeCounter = itemCard.locator('[data-testid="like-count"], .like-count');
+		const counterExists = await likeCounter.count();
+		if (counterExists > 0) {
+			const text = await likeCounter.innerText();
+			const num = parseInt(text.replace(/\D/g, ''), 10);
+			expect(num).toBeGreaterThanOrEqual(count);
+		}
+	},
+);
 
 Then('Кнопка змінює стан на {string}', async function (this: CustomWorld, state: string) {
 	// Verify button with expected state text is visible
@@ -605,28 +651,37 @@ Then('Кнопка змінює стан на {string}', async function (this: C
 
 // --- МЕДІА СТОРІНКИ ---
 
-Given('Існує медіа {string} \\(Id: {int})', async function (this: CustomWorld, name: string, id: number) {
-	// Precondition: media should exist in backend — verify via API or assume seeded
-	try {
-		const res = await this.api!.get(`media/${id}`);
-		expect(res.ok() || res.status() === 200).toBeTruthy();
-	} catch {
-		// Media may be seeded or not available via this endpoint
-	}
-});
+Given(
+	'Існує медіа {string} \\(Id: {int})',
+	async function (this: CustomWorld, name: string, id: number) {
+		// Precondition: media should exist in backend — verify via API or assume seeded
+		try {
+			const res = await this.api!.get(`media/${id}`);
+			expect(res.ok() || res.status() === 200).toBeTruthy();
+		} catch {
+			// Media may be seeded or not available via this endpoint
+		}
+	},
+);
 
-Given('В системі є український переклад для {string}', async function (this: CustomWorld, _media: string) {
-	// Precondition: translation assumed seeded in test DB
-});
+Given(
+	'В системі є український переклад для {string}',
+	async function (this: CustomWorld, _media: string) {
+		// Precondition: translation assumed seeded in test DB
+	},
+);
 
-Given('Користувач {string} авторизований з мовою інтерфейсу {string}', async function (this: CustomWorld, user: string, _lang: string) {
-	// Login user then set language preference if UI supports it
-	await this.page!.goto(`${this.appUrl}/auth/login`);
-	await this.page!.fill('input[name="email"], input[type="email"]', `${user}@example.com`);
-	await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
-	await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
-	await expect(this.page!.locator('header')).toBeVisible();
-});
+Given(
+	'Користувач {string} авторизований з мовою інтерфейсу {string}',
+	async function (this: CustomWorld, user: string, _lang: string) {
+		// Login user then set language preference if UI supports it
+		await this.page!.goto(`${this.appUrl}/auth/login`);
+		await this.page!.fill('input[name="email"], input[type="email"]', `${user}@example.com`);
+		await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
+		await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
+		await expect(this.page!.locator('header')).toBeVisible();
+	},
+);
 
 When(
 	'Користувач {string} відкриває сторінку {string}',
@@ -699,7 +754,6 @@ Then(
 
 // --- SEARCH & EXTERNAL API ---
 
-
 // Розрізнення локальних та зовнішніх результатів
 // Це змусить фронтенд мати різні візуальні маркери або класи для різних джерел
 Then(
@@ -750,19 +804,21 @@ Given(
 	},
 );
 
-
 // --- BACKEND ACTION VERIFICATION ---
-Then(/^Система (?!не )(?!м'яко ).* (?:створює|оновлює|видаляє|зберігає) .*$/, async function (this: CustomWorld) {
-	// Verify backend action completed: network settled, no errors, possible success feedback
-	await this.page!.waitForLoadState('networkidle');
-	await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
-	// Check for success toast if present
-	const successToast = this.page!.locator('.toast-success, .alert-success');
-	const hasSuccess = await successToast.count();
-	if (hasSuccess > 0) {
-		await expect(successToast.first()).toBeVisible();
-	}
-});
+Then(
+	/^Система (?!не )(?!м'яко ).* (?:створює|оновлює|видаляє|зберігає) .*$/,
+	async function (this: CustomWorld) {
+		// Verify backend action completed: network settled, no errors, possible success feedback
+		await this.page!.waitForLoadState('networkidle');
+		await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
+		// Check for success toast if present
+		const successToast = this.page!.locator('.toast-success, .alert-success');
+		const hasSuccess = await successToast.count();
+		if (hasSuccess > 0) {
+			await expect(successToast.first()).toBeVisible();
+		}
+	},
+);
 
 // ==========================================
 // 11. E2E AUTH & ROUTE PROTECTION
@@ -783,8 +839,9 @@ Then(
 	'Гість перенаправлений на сторінку входу з redirectTo {string}',
 	async function (this: CustomWorld, expectedPath: string) {
 		await expect(this.page!).toHaveURL(
-			new RegExp(`/auth/login.*redirectTo=${encodeURIComponent(expectedPath).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+			new RegExp(
+				`/auth/login.*redirectTo=${encodeURIComponent(expectedPath).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+			),
 		);
 	},
 );
-

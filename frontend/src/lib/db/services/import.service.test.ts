@@ -7,7 +7,10 @@ import { importFromMal, importFromAnilist, importFromTmdb } from './import.servi
 // return a fixed canonical id regardless of the input id, to catch any regression where a
 // caller uses its own locally-generated id instead of upsertMedia's return value.
 const CANONICAL_MEDIA_ID = 'canonical-media-id';
-const mockUpsertMedia = vi.fn(async (data: Record<string, unknown>) => ({ ...data, id: CANONICAL_MEDIA_ID }));
+const mockUpsertMedia = vi.fn(async (data: Record<string, unknown>) => ({
+	...data,
+	id: CANONICAL_MEDIA_ID,
+}));
 vi.mock('./media.service', () => ({
 	upsertMedia: (data: Record<string, unknown>) => mockUpsertMedia(data),
 }));
@@ -37,7 +40,9 @@ vi.mock('../fetchUtils', () => ({
 	fetchJson: (url: string) => mockFetchJson(url),
 }));
 
-function malXml(entries: Array<{ id: string; title: string; watched?: number; score?: number; status?: string }>) {
+function malXml(
+	entries: Array<{ id: string; title: string; watched?: number; score?: number; status?: string }>,
+) {
 	const items = entries
 		.map(
 			(e) => `
@@ -65,8 +70,10 @@ describe('import.service', () => {
 	});
 
 	describe('importFromMal', () => {
-		it('links the tracking record to upsertMedia\'s returned id, not a locally-generated one', async () => {
-			const result = await importFromMal(malXml([{ id: '42', title: 'Cowboy Bebop', watched: 5, score: 9, status: '2' }]));
+		it("links the tracking record to upsertMedia's returned id, not a locally-generated one", async () => {
+			const result = await importFromMal(
+				malXml([{ id: '42', title: 'Cowboy Bebop', watched: 5, score: 9, status: '2' }]),
+			);
 
 			expect(result).toEqual({ success: 1, failed: 0 });
 			expect(mockUpsertTracking).toHaveBeenCalledTimes(1);
@@ -88,7 +95,12 @@ describe('import.service', () => {
 		});
 
 		it('logs a single mal_import activity event with the success count', async () => {
-			await importFromMal(malXml([{ id: '1', title: 'A' }, { id: '2', title: 'B' }]));
+			await importFromMal(
+				malXml([
+					{ id: '1', title: 'A' },
+					{ id: '2', title: 'B' },
+				]),
+			);
 
 			expect(mockLogActivity).toHaveBeenCalledTimes(1);
 			expect(mockLogActivity).toHaveBeenCalledWith(
@@ -107,7 +119,7 @@ describe('import.service', () => {
 			});
 		}
 
-		it('links the tracking record to upsertMedia\'s returned id, not a locally-generated one', async () => {
+		it("links the tracking record to upsertMedia's returned id, not a locally-generated one", async () => {
 			mockAnilistFetch([{ status: 'CURRENT', score: 8, progress: 3, media: { id: 555 } }]);
 			mockGetAnilistDetails.mockResolvedValue({
 				source: 'anilist',
@@ -124,7 +136,7 @@ describe('import.service', () => {
 			);
 		});
 
-		it('asks AniList for scores on the app\'s 10-point scale', async () => {
+		it("asks AniList for scores on the app's 10-point scale", async () => {
 			mockAnilistFetch([]);
 
 			await importFromAnilist('someuser');
@@ -145,7 +157,7 @@ describe('import.service', () => {
 	});
 
 	describe('importFromTmdb', () => {
-		it('links the tracking record to upsertMedia\'s returned id, not a locally-generated one', async () => {
+		it("links the tracking record to upsertMedia's returned id, not a locally-generated one", async () => {
 			mockFetchJson.mockImplementation(async (url: string) => {
 				if (url.includes('/account?')) return { id: 999 };
 				if (url.includes('/watchlist/movies')) {

@@ -1,155 +1,177 @@
-export type MediaType = 'film' | 'tv' | 'game' | 'anime' | 'manga' | 'manhwa' | 'manhua' | 'comic' | 'book';
-export type MediaSource = 'tmdb' | 'igdb' | 'anilist' | 'comicvine' | 'openlibrary' | 'flashpoint' | 'manual';
+export type MediaType =
+	| 'film'
+	| 'tv'
+	| 'game'
+	| 'anime'
+	| 'manga'
+	| 'manhwa'
+	| 'manhua'
+	| 'comic'
+	| 'book';
+export type MediaSource =
+	| 'tmdb'
+	| 'igdb'
+	| 'anilist'
+	| 'comicvine'
+	| 'openlibrary'
+	| 'flashpoint'
+	| 'manual';
 /** `watched_letsplay` is game-only: the story was seen through someone else's playthrough. */
-export type TrackingStatusType = 'planned' | 'in_progress' | 'completed' | 'dropped' | 'paused' | 'watched_letsplay';
+export type TrackingStatusType =
+	| 'planned'
+	| 'in_progress'
+	| 'completed'
+	| 'dropped'
+	| 'paused'
+	| 'watched_letsplay';
 /** How far a finished game was taken, matching HowLongToBeat's time-to-beat buckets. */
 export type CompletionTier = 'main_story' | 'main_plus_sides' | 'completionist';
 
 export type ActivityEventType =
-  // user_action
-  | 'status_changed'
-  | 'episode_watched'
-  | 'chapter_read'
-  | 'issue_read'
-  | 'pages_updated'
-  | 'hours_updated'
-  | 'score_set'
-  | 'score_changed'
-  | 'note_updated'
-  | 'rewatch_started'
-  | 'rewatch_completed'
-  | 'added_to_collection'
-  | 'removed_from_collection'
-  | 'collection_created'
-  | 'profile_updated'
-  // system
-  | 'mal_import'
-  | 'anilist_import'
-  | 'tmdb_import'
-  | 'import_completed'
-  | 'import_failed'
-  | 'backup_created'
-  | 'backup_failed'
-  | 'app_error'
-  | 'app_warning'
-  // media_update
-  | 'media_new_episode'
-  | 'media_new_season'
-  | 'media_new_chapter'
-  | 'media_new_volume'
-  | 'media_dropped'
-  | 'media_hiatus';
+	// user_action
+	| 'status_changed'
+	| 'episode_watched'
+	| 'chapter_read'
+	| 'issue_read'
+	| 'pages_updated'
+	| 'hours_updated'
+	| 'score_set'
+	| 'score_changed'
+	| 'note_updated'
+	| 'rewatch_started'
+	| 'rewatch_completed'
+	| 'added_to_collection'
+	| 'removed_from_collection'
+	| 'collection_created'
+	| 'profile_updated'
+	// system
+	| 'mal_import'
+	| 'anilist_import'
+	| 'tmdb_import'
+	| 'import_completed'
+	| 'import_failed'
+	| 'backup_created'
+	| 'backup_failed'
+	| 'app_error'
+	| 'app_warning'
+	// media_update
+	| 'media_new_episode'
+	| 'media_new_season'
+	| 'media_new_chapter'
+	| 'media_new_volume'
+	| 'media_dropped'
+	| 'media_hiatus';
 
 export interface MediaSeasonData {
-  seasonNumber: number;
-  episodeCount?: number;
-  linkedMediaId?: string;
+	seasonNumber: number;
+	episodeCount?: number;
+	linkedMediaId?: string;
 }
 
 export interface Media {
-  id: string; // UUID
-  source: MediaSource;
-  externalId: string;
-  type: MediaType;
-  title: string;
-  year?: number;
-  posterUrl?: string;
-  description?: string;
-  originalTitle?: string;
-  serializationYears?: string;
-  author?: string;
-  country?: string;
-  genres?: string; // JSON array
-  releaseStatus?: string;
-  totalEpisodes?: number; // TV/Anime specific
-  totalSeasons?: number; // TV/Anime specific
-  totalVolumes?: number; // Manga/Comic specific
-  totalChapters?: number; // Manga/Comic specific
-  platforms?: string; // JSON array (Game specific)
-  totalPages?: number; // Book specific
-  seasonData?: string; // JSON array of MediaSeasonData
-  timeToBeat?: string; // JSON string
-  runtimeMinutes?: number; // Film / anime-movie runtime in minutes
-  isAdult?: number; // 1 = adult (18+) content flagged by the provider
-  wikiMeta?: string; // JSON WikiMeta: which fields Wikidata filled, and from which entity
+	id: string; // UUID
+	source: MediaSource;
+	externalId: string;
+	type: MediaType;
+	title: string;
+	year?: number;
+	posterUrl?: string;
+	description?: string;
+	originalTitle?: string;
+	serializationYears?: string;
+	author?: string;
+	country?: string;
+	genres?: string; // JSON array
+	releaseStatus?: string;
+	totalEpisodes?: number; // TV/Anime specific
+	totalSeasons?: number; // TV/Anime specific
+	totalVolumes?: number; // Manga/Comic specific
+	totalChapters?: number; // Manga/Comic specific
+	platforms?: string; // JSON array (Game specific)
+	totalPages?: number; // Book specific
+	seasonData?: string; // JSON array of MediaSeasonData
+	timeToBeat?: string; // JSON string
+	runtimeMinutes?: number; // Film / anime-movie runtime in minutes
+	isAdult?: number; // 1 = adult (18+) content flagged by the provider
+	wikiMeta?: string; // JSON WikiMeta: which fields Wikidata filled, and from which entity
 }
 
 export interface TrackingStatus {
-  id: string; // UUID
-  mediaId: string;
-  status: TrackingStatusType;
-  score?: number; // 1-10
-  note?: string;
-  currentEpisode?: number;
-  currentSeason?: number;
-  currentChapter?: number;
-  currentVolume?: number;
-  currentPage?: number;
-  currentIssue?: number;
-  hoursPlayed?: number;
-  completionTier?: CompletionTier;
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
+	id: string; // UUID
+	mediaId: string;
+	status: TrackingStatusType;
+	score?: number; // 1-10
+	note?: string;
+	currentEpisode?: number;
+	currentSeason?: number;
+	currentChapter?: number;
+	currentVolume?: number;
+	currentPage?: number;
+	currentIssue?: number;
+	hoursPlayed?: number;
+	completionTier?: CompletionTier;
+	createdAt: string; // ISO string
+	updatedAt: string; // ISO string
 }
 
 export interface WatchCycle {
-  id: string; // UUID
-  mediaId: string;
-  cycleNumber: number; // 1 = first watch, 2 = rewatch #1...
-  startedAt?: string; // ISO date
-  finishedAt?: string; // ISO date
+	id: string; // UUID
+	mediaId: string;
+	cycleNumber: number; // 1 = first watch, 2 = rewatch #1...
+	startedAt?: string; // ISO date
+	finishedAt?: string; // ISO date
 }
 
 /** Built-in collections the app creates on demand; they can't be renamed or deleted. */
 export type SystemCollectionKey = 'favorites' | 'wishlist';
 
 export interface Collection {
-  id: string; // UUID
-  name: string;
-  description?: string;
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
-  mediaType: MediaType | null; // null = shared across all media types
-  systemKey: SystemCollectionKey | null;
-  isRanked: boolean; // items shown as a numbered "Top N" list in manual order
-  sortOrder: number;
+	id: string; // UUID
+	name: string;
+	description?: string;
+	createdAt: string; // ISO string
+	updatedAt: string; // ISO string
+	mediaType: MediaType | null; // null = shared across all media types
+	systemKey: SystemCollectionKey | null;
+	isRanked: boolean; // items shown as a numbered "Top N" list in manual order
+	sortOrder: number;
 }
 
 export interface CollectionItem {
-  id: string; // UUID
-  collectionId: string;
-  mediaId: string;
-  sortOrder: number;
-  addedAt: string; // ISO string
-  note?: string;
+	id: string; // UUID
+	collectionId: string;
+	mediaId: string;
+	sortOrder: number;
+	addedAt: string; // ISO string
+	note?: string;
 }
 
 export interface ActivityLog {
-  id: string; // UUID
-  mediaId?: string;
-  mediaTitle?: string;
-  mediaPosterUrl?: string;
-  mediaType?: MediaType;
-  eventType: ActivityEventType;
-  payload: string; // JSON string
-  occurredAt: string; // ISO string
+	id: string; // UUID
+	mediaId?: string;
+	mediaTitle?: string;
+	mediaPosterUrl?: string;
+	mediaType?: MediaType;
+	eventType: ActivityEventType;
+	payload: string; // JSON string
+	occurredAt: string; // ISO string
 }
 
 export interface Goal {
-  id: string; // UUID
-  mediaType: MediaType | 'any';
-  targetCount: number;
-  year: number;
-  createdAt: string; // ISO string
+	id: string; // UUID
+	mediaType: MediaType | 'any';
+	targetCount: number;
+	year: number;
+	createdAt: string; // ISO string
 }
 
 export interface ApiCache {
-  cacheKey: string;
-  data: string; // JSON string
-  cachedAt: string; // ISO string
+	cacheKey: string;
+	data: string; // JSON string
+	cachedAt: string; // ISO string
 }
 
 export interface AppSettings {
-  key: string;
-  value: string;
+	key: string;
+	value: string;
 }

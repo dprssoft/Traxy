@@ -16,7 +16,9 @@
 </script>
 
 <div
-	class="bg-[#121422]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-xl {paddings[padding]} {extraClass}"
+	class="bg-[#121422]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-xl {paddings[
+		padding
+	]} {extraClass}"
 >
 	{@render children()}
 </div>

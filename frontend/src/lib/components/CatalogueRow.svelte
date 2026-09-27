@@ -72,7 +72,13 @@
 					class="w-7 h-7 rounded-xl bg-[#181b2e] hover:bg-[#20243d] border border-white/[0.08] flex items-center justify-center text-slate-400 hover:text-white transition-all cursor-pointer"
 					aria-label="Scroll left"
 				>
-					<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<svg
+						class="w-3.5 h-3.5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
 					</svg>
 				</button>
@@ -82,7 +88,13 @@
 					class="w-7 h-7 rounded-xl bg-[#181b2e] hover:bg-[#20243d] border border-white/[0.08] flex items-center justify-center text-slate-400 hover:text-white transition-all cursor-pointer"
 					aria-label="Scroll right"
 				>
-					<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<svg
+						class="w-3.5 h-3.5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
 					</svg>
 				</button>
@@ -101,8 +113,12 @@
 		</div>
 	{:else if items.length === 0}
 		{#if error}
-			<div class="px-4 py-8 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center mx-1">
-				<p class="text-xs text-amber-500/80">⚠️ Couldn't reach the server. Pull down or click refresh to try again.</p>
+			<div
+				class="px-4 py-8 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center mx-1"
+			>
+				<p class="text-xs text-amber-500/80">
+					⚠️ Couldn't reach the server. Pull down or click refresh to try again.
+				</p>
 			</div>
 		{:else}
 			<div

@@ -12,6 +12,6 @@ export const load: PageLoad = async ({ parent }) => {
 	return {
 		year: currentYear,
 		heatmapDays,
-		trackingList
+		trackingList,
 	};
 };

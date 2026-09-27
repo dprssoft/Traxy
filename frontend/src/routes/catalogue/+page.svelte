@@ -43,9 +43,14 @@
 
 	const activeTypeOption = $derived.by(() => {
 		if (selectedType !== 'all') {
-			return specificTypeOptions.find((opt) => opt.value === selectedType) ?? specificTypeOptions[0];
+			return (
+				specificTypeOptions.find((opt) => opt.value === selectedType) ?? specificTypeOptions[0]
+			);
 		}
-		return specificTypeOptions.find((opt) => opt.value === dropdownLastSelected) ?? specificTypeOptions[0];
+		return (
+			specificTypeOptions.find((opt) => opt.value === dropdownLastSelected) ??
+			specificTypeOptions[0]
+		);
 	});
 
 	// ── Category row data ────────────────────────────────────────────────────
@@ -91,7 +96,7 @@
 		if (touchStartY === 0) return;
 		touchCurrentY = e.touches[0].clientY;
 		const pullDist = touchCurrentY - touchStartY;
-		
+
 		if (pullDist > 0) {
 			isPulling = pullDist > PULL_THRESHOLD;
 		}
@@ -142,11 +147,14 @@
 		window.addEventListener('pointerdown', handlePointerDown);
 		window.addEventListener('keydown', handleKeyDown);
 
-		refreshInterval = setInterval(() => {
-			if (document.visibilityState === 'visible') {
-				loadAllCategories(false, true); // silent refresh
-			}
-		}, 15 * 60 * 1000);
+		refreshInterval = setInterval(
+			() => {
+				if (document.visibilityState === 'visible') {
+					loadAllCategories(false, true); // silent refresh
+				}
+			},
+			15 * 60 * 1000,
+		);
 
 		return () => {
 			window.removeEventListener('pointerdown', handlePointerDown);
@@ -298,21 +306,35 @@
 </svelte:head>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div 
+<div
 	class="space-y-6 max-w-6xl mx-auto pb-10 min-h-screen"
 	ontouchstart={handleTouchStart}
 	ontouchmove={handleTouchMove}
 	ontouchend={handleTouchEnd}
 >
 	<!-- Pull to refresh indicator -->
-	<div 
-		class="flex justify-center transition-all duration-300 overflow-hidden" 
-		style="height: {isPulling ? '40px' : '0px'}; opacity: {isPulling ? '1' : '0'}; margin-top: {isPulling ? '16px' : '0'};"
+	<div
+		class="flex justify-center transition-all duration-300 overflow-hidden"
+		style="height: {isPulling ? '40px' : '0px'}; opacity: {isPulling
+			? '1'
+			: '0'}; margin-top: {isPulling ? '16px' : '0'};"
 	>
-		<div class="bg-[#181c32] rounded-full h-10 shadow-lg shadow-black/50 border border-white/[0.08] flex items-center gap-2 px-4 text-xs font-medium text-slate-300">
-			<svg class="w-4 h-4 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-				<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
-				<path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" class="opacity-75"></path>
+		<div
+			class="bg-[#181c32] rounded-full h-10 shadow-lg shadow-black/50 border border-white/[0.08] flex items-center gap-2 px-4 text-xs font-medium text-slate-300"
+		>
+			<svg
+				class="w-4 h-4 animate-spin text-indigo-400"
+				viewBox="0 0 24 24"
+				fill="none"
+				xmlns="http://www.w3.org/2000/svg"
+			>
+				<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"
+				></circle>
+				<path
+					d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					fill="currentColor"
+					class="opacity-75"
+				></path>
 			</svg>
 			Refreshing...
 		</div>
@@ -349,11 +371,17 @@
 					<span>{activeTypeOption.label}</span>
 				</span>
 				<svg
-					class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 {dropdownOpen ? 'rotate-180 text-white' : ''}"
+					class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 {dropdownOpen
+						? 'rotate-180 text-white'
+						: ''}"
 					fill="currentColor"
 					viewBox="0 0 20 20"
 				>
-					<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+					<path
+						fill-rule="evenodd"
+						d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 			</button>
 
@@ -379,7 +407,13 @@
 								<span>{opt.label}</span>
 							</span>
 							{#if selectedType === opt.value}
-								<svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+								<svg
+									class="w-4 h-4 text-indigo-400"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2.5"
+								>
 									<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 								</svg>
 							{/if}
@@ -399,8 +433,18 @@
 			class="h-10 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer shrink-0 border bg-[#131627] text-slate-400 hover:text-white hover:bg-[#1a1e35] border-white/[0.08] hover:border-indigo-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 			title="Refresh"
 		>
-			<svg class="w-4 h-4 {isRefreshing ? 'animate-spin' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+			<svg
+				class="w-4 h-4 {isRefreshing ? 'animate-spin' : ''}"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+				/>
 			</svg>
 			<span class="hidden sm:inline">Refresh</span>
 		</button>
@@ -419,8 +463,8 @@
 				emptyMessage={cat.id === 'visited'
 					? 'No recently visited media yet'
 					: selectedType === 'all'
-					? 'No results available for this category'
-					: `No ${cat.label.toLowerCase()} available for this type`}
+						? 'No results available for this category'
+						: `No ${cat.label.toLowerCase()} available for this type`}
 			/>
 		{/each}
 	</div>
@@ -431,7 +475,13 @@
 			href={resolve('/search')}
 			class="inline-flex items-center gap-2 px-5 py-2 text-xs sm:text-sm font-medium text-slate-400 hover:text-white bg-[#121422]/60 hover:bg-[#181c32] border border-white/[0.08] hover:border-indigo-500/30 rounded-xl transition-all"
 		>
-			<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+			<svg
+				class="w-3.5 h-3.5"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				stroke-width="2"
+			>
 				<circle cx="11" cy="11" r="8"></circle>
 				<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 			</svg>

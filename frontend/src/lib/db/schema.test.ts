@@ -15,20 +15,30 @@ describe('collection schema migration', () => {
 		await seedMedia(db, 'g1', 'game');
 		await seedMedia(db, 'g2', 'game');
 		await seedMedia(db, 'f1', 'film');
-		await db.run("INSERT INTO Collection (id, name, createdAt) VALUES ('legacy', 'Favorites', 'x')");
+		await db.run(
+			"INSERT INTO Collection (id, name, createdAt) VALUES ('legacy', 'Favorites', 'x')",
+		);
 		// Legacy rows: one without an id, one duplicate
 		await db.run(
 			"INSERT INTO CollectionItem (collectionId, mediaId, addedAt) VALUES ('legacy', 'g1', 'a')",
 		);
-		await db.run("INSERT INTO CollectionItem (id, collectionId, mediaId, addedAt) VALUES ('i2', 'legacy', 'g2', 'b')");
-		await db.run("INSERT INTO CollectionItem (id, collectionId, mediaId, addedAt) VALUES ('i3', 'legacy', 'f1', 'c')");
+		await db.run(
+			"INSERT INTO CollectionItem (id, collectionId, mediaId, addedAt) VALUES ('i2', 'legacy', 'g2', 'b')",
+		);
+		await db.run(
+			"INSERT INTO CollectionItem (id, collectionId, mediaId, addedAt) VALUES ('i3', 'legacy', 'f1', 'c')",
+		);
 
 		await db.execute('DROP INDEX idx_collection_item_unique');
-		await db.run("INSERT INTO CollectionItem (id, collectionId, mediaId, addedAt) VALUES ('i4', 'legacy', 'f1', 'd')");
+		await db.run(
+			"INSERT INTO CollectionItem (id, collectionId, mediaId, addedAt) VALUES ('i4', 'legacy', 'f1', 'd')",
+		);
 
 		await applySchema(db);
 
-		const collections = (await db.query('SELECT name, mediaType, systemKey FROM Collection ORDER BY name')).values;
+		const collections = (
+			await db.query('SELECT name, mediaType, systemKey FROM Collection ORDER BY name')
+		).values;
 		expect(collections).toEqual([
 			{ name: 'Favorite Films', mediaType: 'film', systemKey: 'favorites' },
 			{ name: 'Favorite Games', mediaType: 'game', systemKey: 'favorites' },

@@ -73,8 +73,10 @@
 	<title>Traxy · Personal Media Tracker</title>
 </svelte:head>
 
-<div class="min-h-screen flex text-[var(--color-text-main)] bg-[var(--color-bkg-main)] selection:bg-indigo-500/30 selection:text-indigo-200 transition-all duration-300
-	{isMirrored ? 'flex-row-reverse' : 'flex-row'}">
+<div
+	class="min-h-screen flex text-[var(--color-text-main)] bg-[var(--color-bkg-main)] selection:bg-indigo-500/30 selection:text-indigo-200 transition-all duration-300
+	{isMirrored ? 'flex-row-reverse' : 'flex-row'}"
+>
 	<!-- Desktop Sidebar (Moves together with top-left button) -->
 	<Sidebar />
 
@@ -86,7 +88,11 @@
 		{/if}
 
 		<!-- Page Content -->
-		<main class="flex-1 w-full max-w-6xl mx-auto {isMediaPage ? 'p-0 sm:px-4 sm:py-6' : 'px-4 sm:px-8 py-6 sm:py-8'}">
+		<main
+			class="flex-1 w-full max-w-6xl mx-auto {isMediaPage
+				? 'p-0 sm:px-4 sm:py-6'
+				: 'px-4 sm:px-8 py-6 sm:py-8'}"
+		>
 			{@render children()}
 		</main>
 	</div>

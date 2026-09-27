@@ -48,12 +48,9 @@ Given(
 );
 
 // "В системі існує N зареєстрованих користувачів"
-Given(
-	/^В системі існує \d+ зареєстрованих користувачів$/,
-	async function (this: CustomWorld) {
-		// Precondition — data assumed seeded via backend
-	},
-);
+Given(/^В системі існує \d+ зареєстрованих користувачів$/, async function (this: CustomWorld) {
+	// Precondition — data assumed seeded via backend
+});
 
 When(
 	'Гість намагається зареєструватися з email {string}',
@@ -123,11 +120,15 @@ When(/^Користувач натискає кнопку "Вийти|Вихід
 	const avatarGroup = this.page!.locator('header .group').first();
 	if ((await avatarGroup.count()) > 0) await avatarGroup.hover();
 	// Button is inside a CSS-hover dropdown (visibility:hidden by default); force click bypasses visibility check
-	const logoutBtn = this.page!.locator('header button:has-text("Вихід"), header button:has-text("Вийти")').first();
+	const logoutBtn = this.page!.locator(
+		'header button:has-text("Вихід"), header button:has-text("Вийти")',
+	).first();
 	if ((await logoutBtn.count()) > 0) {
 		await logoutBtn.click({ force: true });
 	} else {
-		await this.page!.locator('button:has-text("Вихід"), button:has-text("Вийти")').first().click({ force: true });
+		await this.page!.locator('button:has-text("Вихід"), button:has-text("Вийти")')
+			.first()
+			.click({ force: true });
 	}
 	await this.page!.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
 });
@@ -152,17 +153,14 @@ When(
 	/^"([^"]*)"(?:\s+\([^)]*\))?\s+переходить на профіль "([^"]*)" \(вкладка "([^"]*)"\)$/,
 	async function (this: CustomWorld, actorUser: string, profileUrl: string, tabName: string) {
 		await this.page!.goto(`${this.appUrl}/auth/login`);
-		await this.page!.fill(
-			'input[name="email"], input[type="email"]',
-			actorUser,
-		);
+		await this.page!.fill('input[name="email"], input[type="email"]', actorUser);
 		await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
 		await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
 		await this.page!.waitForLoadState('networkidle');
 		await this.page!.goto(`${this.appUrl}${profileUrl}`);
-		const tab = this.page!
-			.getByRole('tab', { name: tabName })
-			.or(this.page!.getByText(tabName, { exact: true }));
+		const tab = this.page!.getByRole('tab', { name: tabName }).or(
+			this.page!.getByText(tabName, { exact: true }),
+		);
 		if ((await tab.count()) > 0) await tab.first().click();
 	},
 );
@@ -205,9 +203,9 @@ Given(
 When(
 	/^"([^"]*)" натискає на вкладку "([^"]*)"$/,
 	async function (this: CustomWorld, _user: string, tabName: string) {
-		const tab = this.page!
-			.getByRole('tab', { name: tabName })
-			.or(this.page!.getByText(tabName, { exact: true }));
+		const tab = this.page!.getByRole('tab', { name: tabName }).or(
+			this.page!.getByText(tabName, { exact: true }),
+		);
 		await tab.first().click();
 	},
 );
@@ -216,9 +214,9 @@ When(
 Then(
 	/^Він бачить "([^"]*)" \(від "([^"]*)"\)$/,
 	async function (this: CustomWorld, reviewTitle: string, _author: string) {
-		const card = this.page!
-			.locator(`.review-card, .feed-item, [data-testid="review"], [data-testid="feed-item"]`)
-			.filter({ hasText: reviewTitle });
+		const card = this.page!.locator(
+			`.review-card, .feed-item, [data-testid="review"], [data-testid="feed-item"]`,
+		).filter({ hasText: reviewTitle });
 		if ((await card.count()) > 0) {
 			await expect(card.first()).toBeVisible();
 		} else {
@@ -231,9 +229,9 @@ Then(
 Then(
 	/^Він НЕ бачить "([^"]*)" \(від "([^"]*)"\)$/,
 	async function (this: CustomWorld, reviewTitle: string, _author: string) {
-		const card = this.page!
-			.locator(`.review-card, .feed-item, [data-testid="review"]`)
-			.filter({ hasText: reviewTitle });
+		const card = this.page!.locator(`.review-card, .feed-item, [data-testid="review"]`).filter({
+			hasText: reviewTitle,
+		});
 		await expect(card).toHaveCount(0);
 	},
 );
@@ -277,14 +275,17 @@ Then('Він НЕ бачить жодної рецензії', async function (t
 When(
 	'Він натискає "Вподобати" (Like) на {string} у стрічці',
 	async function (this: CustomWorld, reviewTitle: string) {
-		const card = this.page!
-			.locator(`.review-card, .feed-item, [data-testid="review"], [data-testid="feed-item"]`)
+		const card = this.page!.locator(
+			`.review-card, .feed-item, [data-testid="review"], [data-testid="feed-item"]`,
+		)
 			.filter({ hasText: reviewTitle })
 			.first();
 		if ((await card.count()) > 0) {
 			await card.getByRole('button', { name: /Вподобати|Like/i }).click();
 		} else {
-			await this.page!.getByRole('button', { name: /Вподобати|Like/i }).first().click();
+			await this.page!.getByRole('button', { name: /Вподобати|Like/i })
+				.first()
+				.click();
 		}
 	},
 );
@@ -292,8 +293,9 @@ When(
 Then(
 	'Лічильник вподобайок {string} оновлюється на {string} (у стрічці)',
 	async function (this: CustomWorld, reviewTitle: string, expectedCount: string) {
-		const card = this.page!
-			.locator(`.review-card, .feed-item, [data-testid="review"], [data-testid="feed-item"]`)
+		const card = this.page!.locator(
+			`.review-card, .feed-item, [data-testid="review"], [data-testid="feed-item"]`,
+		)
 			.filter({ hasText: reviewTitle })
 			.first();
 		const counter = card.locator('[data-testid="like-count"], .like-count');
@@ -313,9 +315,9 @@ Then(
 When(
 	'Він дивиться на блок коментарів під {string}',
 	async function (this: CustomWorld, reviewTitle: string) {
-		const section = this.page!
-			.locator(`.review-card:has-text("${reviewTitle}") .comments, [data-testid="comments"]`)
-			.first();
+		const section = this.page!.locator(
+			`.review-card:has-text("${reviewTitle}") .comments, [data-testid="comments"]`,
+		).first();
 		if ((await section.count()) > 0) await section.scrollIntoViewIfNeeded();
 	},
 );
@@ -330,8 +332,7 @@ Then(
 Then(
 	'Він бачить лічильник {string} вподобайок біля {string}',
 	async function (this: CustomWorld, count: string, itemTitle: string) {
-		const container = this.page!
-			.locator(`[data-testid="comment"], .comment, .review-card`)
+		const container = this.page!.locator(`[data-testid="comment"], .comment, .review-card`)
 			.filter({ hasText: itemTitle })
 			.first();
 		if ((await container.count()) > 0) {
@@ -352,14 +353,11 @@ Then(
 	},
 );
 
-Then(
-	'Він бачить посилання {string}',
-	async function (this: CustomWorld, linkText: string) {
-		await expect(
-			this.page!.getByRole('link', { name: new RegExp(linkText, 'i') }).first(),
-		).toBeVisible();
-	},
-);
+Then('Він бачить посилання {string}', async function (this: CustomWorld, linkText: string) {
+	await expect(
+		this.page!.getByRole('link', { name: new RegExp(linkText, 'i') }).first(),
+	).toBeVisible();
+});
 
 // ==========================================
 // EPIC 4: МЕДІА — ВІДСУТНІ КРОКИ
@@ -395,7 +393,6 @@ Given(
 		// Precondition — review assumed seeded via backend
 	},
 );
-
 
 Given(
 	/^"([^"]*)" вже лайкнув "([^"]*)"$/,
@@ -437,10 +434,7 @@ Given(
 	/^"([^"]*)" авторизований і знаходиться на "([^"]*)"(?:\s+\([^)]*\))?$/,
 	async function (this: CustomWorld, username: string, url: string) {
 		await this.page!.goto(`${this.appUrl}/auth/login`);
-		await this.page!.fill(
-			'input[name="email"], input[type="email"]',
-			username,
-		);
+		await this.page!.fill('input[name="email"], input[type="email"]', username);
 		await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
 		await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
 		await this.page!.waitForLoadState('networkidle');
@@ -452,10 +446,7 @@ Given(
 	/^Користувач "([^"]*)" авторизований і знаходиться на "([^"]*)" \([^)]*\)$/,
 	async function (this: CustomWorld, username: string, url: string) {
 		await this.page!.goto(`${this.appUrl}/auth/login`);
-		await this.page!.fill(
-			'input[name="email"], input[type="email"]',
-			username,
-		);
+		await this.page!.fill('input[name="email"], input[type="email"]', username);
 		await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
 		await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
 		await this.page!.waitForLoadState('networkidle');
@@ -485,17 +476,14 @@ When(
 	},
 );
 
-Then(
-	/^Він бачить рейтинги IMdB \/ Rotten Tomatoes$/,
-	async function (this: CustomWorld) {
-		const ratings = this.page!.locator(
-			'[data-testid="imdb-rating"], [data-testid="rt-rating"], .rating-imdb, .rating-rt',
-		);
-		if ((await ratings.count()) > 0) {
-			await expect(ratings.first()).toBeVisible();
-		}
-	},
-);
+Then(/^Він бачить рейтинги IMdB \/ Rotten Tomatoes$/, async function (this: CustomWorld) {
+	const ratings = this.page!.locator(
+		'[data-testid="imdb-rating"], [data-testid="rt-rating"], .rating-imdb, .rating-rt',
+	);
+	if ((await ratings.count()) > 0) {
+		await expect(ratings.first()).toBeVisible();
+	}
+});
 
 Then(
 	'Він бачить список рецензій, включаючи {string}',
@@ -509,9 +497,7 @@ Then(
 );
 
 Then('Він бачить свою вже існуючу рецензію', async function (this: CustomWorld) {
-	const myReview = this.page!.locator(
-		'[data-testid="my-review"], .my-review, .own-review',
-	);
+	const myReview = this.page!.locator('[data-testid="my-review"], .my-review, .own-review');
 	if ((await myReview.count()) > 0) {
 		await expect(myReview.first()).toBeVisible();
 	} else {
@@ -528,25 +514,20 @@ Then('Він НЕ бачить форми для створення нової �
 	if ((await form.count()) > 0) await expect(form.first()).not.toBeVisible();
 });
 
-When(
-	'Він ставить оцінку {string}',
-	async function (this: CustomWorld, ratingText: string) {
-		const stars = ratingText.match(/\d+/)?.[0] || '5';
-		const starBtn = this.page!.locator(
-			`.stars button[data-value="${stars}"], .rating-star:nth-child(${stars}), [data-testid="star-${stars}"]`,
-		);
-		if ((await starBtn.count()) > 0) await starBtn.click();
-	},
-);
+When('Він ставить оцінку {string}', async function (this: CustomWorld, ratingText: string) {
+	const stars = ratingText.match(/\d+/)?.[0] || '5';
+	const starBtn = this.page!.locator(
+		`.stars button[data-value="${stars}"], .rating-star:nth-child(${stars}), [data-testid="star-${stars}"]`,
+	);
+	if ((await starBtn.count()) > 0) await starBtn.click();
+});
 
 When(
 	'Він вводить в {string} редактор текст: {string}',
 	async function (this: CustomWorld, _editorType: string, text: string) {
-		const editor = this.page!
-			.locator(
-				'.ql-editor, .ProseMirror, .tiptap, [contenteditable="true"], textarea[name="content"], textarea[name="review"], textarea[name="body"]',
-			)
-			.first();
+		const editor = this.page!.locator(
+			'.ql-editor, .ProseMirror, .tiptap, [contenteditable="true"], textarea[name="content"], textarea[name="review"], textarea[name="body"]',
+		).first();
 		if ((await editor.count()) > 0) {
 			await editor.click();
 			await editor.fill(text);
@@ -562,27 +543,27 @@ Then(
 	},
 );
 
-Then(
-	"Його рецензія з'являється у списку рецензій на сторінці",
-	async function (this: CustomWorld) {
-		await this.page!.waitForLoadState('networkidle');
-		await expect(
-			this.page!.locator('.reviews-list, [data-testid="reviews-list"], [data-testid="review"]').first(),
-		).toBeVisible();
-	},
-);
+Then("Його рецензія з'являється у списку рецензій на сторінці", async function (this: CustomWorld) {
+	await this.page!.waitForLoadState('networkidle');
+	await expect(
+		this.page!.locator(
+			'.reviews-list, [data-testid="reviews-list"], [data-testid="review"]',
+		).first(),
+	).toBeVisible();
+});
 
 When(
 	'Він натискає "Вподобати" (Like) на {string}',
 	async function (this: CustomWorld, reviewTitle: string) {
-		const card = this.page!
-			.locator(`.review-card, [data-testid="review"]`)
+		const card = this.page!.locator(`.review-card, [data-testid="review"]`)
 			.filter({ hasText: reviewTitle })
 			.first();
 		if ((await card.count()) > 0) {
 			await card.getByRole('button', { name: /Вподобати|Like/i }).click();
 		} else {
-			await this.page!.getByRole('button', { name: /Вподобати|Like/i }).first().click();
+			await this.page!.getByRole('button', { name: /Вподобати|Like/i })
+				.first()
+				.click();
 		}
 	},
 );
@@ -590,14 +571,15 @@ When(
 When(
 	'Він натискає "Вподобано" (Liked) на {string}',
 	async function (this: CustomWorld, reviewTitle: string) {
-		const card = this.page!
-			.locator(`.review-card, [data-testid="review"]`)
+		const card = this.page!.locator(`.review-card, [data-testid="review"]`)
 			.filter({ hasText: reviewTitle })
 			.first();
 		if ((await card.count()) > 0) {
 			await card.getByRole('button', { name: /Вподобано|Liked/i }).click();
 		} else {
-			await this.page!.getByRole('button', { name: /Вподобано|Liked/i }).first().click();
+			await this.page!.getByRole('button', { name: /Вподобано|Liked/i })
+				.first()
+				.click();
 		}
 	},
 );
@@ -605,8 +587,7 @@ When(
 Then(
 	'Лічильник вподобайок {string} стає {string}',
 	async function (this: CustomWorld, reviewTitle: string, expectedCount: string) {
-		const card = this.page!
-			.locator(`.review-card, [data-testid="review"]`)
+		const card = this.page!.locator(`.review-card, [data-testid="review"]`)
 			.filter({ hasText: reviewTitle })
 			.first();
 		const counter = card.locator('[data-testid="like-count"], .like-count');
@@ -618,8 +599,7 @@ Then(
 When(
 	'Він вводить {string} у поле коментування під {string}',
 	async function (this: CustomWorld, text: string, reviewTitle: string) {
-		const card = this.page!
-			.locator(`.review-card, [data-testid="review"]`)
+		const card = this.page!.locator(`.review-card, [data-testid="review"]`)
 			.filter({ hasText: reviewTitle })
 			.first();
 		const field = card
@@ -628,10 +608,7 @@ When(
 		if ((await field.count()) > 0) {
 			await field.fill(text);
 		} else {
-			await this.page!
-				.locator('textarea, input[placeholder*="коментар"]')
-				.first()
-				.fill(text);
+			await this.page!.locator('textarea, input[placeholder*="коментар"]').first().fill(text);
 		}
 	},
 );
@@ -647,14 +624,15 @@ Then(
 When(
 	'Він натискає "Відповісти" біля {string}',
 	async function (this: CustomWorld, commentText: string) {
-		const comment = this.page!
-			.locator(`[data-testid="comment"], .comment`)
+		const comment = this.page!.locator(`[data-testid="comment"], .comment`)
 			.filter({ hasText: commentText })
 			.first();
 		if ((await comment.count()) > 0) {
 			await comment.getByRole('button', { name: /Відповісти|Reply/i }).click();
 		} else {
-			await this.page!.getByRole('button', { name: /Відповісти|Reply/i }).first().click();
+			await this.page!.getByRole('button', { name: /Відповісти|Reply/i })
+				.first()
+				.click();
 		}
 	},
 );
@@ -664,9 +642,9 @@ Then(
 	async function (this: CustomWorld, replyText: string, _parentText: string) {
 		await this.page!.waitForLoadState('networkidle');
 		await expect(this.page!.getByText(replyText).first()).toBeVisible();
-		const indented = this.page!
-			.locator(`.comment-reply, [data-testid="reply"], .comment--level-1`)
-			.filter({ hasText: replyText });
+		const indented = this.page!.locator(
+			`.comment-reply, [data-testid="reply"], .comment--level-1`,
+		).filter({ hasText: replyText });
 		if ((await indented.count()) > 0) await expect(indented.first()).toBeVisible();
 	},
 );
@@ -681,14 +659,11 @@ Given(
 Then(
 	'Він НЕ бачить кнопку "Відповісти" біля {string}',
 	async function (this: CustomWorld, itemText: string) {
-		const item = this.page!
-			.locator(`[data-testid="reply"], .comment--level-1`)
+		const item = this.page!.locator(`[data-testid="reply"], .comment--level-1`)
 			.filter({ hasText: itemText })
 			.first();
 		if ((await item.count()) > 0) {
-			await expect(
-				item.getByRole('button', { name: /Відповісти|Reply/i }),
-			).not.toBeVisible();
+			await expect(item.getByRole('button', { name: /Відповісти|Reply/i })).not.toBeVisible();
 		}
 	},
 );
@@ -696,14 +671,11 @@ Then(
 Then(
 	'Він бачить кнопку "Відповісти" тільки біля {string} (Рівень 0)',
 	async function (this: CustomWorld, commentText: string) {
-		const comment = this.page!
-			.locator(`[data-testid="comment"], .comment--level-0`)
+		const comment = this.page!.locator(`[data-testid="comment"], .comment--level-0`)
 			.filter({ hasText: commentText })
 			.first();
 		if ((await comment.count()) > 0) {
-			await expect(
-				comment.getByRole('button', { name: /Відповісти|Reply/i }),
-			).toBeVisible();
+			await expect(comment.getByRole('button', { name: /Відповісти|Reply/i })).toBeVisible();
 		}
 	},
 );
@@ -711,9 +683,9 @@ Then(
 Then(
 	/^Поле коментування неактивне \(або при кліку перенаправляє на "\/login"\)$/,
 	async function (this: CustomWorld) {
-		const field = this.page!
-			.locator('textarea[placeholder*="коментар"], [data-testid="comment-input"]')
-			.first();
+		const field = this.page!.locator(
+			'textarea[placeholder*="коментар"], [data-testid="comment-input"]',
+		).first();
 		if ((await field.count()) > 0) {
 			const isDisabled = await field.isDisabled();
 			if (!isDisabled) {
@@ -812,9 +784,9 @@ When(
 		if ((await select.count()) > 0) {
 			await select.selectOption({ label: status });
 		} else {
-			const option = this.page!
-				.getByRole('option', { name: status })
-				.or(this.page!.getByRole('menuitem', { name: status }));
+			const option = this.page!.getByRole('option', { name: status }).or(
+				this.page!.getByRole('menuitem', { name: status }),
+			);
 			if ((await option.count()) > 0) {
 				await option.first().click();
 			} else {
@@ -824,9 +796,12 @@ When(
 	},
 );
 
-When('Він натискає на будь-яке місце на сторінці поза межами меню', async function (this: CustomWorld) {
-	await this.page!.locator('body').click({ position: { x: 10, y: 10 } });
-});
+When(
+	'Він натискає на будь-яке місце на сторінці поза межами меню',
+	async function (this: CustomWorld) {
+		await this.page!.locator('body').click({ position: { x: 10, y: 10 } });
+	},
+);
 
 Then(
 	'"Кнопка Статусу" на сторінці медіа змінює свій текст на {string}',
@@ -848,9 +823,9 @@ When(
 	'Він переходить на сторінку свого профілю (вкладка "Трекінг")',
 	async function (this: CustomWorld) {
 		await this.page!.goto(`${this.appUrl}/profile`);
-		const tab = this.page!
-			.getByRole('tab', { name: /Трекінг|Tracking/i })
-			.or(this.page!.getByText('Трекінг', { exact: true }));
+		const tab = this.page!.getByRole('tab', { name: /Трекінг|Tracking/i }).or(
+			this.page!.getByText('Трекінг', { exact: true }),
+		);
 		if ((await tab.count()) > 0) await tab.first().click();
 	},
 );
@@ -870,20 +845,16 @@ Then(
 When(
 	'Він вводить {string} у поле {string} для {string}',
 	async function (this: CustomWorld, value: string, fieldLabel: string, mediaTitle: string) {
-		const mediaRow = this.page!
-			.locator(`.tracking-item, [data-testid="tracking-item"]`)
+		const mediaRow = this.page!.locator(`.tracking-item, [data-testid="tracking-item"]`)
 			.filter({ hasText: mediaTitle })
 			.first();
 		const field = mediaRow
-			.locator(
-				`input[name="${fieldLabel.toLowerCase()}"], input[placeholder*="${fieldLabel}"]`,
-			)
+			.locator(`input[name="${fieldLabel.toLowerCase()}"], input[placeholder*="${fieldLabel}"]`)
 			.first();
 		if ((await field.count()) > 0) {
 			await field.fill(value);
 		} else {
-			await this.page!
-				.locator(`input[name="progress"], input[placeholder*="епізод"]`)
+			await this.page!.locator(`input[name="progress"], input[placeholder*="епізод"]`)
 				.first()
 				.fill(value);
 		}
@@ -908,10 +879,7 @@ Given(
 		};
 		const route = panelRoutes[panelOrItem];
 		await this.page!.goto(`${this.appUrl}/auth/login`);
-		await this.page!.fill(
-			'input[name="email"], input[type="email"]',
-			username,
-		);
+		await this.page!.fill('input[name="email"], input[type="email"]', username);
 		await this.page!.fill('input[name="password"], input[type="password"]', 'Password123');
 		await this.page!.getByRole('button', { name: /Увійти|Login/i }).click();
 		await this.page!.waitForLoadState('networkidle');
@@ -926,23 +894,18 @@ Given(
 	},
 );
 
-When(
-	'Він натискає "Поскаржитись" на {string}',
-	async function (this: CustomWorld, target: string) {
-		const card = this.page!
-			.locator(`.review-card, [data-testid="review"], .feed-item`)
-			.filter({ hasText: target })
-			.first();
-		if ((await card.count()) > 0) {
-			await card.getByRole('button', { name: /Поскаржитись|Скарга|Report/i }).click();
-		} else {
-			await this.page!
-				.getByRole('button', { name: /Поскаржитись|Скарга|Report/i })
-				.first()
-				.click();
-		}
-	},
-);
+When('Він натискає "Поскаржитись" на {string}', async function (this: CustomWorld, target: string) {
+	const card = this.page!.locator(`.review-card, [data-testid="review"], .feed-item`)
+		.filter({ hasText: target })
+		.first();
+	if ((await card.count()) > 0) {
+		await card.getByRole('button', { name: /Поскаржитись|Скарга|Report/i }).click();
+	} else {
+		await this.page!.getByRole('button', { name: /Поскаржитись|Скарга|Report/i })
+			.first()
+			.click();
+	}
+});
 
 When('Він обирає причину {string}', async function (this: CustomWorld, reason: string) {
 	const radio = this.page!.locator(`input[type="radio"][value*="${reason}"]`);
@@ -953,16 +916,12 @@ When('Він обирає причину {string}', async function (this: Custom
 	}
 });
 
-When(
-	/^Він переходить у чергу "([^"]*)"$/,
-	async function (this: CustomWorld, queueName: string) {
-		const el = this.page!
-			.getByRole('link', { name: queueName })
-			.or(this.page!.getByRole('tab', { name: queueName }))
-			.or(this.page!.getByText(queueName, { exact: true }));
-		await el.first().click();
-	},
-);
+When(/^Він переходить у чергу "([^"]*)"$/, async function (this: CustomWorld, queueName: string) {
+	const el = this.page!.getByRole('link', { name: queueName })
+		.or(this.page!.getByRole('tab', { name: queueName }))
+		.or(this.page!.getByText(queueName, { exact: true }));
+	await el.first().click();
+});
 
 Given(
 	/^Він бачить запит "([^"]*)" \(Назва: "([^"]*)"\) зі статусом "([^"]*)"$/,
@@ -980,40 +939,33 @@ Then('Запит зникає з черги модерації', async function 
 // EPIC 7: АДМІН — ВІДСУТНІ КРОКИ
 // ==========================================
 
-When(
-	/^Він переходить у "([^"]*)"$/,
-	async function (this: CustomWorld, sectionName: string) {
-		const routeMap: Record<string, string> = {
-			'Керування користувачами': '/admin/users',
-			'Керування медіа': '/admin/media',
-			Статистика: '/admin/statistics',
-		};
-		const route = routeMap[sectionName];
-		if (route) {
-			await this.page!.goto(`${this.appUrl}${route}`);
-		} else {
-			await this.page!
-				.getByRole('link', { name: sectionName })
-				.or(this.page!.getByRole('tab', { name: sectionName }))
-				.first()
-				.click();
-		}
-	},
-);
+When(/^Він переходить у "([^"]*)"$/, async function (this: CustomWorld, sectionName: string) {
+	const routeMap: Record<string, string> = {
+		'Керування користувачами': '/admin/users',
+		'Керування медіа': '/admin/media',
+		Статистика: '/admin/statistics',
+	};
+	const route = routeMap[sectionName];
+	if (route) {
+		await this.page!.goto(`${this.appUrl}${route}`);
+	} else {
+		await this.page!.getByRole('link', { name: sectionName })
+			.or(this.page!.getByRole('tab', { name: sectionName }))
+			.first()
+			.click();
+	}
+});
 
 When(
 	/^Він знаходить "([^"]*)" \(ID: "([^"]*)"\)$/,
 	async function (this: CustomWorld, username: string, _id: string) {
-		const row = this.page!
-			.locator(`tr, .user-row, [data-testid="user-row"]`)
+		const row = this.page!.locator(`tr, .user-row, [data-testid="user-row"]`)
 			.filter({ hasText: username })
 			.first();
 		if ((await row.count()) > 0) {
 			await row.scrollIntoViewIfNeeded();
 		} else {
-			const searchInput = this.page!.locator(
-				'input[type="search"], input[placeholder*="пошук"]',
-			);
+			const searchInput = this.page!.locator('input[type="search"], input[placeholder*="пошук"]');
 			if ((await searchInput.count()) > 0) {
 				await searchInput.first().fill(username);
 				await this.page!.keyboard.press('Enter');
@@ -1023,9 +975,9 @@ When(
 );
 
 When('Він підтверджує дію', async function (this: CustomWorld) {
-	const confirmBtn = this.page!
-		.getByRole('button', { name: /Підтвердити|Так|OK|Confirm|Yes/i })
-		.first();
+	const confirmBtn = this.page!.getByRole('button', {
+		name: /Підтвердити|Так|OK|Confirm|Yes/i,
+	}).first();
 	if ((await confirmBtn.count()) > 0) {
 		await confirmBtn.click();
 	} else {
@@ -1040,16 +992,13 @@ Then(
 	},
 );
 
-Then(
-	/^Він бачить віджети: (.+)$/,
-	async function (this: CustomWorld, widgetsText: string) {
-		const widgets = widgetsText.match(/"([^"]+)"/g)?.map((w: string) => w.replace(/"/g, '')) ?? [];
-		for (const widget of widgets) {
-			const el = this.page!.getByText(widget);
-			if ((await el.count()) > 0) await expect(el.first()).toBeVisible();
-		}
-	},
-);
+Then(/^Він бачить віджети: (.+)$/, async function (this: CustomWorld, widgetsText: string) {
+	const widgets = widgetsText.match(/"([^"]+)"/g)?.map((w: string) => w.replace(/"/g, '')) ?? [];
+	for (const widget of widgets) {
+		const el = this.page!.getByText(widget);
+		if ((await el.count()) > 0) await expect(el.first()).toBeVisible();
+	}
+});
 
 When(
 	/^Він обирає проміжок часу \(наприклад, "([^"]*)"\)$/,
@@ -1073,7 +1022,6 @@ Given(
 	},
 );
 
-
 Given(
 	/^В `MediaTranslations` існує "([^"]*)" \(MediaId: \d+, Lang: "[^"]*", Title: "([^"]*)", Status: "[^"]*"\)$/,
 	async function (this: CustomWorld, _id: string, _title: string) {
@@ -1092,12 +1040,9 @@ Given(
 	},
 );
 
-Given(
-	/^"([^"]*)" створив список "([^"]*)"$/,
-	async function (this: CustomWorld) {
-		// Precondition — collection assumed seeded via backend
-	},
-);
+Given(/^"([^"]*)" створив список "([^"]*)"$/, async function (this: CustomWorld) {
+	// Precondition — collection assumed seeded via backend
+});
 
 Given(
 	/^"([^"]*)" є власником (?:публічного|приватного) списку "([^"]*)"(?:\s+\(`[^`]*`\))?$/,
@@ -1113,12 +1058,9 @@ Given(
 	},
 );
 
-Given(
-	/^"([^"]*)" ще не має доступу до "([^"]*)"$/,
-	async function (this: CustomWorld) {
-		// Precondition — no access record
-	},
-);
+Given(/^"([^"]*)" ще не має доступу до "([^"]*)"$/, async function (this: CustomWorld) {
+	// Precondition — no access record
+});
 
 Given(
 	/^"([^"]*)" надав "([^"]*)" доступ до (?:приватного списку )?"([^"]*)"(?:\s+\(`[^`]*`\))?$/,
@@ -1144,16 +1086,16 @@ When(
 When(
 	'Він відкриває модальне вікно {string}',
 	async function (this: CustomWorld, modalName: string) {
-		await this.page!.getByRole('button', { name: new RegExp(modalName, 'i') }).first().click();
+		await this.page!.getByRole('button', { name: new RegExp(modalName, 'i') })
+			.first()
+			.click();
 	},
 );
 
 When(
 	'Він змінює базовий рівень з {string} на {string}',
 	async function (this: CustomWorld, _fromLevel: string, toLevel: string) {
-		const select = this.page!.locator(
-			'select[name="privacyLevel"], select[name="privacy"]',
-		);
+		const select = this.page!.locator('select[name="privacyLevel"], select[name="privacy"]');
 		if ((await select.count()) > 0) {
 			await select.selectOption({ label: toLevel });
 		} else {
@@ -1166,8 +1108,9 @@ When(
 When(
 	'У полі {string} він вводить нікнейм {string}',
 	async function (this: CustomWorld, _fieldLabel: string, username: string) {
-		await this.page!
-			.locator(`input[placeholder*="Запросити"], input[name*="invite"], input[name*="user"]`)
+		await this.page!.locator(
+			`input[placeholder*="Запросити"], input[name*="invite"], input[name*="user"]`,
+		)
 			.first()
 			.fill(username);
 	},
@@ -1176,8 +1119,7 @@ When(
 When(
 	'Він натискає "Видалити доступ" біля {string}',
 	async function (this: CustomWorld, username: string) {
-		const row = this.page!
-			.locator(`.access-row, [data-testid="access-row"]`)
+		const row = this.page!.locator(`.access-row, [data-testid="access-row"]`)
 			.filter({ hasText: username })
 			.first();
 		if ((await row.count()) > 0) {
@@ -1191,14 +1133,15 @@ When(
 When(
 	'Він натискає "Видалити" біля {string}',
 	async function (this: CustomWorld, itemTitle: string) {
-		const row = this.page!
-			.locator(`.collection-item, [data-testid="collection-item"]`)
+		const row = this.page!.locator(`.collection-item, [data-testid="collection-item"]`)
 			.filter({ hasText: itemTitle })
 			.first();
 		if ((await row.count()) > 0) {
 			await row.getByRole('button', { name: /Видалити|Remove|Delete/i }).click();
 		} else {
-			await this.page!.getByRole('button', { name: /Видалити|Remove/i }).first().click();
+			await this.page!.getByRole('button', { name: /Видалити|Remove/i })
+				.first()
+				.click();
 		}
 	},
 );
@@ -1224,9 +1167,9 @@ Then(
 	'{string} зникає зі списку на сторінці',
 	async function (this: CustomWorld, itemTitle: string) {
 		await this.page!.waitForLoadState('networkidle');
-		const item = this.page!
-			.locator(`.collection-item, [data-testid="collection-item"]`)
-			.filter({ hasText: itemTitle });
+		const item = this.page!.locator(`.collection-item, [data-testid="collection-item"]`).filter({
+			hasText: itemTitle,
+		});
 		await expect(item).toHaveCount(0);
 	},
 );
@@ -1270,13 +1213,10 @@ Given('Гість знаходиться у рядку пошуку', async func
 	if ((await searchInput.count()) > 0) await searchInput.first().focus();
 });
 
-Then(
-	/^Бекенд опитує і локальну БД.*$/,
-	async function (this: CustomWorld) {
-		await this.page!.waitForLoadState('networkidle');
-		await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
-	},
-);
+Then(/^Бекенд опитує і локальну БД.*$/, async function (this: CustomWorld) {
+	await this.page!.waitForLoadState('networkidle');
+	await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
+});
 
 Then(
 	'Система показує список результатів, що містить:',
@@ -1295,20 +1235,17 @@ Then(
 Then(
 	/^Він НЕ бачить "([^"]*)" у результатах пошуку$/,
 	async function (this: CustomWorld, title: string) {
-		const result = this.page!
-			.locator(`.search-result, [data-testid="search-result"]`)
-			.filter({ hasText: title });
+		const result = this.page!.locator(`.search-result, [data-testid="search-result"]`).filter({
+			hasText: title,
+		});
 		await expect(result).toHaveCount(0);
 	},
 );
 
-Then(
-	'Бекенд НЕ звертається до зовнішнього API',
-	async function (this: CustomWorld) {
-		await this.page!.waitForLoadState('networkidle');
-		await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
-	},
-);
+Then('Бекенд НЕ звертається до зовнішнього API', async function (this: CustomWorld) {
+	await this.page!.waitForLoadState('networkidle');
+	await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
+});
 
 Then(
 	'Бекенд миттєво повертає дані про {string} з локальної таблиці `Media`',
@@ -1391,12 +1328,9 @@ Then(
 );
 
 // Система підключена до зовнішнього API
-Given(
-	/^Система підключена до зовнішнього API.*$/,
-	async function (this: CustomWorld) {
-		// Precondition — API connectivity assumed
-	},
-);
+Given(/^Система підключена до зовнішнього API.*$/, async function (this: CustomWorld) {
+	// Precondition — API connectivity assumed
+});
 
 // ==========================================
 // NEW BINDINGS FOR GAP SCENARIOS (2026-05-29)
@@ -1404,12 +1338,9 @@ Given(
 
 // --- GIVEN: Preconditions (no-op, seeded via backend) ---
 
-Given(
-	/^Він знаходиться на сторінці "([^"]*)"$/,
-	async function (this: CustomWorld, url: string) {
-		await this.page!.goto(`${this.appUrl}${url}`);
-	},
-);
+Given(/^Він знаходиться на сторінці "([^"]*)"$/, async function (this: CustomWorld, url: string) {
+	await this.page!.goto(`${this.appUrl}${url}`);
+});
 
 Given(
 	/^"([^"]*)" має (?:публічний )?список "([^"]*)"$/,
@@ -1453,15 +1384,12 @@ Given(
 	},
 );
 
-Given(
-	/^Він ввів запит "([^"]*)"$/,
-	async function (this: CustomWorld, query: string) {
-		const searchInput = this.page!.locator(
-			'input[type="search"], input[name="search"], input[placeholder*="пошук"], input[placeholder*="Пошук"]',
-		);
-		await searchInput.first().fill(query);
-	},
-);
+Given(/^Він ввів запит "([^"]*)"$/, async function (this: CustomWorld, query: string) {
+	const searchInput = this.page!.locator(
+		'input[type="search"], input[name="search"], input[placeholder*="пошук"], input[placeholder*="Пошук"]',
+	);
+	await searchInput.first().fill(query);
+});
 
 Given('Термін дії access token закінчився', async function (this: CustomWorld) {
 	// Precondition — simulated expired token
@@ -1521,9 +1449,9 @@ Given(
 When(
 	/^Він натискає на лічильник "([^"]*)"$/,
 	async function (this: CustomWorld, counterName: string) {
-		const counter = this.page!
-			.locator(`[data-testid*="counter"], .stat, .follower-count, .following-count`)
-			.filter({ hasText: counterName });
+		const counter = this.page!.locator(
+			`[data-testid*="counter"], .stat, .follower-count, .following-count`,
+		).filter({ hasText: counterName });
 		if ((await counter.count()) > 0) {
 			await counter.first().click();
 		} else {
@@ -1532,15 +1460,12 @@ When(
 	},
 );
 
-When(
-	/^Він натискає на вкладку "([^"]*)"$/,
-	async function (this: CustomWorld, tabName: string) {
-		const tab = this.page!
-			.getByRole('tab', { name: tabName })
-			.or(this.page!.getByText(tabName, { exact: true }));
-		await tab.first().click();
-	},
-);
+When(/^Він натискає на вкладку "([^"]*)"$/, async function (this: CustomWorld, tabName: string) {
+	const tab = this.page!.getByRole('tab', { name: tabName }).or(
+		this.page!.getByText(tabName, { exact: true }),
+	);
+	await tab.first().click();
+});
 
 When('Він натискає кнопку копіювання нікнейму', async function (this: CustomWorld) {
 	const copyBtn = this.page!.locator(
@@ -1600,32 +1525,23 @@ When(
 	},
 );
 
-When(
-	/^Він змінює текст рецензії на "([^"]*)"$/,
-	async function (this: CustomWorld, text: string) {
-		const editor = this.page!.locator(
-			'textarea[name*="review"], [contenteditable="true"], .review-editor textarea',
-		);
-		await editor.first().fill(text);
-	},
-);
+When(/^Він змінює текст рецензії на "([^"]*)"$/, async function (this: CustomWorld, text: string) {
+	const editor = this.page!.locator(
+		'textarea[name*="review"], [contenteditable="true"], .review-editor textarea',
+	);
+	await editor.first().fill(text);
+});
 
-When(
-	/^Він натискає на скаргу "([^"]*)"$/,
-	async function (this: CustomWorld, reportId: string) {
-		const reportRow = this.page!.locator(
-			`.report-item:has-text("${reportId}"), tr:has-text("${reportId}"), [data-testid*="report"]:has-text("${reportId}")`,
-		);
-		await reportRow.first().click();
-	},
-);
+When(/^Він натискає на скаргу "([^"]*)"$/, async function (this: CustomWorld, reportId: string) {
+	const reportRow = this.page!.locator(
+		`.report-item:has-text("${reportId}"), tr:has-text("${reportId}"), [data-testid*="report"]:has-text("${reportId}")`,
+	);
+	await reportRow.first().click();
+});
 
-When(
-	/^Він натискає клавішу "([^"]*)"$/,
-	async function (this: CustomWorld, key: string) {
-		await this.page!.keyboard.press(key);
-	},
-);
+When(/^Він натискає клавішу "([^"]*)"$/, async function (this: CustomWorld, key: string) {
+	await this.page!.keyboard.press(key);
+});
 
 When(
 	/^Він швидко вводить "([^"]*)" і потім "([^"]*)"$/,
@@ -1642,22 +1558,21 @@ When(
 When(
 	/^Він натискає на заголовок колонки "([^"]*)"(?: повторно)?$/,
 	async function (this: CustomWorld, columnName: string) {
-		const header = this.page!.locator(`th:has-text("${columnName}"), [role="columnheader"]:has-text("${columnName}")`);
+		const header = this.page!.locator(
+			`th:has-text("${columnName}"), [role="columnheader"]:has-text("${columnName}")`,
+		);
 		await header.first().click();
 		await this.page!.waitForLoadState('networkidle');
 	},
 );
 
-When(
-	/^Він вводить "([^"]*)" у поле пошуку$/,
-	async function (this: CustomWorld, query: string) {
-		const searchInput = this.page!.locator(
-			'input[type="search"], input[name="search"], input[placeholder*="пошук"], input[placeholder*="Пошук"], input[placeholder*="search"]',
-		);
-		await searchInput.first().fill(query);
-		await this.page!.waitForLoadState('networkidle');
-	},
-);
+When(/^Він вводить "([^"]*)" у поле пошуку$/, async function (this: CustomWorld, query: string) {
+	const searchInput = this.page!.locator(
+		'input[type="search"], input[name="search"], input[placeholder*="пошук"], input[placeholder*="Пошук"], input[placeholder*="search"]',
+	);
+	await searchInput.first().fill(query);
+	await this.page!.waitForLoadState('networkidle');
+});
 
 When(
 	'Система автоматично відправляє запит на оновлення токену',
@@ -1691,36 +1606,23 @@ Then('Аватар оновлюється на обрізану версію', a
 Then(
 	/^Він бачить модальне вікно зі списком (?:підписників|підписок|своїми списками)$/,
 	async function (this: CustomWorld) {
-		const modal = this.page!.locator(
-			'[role="dialog"], .modal, [data-testid*="modal"]',
-		);
+		const modal = this.page!.locator('[role="dialog"], .modal, [data-testid*="modal"]');
 		await expect(modal.first()).toBeVisible();
 	},
 );
 
-Then(
-	/^Він бачить "([^"]*)" у списку$/,
-	async function (this: CustomWorld, item: string) {
-		await expect(this.page!.getByText(item).first()).toBeVisible();
-	},
-);
+Then(/^Він бачить "([^"]*)" у списку$/, async function (this: CustomWorld, item: string) {
+	await expect(this.page!.getByText(item).first()).toBeVisible();
+});
 
-Then(
-	/^Він НЕ бачить "([^"]*)" у списку$/,
-	async function (this: CustomWorld, item: string) {
-		await expect(this.page!.getByText(item)).not.toBeVisible();
-	},
-);
+Then(/^Він НЕ бачить "([^"]*)" у списку$/, async function (this: CustomWorld, item: string) {
+	await expect(this.page!.getByText(item)).not.toBeVisible();
+});
 
-Then(
-	'Він бачить список користувачів, на яких підписаний',
-	async function (this: CustomWorld) {
-		const list = this.page!.locator(
-			'.user-list, [data-testid*="following"], .following-list',
-		);
-		await expect(list.first()).toBeVisible();
-	},
-);
+Then('Він бачить список користувачів, на яких підписаний', async function (this: CustomWorld) {
+	const list = this.page!.locator('.user-list, [data-testid*="following"], .following-list');
+	await expect(list.first()).toBeVisible();
+});
 
 Then(
 	/^Нікнейм "([^"]*)" скопійовано в буфер обміну$/,
@@ -1754,15 +1656,10 @@ Then(
 	},
 );
 
-Then(
-	'Він бачить форму редагування рецензії',
-	async function (this: CustomWorld) {
-		const form = this.page!.locator(
-			'[data-testid*="review-edit"], .review-form, form:has(textarea)',
-		);
-		await expect(form.first()).toBeVisible();
-	},
-);
+Then('Він бачить форму редагування рецензії', async function (this: CustomWorld) {
+	const form = this.page!.locator('[data-testid*="review-edit"], .review-form, form:has(textarea)');
+	await expect(form.first()).toBeVisible();
+});
 
 Then(
 	/^(?:Рецензія|Його рецензія) "([^"]*)" оновлюється з новим текстом$/,
@@ -1790,16 +1687,11 @@ Then(
 	},
 );
 
-Then(
-	'Шкала оцінки має діапазон від 1 до 10',
-	async function (this: CustomWorld) {
-		const stars = this.page!.locator(
-			'[data-testid*="star"], .star-rating button, .rating-star',
-		);
-		const count = await stars.count();
-		expect(count).toBe(10);
-	},
-);
+Then('Шкала оцінки має діапазон від 1 до 10', async function (this: CustomWorld) {
+	const stars = this.page!.locator('[data-testid*="star"], .star-rating button, .rating-star');
+	const count = await stars.count();
+	expect(count).toBe(10);
+});
 
 Then(
 	/^Система зберігає рецензію з оцінкою \d+ \(шкала 1-10\)$/,
@@ -1809,15 +1701,10 @@ Then(
 	},
 );
 
-Then(
-	'Він бачить список усіх своїх медіа зі статусами',
-	async function (this: CustomWorld) {
-		const list = this.page!.locator(
-			'.tracking-list, [data-testid*="tracking"], .media-list',
-		);
-		await expect(list.first()).toBeVisible();
-	},
-);
+Then('Він бачить список усіх своїх медіа зі статусами', async function (this: CustomWorld) {
+	const list = this.page!.locator('.tracking-list, [data-testid*="tracking"], .media-list');
+	await expect(list.first()).toBeVisible();
+});
 
 Then(
 	/^Статус "([^"]*)" автоматично змінюється на "([^"]*)"$/,
@@ -1848,9 +1735,7 @@ Then(
 Then(
 	/^Він бачить (?:першу сторінку|решту) перекладів \((\d+) записів\)$/,
 	async function (this: CustomWorld, count: string) {
-		const items = this.page!.locator(
-			'.translation-item, [data-testid*="translation"], tr',
-		);
+		const items = this.page!.locator('.translation-item, [data-testid*="translation"], tr');
 		const actual = await items.count();
 		expect(actual).toBeGreaterThanOrEqual(parseInt(count, 10));
 	},
@@ -1865,13 +1750,10 @@ Then(
 	},
 );
 
-Then(
-	/^Відповідь містить список (?:публічних колекцій|медіа)$/,
-	async function (this: CustomWorld) {
-		await this.page!.waitForLoadState('networkidle');
-		await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
-	},
-);
+Then(/^Відповідь містить список (?:публічних колекцій|медіа)$/, async function (this: CustomWorld) {
+	await this.page!.waitForLoadState('networkidle');
+	await expect(this.page!.locator('.toast-error, .alert-error')).not.toBeVisible();
+});
 
 Then(
 	/^Елементи у списку "([^"]*)" відсортовані в новому порядку$/,
@@ -1898,9 +1780,7 @@ Then(
 );
 
 Then('Він бачить список усіх медіа', async function (this: CustomWorld) {
-	const list = this.page!.locator(
-		'.media-grid, .media-list, [data-testid*="catalog"], .catalog',
-	);
+	const list = this.page!.locator('.media-grid, .media-list, [data-testid*="catalog"], .catalog');
 	await expect(list.first()).toBeVisible();
 });
 
@@ -1920,13 +1800,10 @@ Then('Перший результат виділено', async function (this: C
 	await expect(highlighted.first()).toBeVisible();
 });
 
-Then(
-	'Його перенаправлено на сторінку обраного медіа',
-	async function (this: CustomWorld) {
-		await this.page!.waitForLoadState('networkidle');
-		expect(this.page!.url()).toMatch(/\/media\//);
-	},
-);
+Then('Його перенаправлено на сторінку обраного медіа', async function (this: CustomWorld) {
+	await this.page!.waitForLoadState('networkidle');
+	expect(this.page!.url()).toMatch(/\/media\//);
+});
 
 Then('Список результатів пошуку закривається', async function (this: CustomWorld) {
 	const dropdown = this.page!.locator(
@@ -1996,7 +1873,10 @@ Given(/^Користувач авторизований з ID "([^"]*)" та р�
 Given(/^Користувач авторизований з ID "([^"]*)"$/, async function () {});
 Given(/^Користувач дивиться серіал "([^"]*)"$/, async function () {});
 Given(/^Користувач не має claim "([^"]*)"$/, async function () {});
-Given(/^Користувач переходить на сторінку фільму "([^"]*)" з результатів API$/, async function () {});
+Given(
+	/^Користувач переходить на сторінку фільму "([^"]*)" з результатів API$/,
+	async function () {},
+);
 Given(/^Сервіс дозволяє видалення коментаря "([^"]*)"$/, async function () {});
 Given(/^Сервіс дозволяє видалення рецензії "([^"]*)"$/, async function () {});
 Given(/^Сервіс дозволяє оновлення рецензії "([^"]*)"$/, async function () {});
@@ -2024,18 +1904,12 @@ When(/^"([^"]*)" надає доступ користувачу "([^"]*)"$/, asy
 When(/^"([^"]*)" натискає кнопку "([^"]*)"$/, async function () {});
 When(/^"([^"]*)" обирає проміжок часу для статистики$/, async function () {});
 When(/^Вводить українську назву та опис$/, async function () {});
-When(
-	/^Він вводить "([^"]*)" у поле "([^"]*)" на сторінці профілю$/,
-	async function () {},
-);
+When(/^Він вводить "([^"]*)" у поле "([^"]*)" на сторінці профілю$/, async function () {});
 When(/^Він вводить текст "([^"]*)"$/, async function () {});
 When(/^Він додає "([^"]*)" до цього списку зі сторінки медіа$/, async function () {});
 When(/^Він змінює налаштування приватності на "([^"]*)"$/, async function () {});
 When(/^Він створює список з назвою "([^"]*)"$/, async function () {});
-When(
-	/^Користувач видаляє коментар "([^"]*)" з рецензії "([^"]*)"$/,
-	async function () {},
-);
+When(/^Користувач видаляє коментар "([^"]*)" з рецензії "([^"]*)"$/, async function () {});
 When(/^Користувач видаляє рецензію "([^"]*)"$/, async function () {});
 When(
 	/^Користувач оновлює рецензію "([^"]*)" з рейтингом \d+ та текстом "([^"]*)"$/,
@@ -2055,14 +1929,8 @@ When(
 	/^Користувач створює відповідь "([^"]*)" до рецензії "([^"]*)" на коментар "([^"]*)"$/,
 	async function () {},
 );
-When(
-	/^Користувач створює коментар "([^"]*)" до рецензії "([^"]*)"$/,
-	async function () {},
-);
-When(
-	/^Користувач створює рецензію з рейтингом \d+ та текстом "([^"]*)"$/,
-	async function () {},
-);
+When(/^Користувач створює коментар "([^"]*)" до рецензії "([^"]*)"$/, async function () {});
+When(/^Користувач створює рецензію з рейтингом \d+ та текстом "([^"]*)"$/, async function () {});
 When(/^Натискає "([^"]*)"$/, async function () {});
 
 // --- THEN: assertion stubs ---
@@ -2077,10 +1945,7 @@ Then(/^Він бачить повідомлення про успішну від
 Then(/^Вона є публічною за замовчуванням$/, async function () {});
 Then(/^Воно зникає з результатів пошуку$/, async function () {});
 Then(/^Його рецензія з'являється у списку$/, async function () {});
-Then(
-	/^Інші користувачі більше не бачать цей список у профілі "([^"]*)"$/,
-	async function () {},
-);
+Then(/^Інші користувачі більше не бачать цей список у профілі "([^"]*)"$/, async function () {});
 Then(/^Код відповіді становить \d+$/, async function () {});
 Then(/^Користувач бачить сторінку фільму$/, async function () {});
 Then(/^Переклад стає доступним для всіх користувачів$/, async function () {});

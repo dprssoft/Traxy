@@ -17,7 +17,12 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 	import type { CollectionSummary } from '$lib/types/collectionTypes';
 	import { getCollectionsForMedia } from '$lib/db/services/collection.service';
 	import { MEDIA_TYPE_LABELS, WISHLIST_MEDIA_TYPES, getStatusLabel } from '$lib/constants';
-	import { updateScore, updateNote, getTracking, upsertTracking } from '$lib/db/services/tracking.service';
+	import {
+		updateScore,
+		updateNote,
+		getTracking,
+		upsertTracking,
+	} from '$lib/db/services/tracking.service';
 	import { getCycles } from '$lib/db/services/cycle.service';
 	import { recordVisitedMedia } from '$lib/db/services/catalogue.service';
 	import { MarqueeText, SensitiveContent } from '$lib/components/ui';
@@ -44,8 +49,12 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 	// eslint-disable-next-line svelte/prefer-writable-derived
 	let cycles = $state<LocalWatchCycle[]>(untrack(() => initialCycles));
 
-	$effect(() => { tracking = initialTracking; });
-	$effect(() => { cycles = initialCycles; });
+	$effect(() => {
+		tracking = initialTracking;
+	});
+	$effect(() => {
+		cycles = initialCycles;
+	});
 
 	// UI state
 	let descExpanded = $state(false);
@@ -87,14 +96,17 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 
 	function handleShare() {
 		if (navigator.share) {
-			navigator
-				.share({ title: media.title, url: window.location.href })
-				.catch(() => {});
+			navigator.share({ title: media.title, url: window.location.href }).catch(() => {});
 		} else {
-			navigator.clipboard?.writeText(window.location.href).then(() => {
-				shareCopied = true;
-				setTimeout(() => { shareCopied = false; }, 2000);
-			}).catch(() => {});
+			navigator.clipboard
+				?.writeText(window.location.href)
+				.then(() => {
+					shareCopied = true;
+					setTimeout(() => {
+						shareCopied = false;
+					}, 2000);
+				})
+				.catch(() => {});
 		}
 	}
 
@@ -132,7 +144,9 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 			tracking = { ...tracking, note: userNote.trim() };
 		}
 		noteSaved = true;
-		setTimeout(() => { noteSaved = false; }, 2000);
+		setTimeout(() => {
+			noteSaved = false;
+		}, 2000);
 	}
 
 	// -------------------------------------------------------------------------
@@ -154,22 +168,25 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 	);
 
 	// Item 3: Year or Year/Months serialization
-	const displayYear = $derived(
-		media.serializationYears || (media.year ? `${media.year}` : '—'),
-	);
+	const displayYear = $derived(media.serializationYears || (media.year ? `${media.year}` : '—'));
 
 	// Item 4: Author (Director / Author / Developer / Creator)
 	const authorLabel = $derived(
-		media.type === 'film' ? 'Director' :
-		media.type === 'tv' || media.type === 'anime' ? 'Creator' :
-		media.type === 'game' ? 'Studio' :
-		media.type === 'book' ? 'Author' :
-		media.type === 'manga' || media.type === 'manhwa' || media.type === 'manhua' ? 'Mangaka' :
-		media.type === 'comic' ? 'Publisher' : 'Author',
+		media.type === 'film'
+			? 'Director'
+			: media.type === 'tv' || media.type === 'anime'
+				? 'Creator'
+				: media.type === 'game'
+					? 'Studio'
+					: media.type === 'book'
+						? 'Author'
+						: media.type === 'manga' || media.type === 'manhwa' || media.type === 'manhua'
+							? 'Mangaka'
+							: media.type === 'comic'
+								? 'Publisher'
+								: 'Author',
 	);
-	const displayAuthor = $derived(
-		media.author || '—',
-	);
+	const displayAuthor = $derived(media.author || '—');
 
 	// Item 5: Country of origin
 	// Build a reverse map: English country name -> ISO 3166-1 alpha-2 code (for flag emoji)
@@ -180,18 +197,18 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 		// Fast-path aliases for non-standard names Wikidata/TMDB might return
 		const aliases: Record<string, string> = {
 			'united states of america': 'US',
-			'usa': 'US',
-			'us': 'US',
-			'uk': 'GB',
+			usa: 'US',
+			us: 'US',
+			uk: 'GB',
 			'great britain': 'GB',
-			'people\'s republic of china': 'CN',
+			"people's republic of china": 'CN',
 			'republic of korea': 'KR',
 			'republic of china': 'TW',
 			'russian federation': 'RU',
 		};
 		if (aliases[normalised]) {
 			const code = aliases[normalised];
-			return String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+			return String.fromCodePoint(...[...code].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
 		}
 		// Search all ISO 3166-1 alpha-2 codes via Intl.DisplayNames
 		try {
@@ -204,99 +221,129 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 					try {
 						const label = dn.of(code);
 						if (label && label.toLowerCase() === normalised) {
-							return String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+							return String.fromCodePoint(...[...code].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
 						}
-					} catch { /* invalid code, skip */ }
+					} catch {
+						/* invalid code, skip */
+					}
 				}
 			}
-		} catch { /* Intl not available */ }
+		} catch {
+			/* Intl not available */
+		}
 		return null;
 	}
 
-	const displayCountry = $derived((() => {
-		const c = media.country ||
-			(media.type === 'anime' || media.type === 'manga' ? 'Japan' :
-			 media.type === 'manhwa' ? 'South Korea' :
-			 media.type === 'manhua' ? 'China' : '—');
-		if (c !== '—' && showCountryFlags) {
-			const flag = countryNameToFlag(c);
-			if (flag) return flag;
-		}
-		return c;
-	})());
+	const displayCountry = $derived(
+		(() => {
+			const c =
+				media.country ||
+				(media.type === 'anime' || media.type === 'manga'
+					? 'Japan'
+					: media.type === 'manhwa'
+						? 'South Korea'
+						: media.type === 'manhua'
+							? 'China'
+							: '—');
+			if (c !== '—' && showCountryFlags) {
+				const flag = countryNameToFlag(c);
+				if (flag) return flag;
+			}
+			return c;
+		})(),
+	);
 
 	// Item 7: Genres (up to 3)
-	const displayGenres = $derived((() => {
-		if (media.genres && media.genres.length > 0) {
-			return media.genres.slice(0, 3);
-		}
-		if (media.type === 'game' && media.platforms && media.platforms.length > 0) {
-			return media.platforms.slice(0, 3);
-		}
-		if (media.type === 'anime') return ['Animation', 'Action'];
-		if (media.type === 'manga') return ['Manga', 'Drama'];
-		if (media.type === 'film') return ['Cinema', 'Feature'];
-		if (media.type === 'tv') return ['Series', 'Drama'];
-		if (media.type === 'book') return ['Literature'];
-		return [];
-	})());
+	const displayGenres = $derived(
+		(() => {
+			if (media.genres && media.genres.length > 0) {
+				return media.genres.slice(0, 3);
+			}
+			if (media.type === 'game' && media.platforms && media.platforms.length > 0) {
+				return media.platforms.slice(0, 3);
+			}
+			if (media.type === 'anime') return ['Animation', 'Action'];
+			if (media.type === 'manga') return ['Manga', 'Drama'];
+			if (media.type === 'film') return ['Cinema', 'Feature'];
+			if (media.type === 'tv') return ['Series', 'Drama'];
+			if (media.type === 'book') return ['Literature'];
+			return [];
+		})(),
+	);
 
 	// Item 9: Status (airing; finished; hiatus; axed etc) — NEVER show tracking status here
-	const mediaStatusText = $derived((() => {
-		if (media.releaseStatus) {
-			return media.releaseStatus.charAt(0).toUpperCase() + media.releaseStatus.slice(1).toLowerCase();
-		}
-		// Type-based default when no release status is known
-		if (media.type === 'film') return 'Released';
-		if (media.type === 'game') return 'Released';
-		if (media.type === 'book') return 'Published';
-		if (media.type === 'tv' || media.type === 'anime') return '—';
-		return '—';
-	})());
+	const mediaStatusText = $derived(
+		(() => {
+			if (media.releaseStatus) {
+				return (
+					media.releaseStatus.charAt(0).toUpperCase() + media.releaseStatus.slice(1).toLowerCase()
+				);
+			}
+			// Type-based default when no release status is known
+			if (media.type === 'film') return 'Released';
+			if (media.type === 'game') return 'Released';
+			if (media.type === 'book') return 'Published';
+			if (media.type === 'tv' || media.type === 'anime') return '—';
+			return '—';
+		})(),
+	);
 
 	// Item 10: Seasons/Episodes, Volumes/Chapters, Pages, Time to beat
-	const ttb = $derived((() => {
-		if (media.type !== 'game' || !media.timeToBeat) return null;
-		try {
-			return JSON.parse(media.timeToBeat) as { main: number; extra: number; completionist: number };
-		} catch {
-			return null;
-		}
-	})());
+	const ttb = $derived(
+		(() => {
+			if (media.type !== 'game' || !media.timeToBeat) return null;
+			try {
+				return JSON.parse(media.timeToBeat) as {
+					main: number;
+					extra: number;
+					completionist: number;
+				};
+			} catch {
+				return null;
+			}
+		})(),
+	);
 
-	const mediaCountText = $derived((() => {
-		if (media.type === 'game') {
-			if (ttb?.main) return `${ttb.main}h`;
-			return '—';
-		}
-		if (media.type === 'book') {
-			return media.totalPages ? `${media.totalPages} p.` : '—';
-		}
-		if (media.type === 'manga' || media.type === 'manhwa' || media.type === 'manhua' || media.type === 'comic') {
-			if (media.totalVolumes && media.totalChapters) {
-				return `${media.totalVolumes}v · ${media.totalChapters}ch`;
+	const mediaCountText = $derived(
+		(() => {
+			if (media.type === 'game') {
+				if (ttb?.main) return `${ttb.main}h`;
+				return '—';
 			}
-			if (media.totalChapters) return `${media.totalChapters} ch.`;
-			if (media.totalVolumes) return `${media.totalVolumes} vol.`;
-			return '—';
-		}
-		if (media.type === 'tv' || media.type === 'anime') {
-			if (media.type === 'anime' && media.runtimeMinutes && !media.totalEpisodes) {
-				return formatRuntime(media.runtimeMinutes);
+			if (media.type === 'book') {
+				return media.totalPages ? `${media.totalPages} p.` : '—';
 			}
-			if (media.totalSeasons && media.totalEpisodes) {
-				return `${media.totalSeasons}s · ${media.totalEpisodes}ep`;
+			if (
+				media.type === 'manga' ||
+				media.type === 'manhwa' ||
+				media.type === 'manhua' ||
+				media.type === 'comic'
+			) {
+				if (media.totalVolumes && media.totalChapters) {
+					return `${media.totalVolumes}v · ${media.totalChapters}ch`;
+				}
+				if (media.totalChapters) return `${media.totalChapters} ch.`;
+				if (media.totalVolumes) return `${media.totalVolumes} vol.`;
+				return '—';
 			}
-			if (media.totalEpisodes) return `${media.totalEpisodes} ep.`;
-			if (media.totalSeasons) return `${media.totalSeasons} season`;
+			if (media.type === 'tv' || media.type === 'anime') {
+				if (media.type === 'anime' && media.runtimeMinutes && !media.totalEpisodes) {
+					return formatRuntime(media.runtimeMinutes);
+				}
+				if (media.totalSeasons && media.totalEpisodes) {
+					return `${media.totalSeasons}s · ${media.totalEpisodes}ep`;
+				}
+				if (media.totalEpisodes) return `${media.totalEpisodes} ep.`;
+				if (media.totalSeasons) return `${media.totalSeasons} season`;
+				return '—';
+			}
+			if (media.type === 'film') {
+				if (media.runtimeMinutes) return formatRuntime(media.runtimeMinutes);
+				return media.year ? `${media.year}` : '—';
+			}
 			return '—';
-		}
-		if (media.type === 'film') {
-			if (media.runtimeMinutes) return formatRuntime(media.runtimeMinutes);
-			return media.year ? `${media.year}` : '—';
-		}
-		return '—';
-	})());
+		})(),
+	);
 
 	// Item 12: Track button label
 	const trackButtonLabel = $derived(
@@ -309,9 +356,10 @@ Takes loaded data as props and keeps local copies so edits show without a reload
      Matches exact wireframe layout with hidden top header
      ========================================================================= -->
 <div class="flex flex-col min-h-full max-w-2xl mx-auto pb-6">
-
 	<!-- ── Top Action Bar (Replacing main header) ────────────────────────── -->
-	<header class="sticky top-0 z-30 bg-[#0a0b12]/95 backdrop-blur-md border-b border-white/[0.06] px-3.5 sm:px-6 py-2.5 flex items-center justify-between">
+	<header
+		class="sticky top-0 z-30 bg-[#0a0b12]/95 backdrop-blur-md border-b border-white/[0.06] px-3.5 sm:px-6 py-2.5 flex items-center justify-between"
+	>
 		<!-- Back button -->
 		<button
 			type="button"
@@ -342,10 +390,16 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 				aria-label="Share"
 			>
 				<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+					/>
 				</svg>
 				{#if shareCopied}
-					<span class="absolute -bottom-7 right-0 text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded shadow">
+					<span
+						class="absolute -bottom-7 right-0 text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded shadow"
+					>
 						Copied!
 					</span>
 				{/if}
@@ -354,29 +408,37 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 	</header>
 
 	<!-- ── Main Wireframe 2-Column Body ───────────────────────────────────── -->
-	<div class="grid grid-cols-[145px_1fr] sm:grid-cols-[210px_1fr] md:grid-cols-[240px_1fr] gap-3.5 sm:gap-6 p-3.5 sm:p-6">
-
+	<div
+		class="grid grid-cols-[145px_1fr] sm:grid-cols-[210px_1fr] md:grid-cols-[240px_1fr] gap-3.5 sm:gap-6 p-3.5 sm:p-6"
+	>
 		<!-- ═══════════════════════════════════════════════════════════
 		     LEFT COLUMN: Poster, Status/Episodes, Stars, Track,
 		     Add to collection, Note
 		     ═══════════════════════════════════════════════════════════ -->
 		<div class="flex flex-col gap-3 min-w-0">
-
 			<!-- Media Poster (or backup image) -->
-			<div class="w-full aspect-[2/3] rounded-2xl overflow-hidden bg-[#16192b] border border-white/[0.08] shadow-xl relative">
+			<div
+				class="w-full aspect-[2/3] rounded-2xl overflow-hidden bg-[#16192b] border border-white/[0.08] shadow-xl relative"
+			>
 				{#if media.posterUrl}
 					<SensitiveContent isAdult={media.isAdult} revealable class="w-full h-full">
-						<img
-							src={media.posterUrl}
-							alt={media.title}
-							class="w-full h-full object-cover"
-						/>
+						<img src={media.posterUrl} alt={media.title} class="w-full h-full object-cover" />
 					</SensitiveContent>
 				{:else}
 					<!-- Backup / Placeholder image -->
-					<div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-[#1b1f35] to-[#101322]">
+					<div
+						class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-[#1b1f35] to-[#101322]"
+					>
 						<span class="text-3xl opacity-50 mb-1">
-							{media.type === 'game' ? '🎮' : media.type === 'book' ? '📖' : media.type === 'film' ? '🎬' : media.type === 'tv' ? '📺' : '📚'}
+							{media.type === 'game'
+								? '🎮'
+								: media.type === 'book'
+									? '📖'
+									: media.type === 'film'
+										? '🎬'
+										: media.type === 'tv'
+											? '📺'
+											: '📚'}
 						</span>
 						<span class="text-slate-400 font-bold text-xs line-clamp-2">{media.title}</span>
 					</div>
@@ -385,7 +447,9 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 
 			<!-- 9. Status & 10. Seasons/Episodes OR Time to Beat for Games -->
 			{#if media.type === 'game' && ttb}
-				<div class="flex flex-col gap-1 mt-1 bg-[#16192b]/80 rounded-xl p-2.5 border border-white/[0.08]">
+				<div
+					class="flex flex-col gap-1 mt-1 bg-[#16192b]/80 rounded-xl p-2.5 border border-white/[0.08]"
+				>
 					<div class="flex justify-between items-center text-[10px]">
 						<span class="text-slate-400 font-bold uppercase tracking-wider">Main Story</span>
 						<span class="text-indigo-400 font-bold">{ttb.main ? `${ttb.main}h` : '--'}</span>
@@ -396,7 +460,9 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 					</div>
 					<div class="flex justify-between items-center text-[10px]">
 						<span class="text-slate-400 font-bold uppercase tracking-wider">Completionist</span>
-						<span class="text-purple-400 font-bold">{ttb.completionist ? `${ttb.completionist}h` : '--'}</span>
+						<span class="text-purple-400 font-bold"
+							>{ttb.completionist ? `${ttb.completionist}h` : '--'}</span
+						>
 					</div>
 				</div>
 			{:else}
@@ -446,7 +512,9 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 			</button>
 
 			<!-- 14. User note (with 255 character limit) -->
-			<div class="relative bg-[#16192b]/80 border border-white/[0.08] hover:border-white/[0.16] rounded-xl p-2.5 transition-all">
+			<div
+				class="relative bg-[#16192b]/80 border border-white/[0.08] hover:border-white/[0.16] rounded-xl p-2.5 transition-all"
+			>
 				<div class="flex items-center justify-between mb-1">
 					<span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Note</span>
 					{#if noteSaved}
@@ -472,9 +540,10 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 		     Type 6, Genre 7, Media Description 8 (expandable)
 		     ═══════════════════════════════════════════════════════════ -->
 		<div class="flex flex-col gap-2 min-w-0">
-
 			<!-- 1. Media Title (on APP language) -->
-			<h1 class="text-base sm:text-2xl font-extrabold text-white leading-tight tracking-tight line-clamp-3">
+			<h1
+				class="text-base sm:text-2xl font-extrabold text-white leading-tight tracking-tight line-clamp-3"
+			>
 				{media.title}
 			</h1>
 
@@ -486,7 +555,9 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 			{/if}
 
 			<!-- 3. Year, 4. Author, 5. Country of origin -->
-			<div class="grid grid-cols-3 gap-1.5 sm:gap-3 py-2 my-1 border-y border-white/[0.06] text-center">
+			<div
+				class="grid grid-cols-3 gap-1.5 sm:gap-3 py-2 my-1 border-y border-white/[0.06] text-center"
+			>
 				<div class="flex flex-col min-w-0">
 					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Year</span>
 					<span class="text-xs font-semibold text-slate-200 truncate" title={displayYear}>
@@ -494,25 +565,39 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 					</span>
 				</div>
 				<div class="flex flex-col min-w-0">
-					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">{authorLabel}</span>
-					<MarqueeText class="text-xs font-semibold text-slate-200" title={displayAuthor} text={displayAuthor} />
+					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider"
+						>{authorLabel}</span
+					>
+					<MarqueeText
+						class="text-xs font-semibold text-slate-200"
+						title={displayAuthor}
+						text={displayAuthor}
+					/>
 				</div>
 				<div class="flex flex-col min-w-0">
 					<span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Country</span>
-					<MarqueeText class="text-xs font-semibold text-slate-200" title={displayCountry} text={displayCountry} />
+					<MarqueeText
+						class="text-xs font-semibold text-slate-200"
+						title={displayCountry}
+						text={displayCountry}
+					/>
 				</div>
 			</div>
 
 			<!-- 6. Media type & 7. Genre (up to 3) -->
 			<div class="flex flex-wrap gap-1.5 my-0.5">
 				<!-- Type badge -->
-				<span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] sm:text-xs font-bold rounded-md uppercase tracking-wider">
+				<span
+					class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] sm:text-xs font-bold rounded-md uppercase tracking-wider"
+				>
 					{MEDIA_TYPE_LABELS[media.type] ?? media.type}
 				</span>
 
 				<!-- Genre badges -->
 				{#each displayGenres as genre (genre)}
-					<span class="px-2 py-0.5 bg-[#181b2e] border border-white/[0.08] text-slate-300 text-[10px] sm:text-xs rounded-md font-medium">
+					<span
+						class="px-2 py-0.5 bg-[#181b2e] border border-white/[0.08] text-slate-300 text-[10px] sm:text-xs rounded-md font-medium"
+					>
 						{genre}
 					</span>
 				{/each}
@@ -541,7 +626,11 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 							href={resolve(`/collections/${col.id}`)}
 							class="px-2 py-0.5 bg-[#181b2e] border border-white/[0.08] hover:border-indigo-500/40 text-slate-300 hover:text-white text-[10px] sm:text-xs rounded-md font-medium transition-colors"
 						>
-							{col.systemKey === 'favorites' ? '❤️ ' : col.systemKey === 'wishlist' ? '🎁 ' : ''}{col.name}
+							{col.systemKey === 'favorites'
+								? '❤️ '
+								: col.systemKey === 'wishlist'
+									? '🎁 '
+									: ''}{col.name}
 						</a>
 					{/each}
 				</div>
@@ -562,7 +651,9 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 
 					<!-- Fade gradient when collapsed -->
 					{#if !descExpanded && (media.description?.length ?? 0) > 100}
-						<div class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[var(--color-bkg-main,#0a0b12)] to-transparent pointer-events-none"></div>
+						<div
+							class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[var(--color-bkg-main,#0a0b12)] to-transparent pointer-events-none"
+						></div>
 					{/if}
 				</div>
 
@@ -576,14 +667,16 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 					>
 						<svg
 							class="w-5 h-5 transition-transform duration-300 {descExpanded ? 'rotate-180' : ''}"
-							fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2.5"
 						>
 							<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
 						</svg>
 					</button>
 				{/if}
 			</div>
-
 		</div>
 	</div>
 
@@ -591,10 +684,14 @@ Takes loaded data as props and keeps local copies so edits show without a reload
 	{#if tracking}
 		<div class="px-3.5 sm:px-6 flex flex-col gap-4 mt-2">
 			<ProgressTracker {media} {tracking} onUpdate={handleTrackingChanged} />
-			<CycleHistory {media} {cycles} onComplete={async () => {
-				const updated = await getTracking(media.id);
-				if (updated) tracking = updated;
-			}} />
+			<CycleHistory
+				{media}
+				{cycles}
+				onComplete={async () => {
+					const updated = await getTracking(media.id);
+					if (updated) tracking = updated;
+				}}
+			/>
 		</div>
 	{/if}
 </div>

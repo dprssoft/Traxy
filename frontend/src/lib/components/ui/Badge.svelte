@@ -1,14 +1,6 @@
 <script lang="ts">
 	interface Props {
-		variant?:
-			| 'default'
-			| 'indigo'
-			| 'emerald'
-			| 'amber'
-			| 'rose'
-			| 'purple'
-			| 'sky'
-			| 'slate';
+		variant?: 'default' | 'indigo' | 'emerald' | 'amber' | 'rose' | 'purple' | 'sky' | 'slate';
 		size?: 'xs' | 'sm' | 'md';
 		dot?: boolean;
 		class?: string;
@@ -53,7 +45,9 @@
 </script>
 
 <span
-	class="inline-flex items-center gap-1 rounded font-bold border {variants[variant]} {sizes[size]} {extraClass}"
+	class="inline-flex items-center gap-1 rounded font-bold border {variants[variant]} {sizes[
+		size
+	]} {extraClass}"
 >
 	{#if dot}
 		<span class="w-1.5 h-1.5 rounded-full shrink-0 {dotColors[variant]}"></span>

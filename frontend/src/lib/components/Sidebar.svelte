@@ -14,26 +14,30 @@
 </script>
 
 <!-- Desktop Wireframe Side Panel (Moves together with top left/right button) -->
-<aside 
+<aside
 	class="hidden md:flex flex-col h-screen sticky top-0 bg-[#0d0e18]/90 backdrop-blur-2xl transition-all duration-300 shrink-0 z-40 select-none
 		{isCollapsed ? 'w-20 p-3' : 'w-64 p-5'}
 		{isMirrored ? 'border-l border-white/[0.08]' : 'border-r border-white/[0.08]'}"
 >
 	<!-- Top Section from Wireframe: [Square Icon] Username with Divider -->
-	<a 
-		href={resolve('/profile')} 
+	<a
+		href={resolve('/profile')}
 		class="flex items-center gap-3.5 pb-4 mb-3 border-b border-white/[0.08] group transition-all
 			{isCollapsed ? 'justify-center' : ''}"
 		title="Open user profile ({username})"
 	>
 		<!-- Avatar square matching wireframe's top-left square -->
-		<div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/25 shrink-0 border border-white/[0.1] group-hover:scale-105 transition-transform">
+		<div
+			class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/25 shrink-0 border border-white/[0.1] group-hover:scale-105 transition-transform"
+		>
 			{profileInitial}
 		</div>
 		{#if !isCollapsed}
 			<div class="min-w-0 flex-1">
 				<div class="flex items-center gap-1.5">
-					<h2 class="font-bold text-white text-base truncate tracking-tight group-hover:text-indigo-300 transition-colors">
+					<h2
+						class="font-bold text-white text-base truncate tracking-tight group-hover:text-indigo-300 transition-colors"
+					>
 						{username}
 					</h2>
 				</div>
@@ -48,23 +52,30 @@
 	<nav class="space-y-1.5 flex-1 overflow-y-auto py-2">
 		{#each navItems as item (item.href)}
 			{@const isActive = item.match($page.url.pathname)}
-			<a 
+			<a
 				href={resolve(item.href)}
 				title={item.label}
 				class="flex items-center rounded-2xl font-semibold text-sm transition-all relative group
 					{isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2.5'}
-					{isActive 
-						? 'text-white bg-indigo-600/20 border border-indigo-500/35 shadow-sm shadow-indigo-500/10' 
-						: 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'}"
+					{isActive
+					? 'text-white bg-indigo-600/20 border border-indigo-500/35 shadow-sm shadow-indigo-500/10'
+					: 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'}"
 			>
 				<div class="flex items-center gap-3 {isCollapsed ? 'justify-center' : ''}">
 					<!-- Rounded square icon wrapper from wireframe -->
-					<div class="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0
-						{isActive 
-							? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/30' 
+					<div
+						class="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0
+						{isActive
+							? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/30'
 							: 'bg-white/[0.04] text-slate-400 group-hover:text-indigo-300 group-hover:bg-white/[0.08]'}"
 					>
-						<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<svg
+							class="w-4 h-4"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={item.icon} />
 						</svg>
 					</div>
@@ -74,7 +85,9 @@
 				</div>
 
 				{#if !isCollapsed && item.badge}
-					<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+					<span
+						class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+					>
 						{item.badge}
 					</span>
 				{/if}
@@ -91,12 +104,20 @@
 				title="About Traxy"
 				class="flex items-center rounded-2xl text-sm font-semibold transition-all group
 					{isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2.5'}
-					{isAboutActive 
-						? 'text-white bg-indigo-600/20 border border-indigo-500/35' 
-						: 'text-slate-400 hover:text-white hover:bg-white/[0.04]'}"
+					{isAboutActive
+					? 'text-white bg-indigo-600/20 border border-indigo-500/35'
+					: 'text-slate-400 hover:text-white hover:bg-white/[0.04]'}"
 			>
-				<div class="w-9 h-9 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center text-slate-400 group-hover:text-indigo-300 shrink-0 transition-colors">
-					<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<div
+					class="w-9 h-9 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center text-slate-400 group-hover:text-indigo-300 shrink-0 transition-colors"
+				>
+					<svg
+						class="w-4 h-4"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d={aboutItem.icon} />
 					</svg>
 				</div>
@@ -108,9 +129,13 @@
 
 		<!-- Mirror toggle indicator -->
 		{#if !isCollapsed}
-			<div class="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500 rounded-xl bg-white/[0.02]">
+			<div
+				class="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500 rounded-xl bg-white/[0.02]"
+			>
 				<span>Panel Position</span>
-				<span class="font-bold text-slate-400 uppercase tracking-wider">{isMirrored ? 'Right' : 'Left'}</span>
+				<span class="font-bold text-slate-400 uppercase tracking-wider"
+					>{isMirrored ? 'Right' : 'Left'}</span
+				>
 			</div>
 		{/if}
 	</div>

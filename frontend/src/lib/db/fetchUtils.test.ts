@@ -15,10 +15,15 @@ describe('fetchJson', () => {
 	it('sends the given method/body/headers via the init param', async () => {
 		(fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
 
-		await fetchJson('https://example.com', 4000, { 'X-Foo': 'bar' }, {
-			method: 'POST',
-			body: 'payload',
-		});
+		await fetchJson(
+			'https://example.com',
+			4000,
+			{ 'X-Foo': 'bar' },
+			{
+				method: 'POST',
+				body: 'payload',
+			},
+		);
 
 		expect(fetch).toHaveBeenCalledWith(
 			'https://example.com',

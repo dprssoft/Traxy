@@ -66,7 +66,9 @@
 		subtitle="Choose which shortcuts appear in the bottom bar on mobile ({BOTTOM_NAV_MIN}–{BOTTOM_NAV_MAX} buttons)."
 	/>
 
-	<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex items-center justify-between gap-4">
+	<div
+		class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex items-center justify-between gap-4"
+	>
 		<div>
 			<h3 class="font-bold text-white text-sm">Custom bottom bar</h3>
 			<p class="text-xs text-slate-400 mt-0.5">When off, the default shortcuts are used.</p>
@@ -88,13 +90,24 @@
 				onfinalize={onFinalize}
 			>
 				{#each dndItems as { id, item } (id)}
-					<div class="relative flex flex-col items-center gap-1 flex-1 max-w-16 cursor-grab active:cursor-grabbing select-none touch-none">
-						<div class="w-10 h-9 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.08] text-slate-200">
-							<svg class="w-4 h-4 stroke-[1.8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<div
+						class="relative flex flex-col items-center gap-1 flex-1 max-w-16 cursor-grab active:cursor-grabbing select-none touch-none"
+					>
+						<div
+							class="w-10 h-9 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.08] text-slate-200"
+						>
+							<svg
+								class="w-4 h-4 stroke-[1.8]"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" d={item.icon} />
 							</svg>
 						</div>
-						<span class="text-[9.5px] font-bold tracking-tight truncate max-w-full text-slate-400">{item.label}</span>
+						<span class="text-[9.5px] font-bold tracking-tight truncate max-w-full text-slate-400"
+							>{item.label}</span
+						>
 						{#if canRemove}
 							<button
 								type="button"
@@ -110,7 +123,9 @@
 			</div>
 			<p class="text-[11px] text-slate-500">Drag to reorder. Tap − to remove.</p>
 			{#if !hasSettings}
-				<p class="text-[11px] text-amber-400">Settings isn't in the bar — you can still reach it from the menu.</p>
+				<p class="text-[11px] text-amber-400">
+					Settings isn't in the bar — you can still reach it from the menu.
+				</p>
 			{/if}
 		</div>
 
@@ -134,7 +149,12 @@
 							aria-label="Add {item.label}"
 							class="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[#121422] border border-white/[0.06] text-slate-300 hover:text-white hover:border-indigo-500/40 transition-colors cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
 						>
-							<svg class="w-5 h-5 stroke-[1.8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<svg
+								class="w-5 h-5 stroke-[1.8]"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" d={item.icon} />
 							</svg>
 							<span class="text-[11px] font-semibold">{item.label}</span>

@@ -8,7 +8,12 @@ imports it locally and opens its media page.
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { searchState, addRecentSearch, loadRecentSearches, getTypeColor } from '$lib/stores/search.svelte';
+	import {
+		searchState,
+		addRecentSearch,
+		loadRecentSearches,
+		getTypeColor,
+	} from '$lib/stores/search.svelte';
 	import { searchTmdb } from '$lib/db/sources/tmdb';
 	import { searchIgdb } from '$lib/db/sources/igdb';
 	import { searchAnilist } from '$lib/db/sources/anilist';
@@ -38,7 +43,15 @@ imports it locally and opens its media page.
 	let containerEl: HTMLElement | null = null;
 	let inputEl: HTMLInputElement | null = null;
 
-	const filterTypes: (MediaType | 'all')[] = ['all', 'film', 'tv', 'game', 'anime', 'book', 'comic'];
+	const filterTypes: (MediaType | 'all')[] = [
+		'all',
+		'film',
+		'tv',
+		'game',
+		'anime',
+		'book',
+		'comic',
+	];
 
 	function openSearch() {
 		isFocused = true;
@@ -118,10 +131,14 @@ imports it locally and opens its media page.
 			// Collect all raw results first, then deduplicate once everything has settled.
 			const raw: SearchResult[] = [];
 			await Promise.all(
-				promises.map(p => p.then(res => {
-					if (searchId !== currentSearchId) return;
-					raw.push(...res);
-				}).catch(e => console.error(e)))
+				promises.map((p) =>
+					p
+						.then((res) => {
+							if (searchId !== currentSearchId) return;
+							raw.push(...res);
+						})
+						.catch((e) => console.error(e)),
+				),
 			);
 
 			if (searchId !== currentSearchId) return;
@@ -132,9 +149,12 @@ imports it locally and opens its media page.
 			const deduped = deduplicateResults(raw, searchPrefsStore.current);
 
 			// Now apply the type filter on the already-clean set.
-			results = t === 'all' ? deduped
-				: t === 'comic' ? deduped.filter(r => ['manga', 'manhwa', 'manhua', 'comic'].includes(r.type))
-				: deduped.filter(r => r.type === t);
+			results =
+				t === 'all'
+					? deduped
+					: t === 'comic'
+						? deduped.filter((r) => ['manga', 'manhwa', 'manhua', 'comic'].includes(r.type))
+						: deduped.filter((r) => r.type === t);
 		} catch (err) {
 			console.error('Search failed', err);
 		} finally {
@@ -160,7 +180,7 @@ imports it locally and opens its media page.
 		addRecentSearch(item.title);
 		closeSearch();
 		query = '';
-		
+
 		const media = await ensureLocalMedia(item);
 		goto(resolve(`/media/${media.id}`));
 	}
@@ -181,12 +201,22 @@ imports it locally and opens its media page.
 		aria-label="Toggle search"
 		title="Toggle search"
 	>
-		<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="15"
+			height="15"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
 			<circle cx="11" cy="11" r="8"></circle>
 			<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 		</svg>
 	</button>
-	
+
 	<input
 		bind:this={inputEl}
 		bind:value={query}
@@ -216,7 +246,17 @@ imports it locally and opens its media page.
 			aria-label="Clear and close search"
 			title="Close search"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<line x1="18" y1="6" x2="6" y2="18"></line>
 				<line x1="6" y1="6" x2="18" y2="18"></line>
 			</svg>
@@ -228,17 +268,27 @@ imports it locally and opens its media page.
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="fixed inset-0 z-40" onclick={closeSearch}></div>
-		
-		<div class="absolute top-12 left-0 w-full bg-[#121422]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden max-h-[80vh]">
-			
+
+		<div
+			class="absolute top-12 left-0 w-full bg-[#121422]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden max-h-[80vh]"
+		>
 			<!-- Type Filters -->
-			<div class="flex overflow-x-auto gap-1.5 p-3 border-b border-white/[0.06] scrollbar-hide shrink-0 bg-[#0d0e18]/50">
+			<div
+				class="flex overflow-x-auto gap-1.5 p-3 border-b border-white/[0.06] scrollbar-hide shrink-0 bg-[#0d0e18]/50"
+			>
 				{#each filterTypes as type (type)}
 					<button
 						onclick={() => onTypeSelect(type)}
-						class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer {searchState.selectedType === type ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'bg-[#181b2e] text-slate-400 hover:text-white hover:bg-[#20243d]'}"
+						class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer {searchState.selectedType ===
+						type
+							? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+							: 'bg-[#181b2e] text-slate-400 hover:text-white hover:bg-[#20243d]'}"
 					>
-						{type === 'all' ? 'All' : type === 'comic' ? 'Comics / Manga' : MEDIA_TYPE_LABELS[type] ?? type}
+						{type === 'all'
+							? 'All'
+							: type === 'comic'
+								? 'Comics / Manga'
+								: (MEDIA_TYPE_LABELS[type] ?? type)}
 					</button>
 				{/each}
 			</div>
@@ -246,21 +296,43 @@ imports it locally and opens its media page.
 			<!-- Results Area -->
 			<div class="overflow-y-auto flex-1 p-2 space-y-1">
 				{#if isLoading}
-					<div class="p-8 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
-						<span class="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin"></span>
+					<div
+						class="p-8 text-center text-slate-400 text-sm flex items-center justify-center gap-2"
+					>
+						<span
+							class="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin"
+						></span>
 						Searching...
 					</div>
 				{:else if query.trim().length === 0}
 					{#if searchState.recentSearches.length > 0}
-						<div class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recent searches</div>
+						<div class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+							Recent searches
+						</div>
 						{#each searchState.recentSearches as recent (recent)}
-							<button 
+							<button
 								class="w-full text-left px-3.5 py-2 text-sm text-slate-300 hover:bg-white/[0.06] rounded-xl flex items-center gap-3 transition-colors cursor-pointer"
-								onclick={() => { query = recent; performSearch(recent); }}
+								onclick={() => {
+									query = recent;
+									performSearch(recent);
+								}}
 							>
 								<span class="text-slate-500">
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-								</span> {recent}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"
+										></polyline></svg
+									>
+								</span>
+								{recent}
 							</button>
 						{/each}
 					{:else}
@@ -271,45 +343,68 @@ imports it locally and opens its media page.
 				{:else}
 					{#each visibleResults as item (`${item.source}:${item.externalId}`)}
 						<div class="relative">
-						<button 
-							class="w-full flex gap-3 p-2.5 pr-12 hover:bg-white/[0.06] rounded-xl text-left items-start transition-all cursor-pointer group"
-							onclick={() => onResultClick(item)}
-						>
-							{#if item.posterUrl}
-								<SensitiveContent isAdult={item.isAdult} badge={false} class="w-12 h-16 rounded-lg shrink-0">
-									<img src={item.posterUrl} alt={item.title} class="w-12 h-16 object-cover rounded-lg shadow bg-slate-800 shrink-0 group-hover:scale-105 transition-transform" />
-								</SensitiveContent>
-							{:else}
-								<div class="w-12 h-16 bg-[#181b2e] rounded-lg border border-white/[0.06] flex items-center justify-center shrink-0">
-									<span class="text-slate-500 text-xs font-bold text-center leading-tight">{item.title.substring(0, 2)}</span>
-								</div>
-							{/if}
-							
-							<div class="flex-1 min-w-0 py-0.5">
-								<h4 class="text-white text-sm font-semibold truncate group-hover:text-indigo-400 transition-colors">{item.title}</h4>
-								<div class="flex items-center gap-2 mt-1 flex-wrap">
-									<span class="text-[11px] font-semibold px-2 py-0.5 rounded {getTypeColor(item.type)}">{MEDIA_TYPE_LABELS[item.type] ?? item.type}</span>
-									{#if item.year}
-										<span class="text-xs text-slate-400 font-medium">{item.year}</span>
-									{/if}
-								</div>
-								{#if item.type === 'game' && item.platforms && item.platforms.length > 0}
-									<div class="flex flex-wrap gap-1 mt-1.5">
-										{#each item.platforms.slice(0, 3) as platform (platform)}
-											<span class="text-[10px] font-medium px-1.5 py-0.5 bg-[#181b2e] text-slate-300 rounded border border-white/[0.06]">{platform}</span>
-										{/each}
-										{#if item.platforms.length > 3}
-											<span class="text-[10px] text-slate-500">+{item.platforms.length - 3}</span>
-										{/if}
+							<button
+								class="w-full flex gap-3 p-2.5 pr-12 hover:bg-white/[0.06] rounded-xl text-left items-start transition-all cursor-pointer group"
+								onclick={() => onResultClick(item)}
+							>
+								{#if item.posterUrl}
+									<SensitiveContent
+										isAdult={item.isAdult}
+										badge={false}
+										class="w-12 h-16 rounded-lg shrink-0"
+									>
+										<img
+											src={item.posterUrl}
+											alt={item.title}
+											class="w-12 h-16 object-cover rounded-lg shadow bg-slate-800 shrink-0 group-hover:scale-105 transition-transform"
+										/>
+									</SensitiveContent>
+								{:else}
+									<div
+										class="w-12 h-16 bg-[#181b2e] rounded-lg border border-white/[0.06] flex items-center justify-center shrink-0"
+									>
+										<span class="text-slate-500 text-xs font-bold text-center leading-tight"
+											>{item.title.substring(0, 2)}</span
+										>
 									</div>
 								{/if}
-							</div>
-						</button>
-						<QuickEditButton
-							label="Quick edit {item.title}"
-							onclick={() => onResultEdit(item)}
-							class="absolute right-2.5 top-1/2 -translate-y-1/2"
-						/>
+
+								<div class="flex-1 min-w-0 py-0.5">
+									<h4
+										class="text-white text-sm font-semibold truncate group-hover:text-indigo-400 transition-colors"
+									>
+										{item.title}
+									</h4>
+									<div class="flex items-center gap-2 mt-1 flex-wrap">
+										<span
+											class="text-[11px] font-semibold px-2 py-0.5 rounded {getTypeColor(
+												item.type,
+											)}">{MEDIA_TYPE_LABELS[item.type] ?? item.type}</span
+										>
+										{#if item.year}
+											<span class="text-xs text-slate-400 font-medium">{item.year}</span>
+										{/if}
+									</div>
+									{#if item.type === 'game' && item.platforms && item.platforms.length > 0}
+										<div class="flex flex-wrap gap-1 mt-1.5">
+											{#each item.platforms.slice(0, 3) as platform (platform)}
+												<span
+													class="text-[10px] font-medium px-1.5 py-0.5 bg-[#181b2e] text-slate-300 rounded border border-white/[0.06]"
+													>{platform}</span
+												>
+											{/each}
+											{#if item.platforms.length > 3}
+												<span class="text-[10px] text-slate-500">+{item.platforms.length - 3}</span>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							</button>
+							<QuickEditButton
+								label="Quick edit {item.title}"
+								onclick={() => onResultEdit(item)}
+								class="absolute right-2.5 top-1/2 -translate-y-1/2"
+							/>
 						</div>
 					{/each}
 				{/if}

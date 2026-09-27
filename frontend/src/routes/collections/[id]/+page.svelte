@@ -40,7 +40,8 @@
 		// Ranked lists always show the user's order — that order is the ranking.
 		if (collection.isRanked) return entries;
 		if (sort === 'added') return [...entries].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
-		if (sort === 'title') return [...entries].sort((a, b) => a.media.title.localeCompare(b.media.title));
+		if (sort === 'title')
+			return [...entries].sort((a, b) => a.media.title.localeCompare(b.media.title));
 		return entries;
 	});
 	const canReorder = $derived(editing && (collection.isRanked || sort === 'manual'));
@@ -140,7 +141,11 @@
 					{copied ? 'Copied ✓' : 'Copy list'}
 				</Button>
 				<Button variant="secondary" size="sm" onclick={exportJson}>Export JSON</Button>
-				<Button variant={editing ? 'primary' : 'secondary'} size="sm" onclick={() => (editing = !editing)}>
+				<Button
+					variant={editing ? 'primary' : 'secondary'}
+					size="sm"
+					onclick={() => (editing = !editing)}
+				>
 					{editing ? 'Done' : 'Edit'}
 				</Button>
 			{/if}

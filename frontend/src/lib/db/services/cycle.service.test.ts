@@ -21,7 +21,11 @@ describe('closeCycle', () => {
 
 		const cycles = await getCycles('m1');
 		expect(cycles).toHaveLength(1);
-		expect(cycles[0]).toMatchObject({ cycleNumber: 1, startedAt: '2026-01-01', finishedAt: '2026-02-01' });
+		expect(cycles[0]).toMatchObject({
+			cycleNumber: 1,
+			startedAt: '2026-01-01',
+			finishedAt: '2026-02-01',
+		});
 	});
 
 	it('records one finished cycle for media completed without ever starting', async () => {
@@ -29,7 +33,11 @@ describe('closeCycle', () => {
 
 		const cycles = await getCycles('m1');
 		expect(cycles).toHaveLength(1);
-		expect(cycles[0]).toMatchObject({ cycleNumber: 1, startedAt: '2026-02-01', finishedAt: '2026-02-01' });
+		expect(cycles[0]).toMatchObject({
+			cycleNumber: 1,
+			startedAt: '2026-02-01',
+			finishedAt: '2026-02-01',
+		});
 	});
 
 	it('does not add a cycle when every earlier one is already finished', async () => {

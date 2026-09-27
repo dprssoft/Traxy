@@ -68,19 +68,26 @@ export async function getOpenLibraryDetails(id: string): Promise<SearchResult | 
 	const cacheKey = `openlibrary:detail:${id}`;
 	try {
 		return await withCache(cacheKey, async () => {
-			const item = await fetchJson<OpenLibraryWorkDetail>(`${BASE_URL}${id}.json`, OPENLIBRARY_TIMEOUT_MS);
+			const item = await fetchJson<OpenLibraryWorkDetail>(
+				`${BASE_URL}${id}.json`,
+				OPENLIBRARY_TIMEOUT_MS,
+			);
 
-			const description = typeof item.description === 'string'
-				? item.description
-				: item.description?.value;
+			const description =
+				typeof item.description === 'string' ? item.description : item.description?.value;
 
 			const result: SearchResult = {
 				externalId: item.key,
 				source: 'openlibrary',
 				type: 'book',
 				title: item.title,
-				year: item.first_publish_date ? parseInt(item.first_publish_date.split(' ')[2] || item.first_publish_date) : undefined,
-				posterUrl: item.covers && item.covers.length > 0 ? `${IMAGE_BASE}/${item.covers[0]}-M.jpg` : undefined,
+				year: item.first_publish_date
+					? parseInt(item.first_publish_date.split(' ')[2] || item.first_publish_date)
+					: undefined,
+				posterUrl:
+					item.covers && item.covers.length > 0
+						? `${IMAGE_BASE}/${item.covers[0]}-M.jpg`
+						: undefined,
 				description: description || undefined,
 				isAdult: subjectsAreAdult(item.subjects),
 			};

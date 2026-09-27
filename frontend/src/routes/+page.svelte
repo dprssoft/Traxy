@@ -113,9 +113,7 @@
 	<!-- Wireframe Top Header: "Activity Feed" Title on left + Funnel Filter on right -->
 	<div class="flex justify-between items-center relative select-none">
 		<div>
-			<h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-				Activity Feed
-			</h1>
+			<h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Activity Feed</h1>
 		</div>
 
 		<!-- Filter Funnel Button from wireframe -->
@@ -131,13 +129,7 @@
 				title="Filter activities"
 			>
 				<!-- Funnel Icon from wireframe -->
-				<svg
-					class="w-5 h-5"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-				>
+				<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -208,8 +200,8 @@
 			<div>
 				<h2 class="text-xl font-bold text-white mb-1">Welcome to Traxy!</h2>
 				<p class="text-xs text-slate-400 max-w-sm mx-auto">
-					Your activity feed is empty. Search for movies, TV series, anime, games, books,
-					or comics to begin building your library.
+					Your activity feed is empty. Search for movies, TV series, anime, games, books, or comics
+					to begin building your library.
 				</p>
 			</div>
 			<a

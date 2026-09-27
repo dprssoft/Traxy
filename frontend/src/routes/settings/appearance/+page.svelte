@@ -36,18 +36,27 @@
 			</div>
 			<Badge variant="indigo">Active</Badge>
 		</div>
-		<p class="text-xs text-slate-500 italic">
-			Additional themes (AMOLED, Light) coming soon.
-		</p>
+		<p class="text-xs text-slate-500 italic">Additional themes (AMOLED, Light) coming soon.</p>
 	</div>
 
 	<!-- Flags Toggle -->
-	<div class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex items-center justify-between gap-4">
+	<div
+		class="p-5 rounded-2xl bg-[#16192b]/60 border border-white/[0.06] flex items-center justify-between gap-4"
+	>
 		<div class="min-w-0">
-			<label for="flag-toggle" class="text-sm font-bold text-white cursor-pointer">Country Flags</label>
-			<p class="text-xs text-slate-400 mt-0.5">Display country of origin as a flag emoji instead of text.</p>
+			<label for="flag-toggle" class="text-sm font-bold text-white cursor-pointer"
+				>Country Flags</label
+			>
+			<p class="text-xs text-slate-400 mt-0.5">
+				Display country of origin as a flag emoji instead of text.
+			</p>
 		</div>
-		<Toggle id="flag-toggle" checked={showCountryFlags} onchange={toggleFlags} label="Country Flags" />
+		<Toggle
+			id="flag-toggle"
+			checked={showCountryFlags}
+			onchange={toggleFlags}
+			label="Country Flags"
+		/>
 	</div>
 
 	<!-- Storage Engine -->

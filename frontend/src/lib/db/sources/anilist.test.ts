@@ -37,7 +37,11 @@ describe('anilist posterUrl mapping', () => {
 		(fetch as Mock).mockResolvedValue({
 			ok: true,
 			json: async () => ({
-				data: { Page: { media: [anilistItem({ coverImage: { large: 'https://example.com/large.jpg' } })] } },
+				data: {
+					Page: {
+						media: [anilistItem({ coverImage: { large: 'https://example.com/large.jpg' } })],
+					},
+				},
 			}),
 		});
 

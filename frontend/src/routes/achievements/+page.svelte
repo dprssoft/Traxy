@@ -22,7 +22,7 @@
 			unlocked: true,
 			progress: 1,
 			max: 1,
-			reward: '+50 XP'
+			reward: '+50 XP',
 		},
 		{
 			id: 'cinephile',
@@ -32,7 +32,7 @@
 			unlocked: false,
 			progress: 3,
 			max: 10,
-			reward: 'Silver Badge'
+			reward: 'Silver Badge',
 		},
 		{
 			id: 'bookworm',
@@ -42,7 +42,7 @@
 			unlocked: false,
 			progress: 1,
 			max: 5,
-			reward: 'Bookworm Title'
+			reward: 'Bookworm Title',
 		},
 		{
 			id: 'gamer',
@@ -52,7 +52,7 @@
 			unlocked: false,
 			progress: 2,
 			max: 3,
-			reward: 'Gold Badge'
+			reward: 'Gold Badge',
 		},
 		{
 			id: 'mirror_master',
@@ -62,8 +62,8 @@
 			unlocked: true,
 			progress: 1,
 			max: 1,
-			reward: 'Layout Pioneer'
-		}
+			reward: 'Layout Pioneer',
+		},
 	];
 
 	const unlockedCount = $derived(achievements.filter((a) => a.unlocked).length);
@@ -89,15 +89,15 @@
 		{#each achievements as a (a.id)}
 			<div
 				class="p-5 rounded-2xl border transition-all duration-200 flex items-start gap-4
-					{a.unlocked 
-						? 'bg-[#141727]/90 border-indigo-500/30 shadow-lg shadow-indigo-500/5' 
-						: 'bg-[#10121d]/60 border-white/[0.05] opacity-75'}"
+					{a.unlocked
+					? 'bg-[#141727]/90 border-indigo-500/30 shadow-lg shadow-indigo-500/5'
+					: 'bg-[#10121d]/60 border-white/[0.05] opacity-75'}"
 			>
 				<div
 					class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 border
-						{a.unlocked 
-							? 'bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 border-indigo-500/40' 
-							: 'bg-white/[0.03] border-white/[0.06] grayscale'}"
+						{a.unlocked
+						? 'bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 border-indigo-500/40'
+						: 'bg-white/[0.03] border-white/[0.06] grayscale'}"
 				>
 					{a.icon}
 				</div>
@@ -115,7 +115,9 @@
 					<p class="text-xs text-slate-400 leading-relaxed">{a.desc}</p>
 
 					<!-- Progress bar -->
-					<div class="w-full bg-[#0a0b12] rounded-full h-1.5 overflow-hidden border border-white/[0.04]">
+					<div
+						class="w-full bg-[#0a0b12] rounded-full h-1.5 overflow-hidden border border-white/[0.04]"
+					>
 						<div
 							class="h-full rounded-full transition-all duration-300
 								{a.unlocked ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-slate-600'}"

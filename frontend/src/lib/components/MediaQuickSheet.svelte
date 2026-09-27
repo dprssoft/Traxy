@@ -62,7 +62,9 @@
 	<div class="space-y-5">
 		<!-- Media header -->
 		<div class="flex items-center gap-3">
-			<div class="w-12 h-16 shrink-0 rounded-lg overflow-hidden bg-[#181b2e] border border-white/[0.08]">
+			<div
+				class="w-12 h-16 shrink-0 rounded-lg overflow-hidden bg-[#181b2e] border border-white/[0.08]"
+			>
 				{#if media.posterUrl}
 					<SensitiveContent isAdult={media.isAdult} badge={false} class="w-full h-full">
 						<img src={media.posterUrl} alt="" class="w-full h-full object-cover" />
@@ -97,7 +99,12 @@
 
 			<MyNote note={tracking?.note} onSave={handleSaveNote} maxLength={255} />
 
-			<Button variant="secondary" size="sm" class="w-full justify-between" onclick={() => (view = 'collections')}>
+			<Button
+				variant="secondary"
+				size="sm"
+				class="w-full justify-between"
+				onclick={() => (view = 'collections')}
+			>
 				<span>Add to collection</span>
 				<span aria-hidden="true">›</span>
 			</Button>
@@ -112,7 +119,13 @@
 	{#snippet footer()}
 		<div class="flex items-center justify-between gap-3">
 			{#if tracking}
-				<Button variant="ghost" size="sm" class="text-rose-400" loading={removing} onclick={handleRemove}>
+				<Button
+					variant="ghost"
+					size="sm"
+					class="text-rose-400"
+					loading={removing}
+					onclick={handleRemove}
+				>
 					Remove from library
 				</Button>
 			{:else}

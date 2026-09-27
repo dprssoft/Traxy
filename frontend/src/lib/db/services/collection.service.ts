@@ -102,7 +102,9 @@ export function acceptsMediaType(collection: CollectionSummary, type: MediaType)
  * All collections, system ones first. With `mediaType`, only collections that can hold that
  * type (shared ones plus that type's own).
  */
-export async function listCollections(opts: { mediaType?: MediaType } = {}): Promise<CollectionSummary[]> {
+export async function listCollections(
+	opts: { mediaType?: MediaType } = {},
+): Promise<CollectionSummary[]> {
 	if (opts.mediaType) {
 		return querySummaries('WHERE c.mediaType IS NULL OR c.mediaType = ?', [opts.mediaType]);
 	}
@@ -143,7 +145,15 @@ export async function createCollection(input: CollectionInput): Promise<Collecti
 	await getDb().run(
 		`INSERT INTO Collection (id, name, description, createdAt, updatedAt, mediaType, systemKey, isRanked, sortOrder)
 		 VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 0)`,
-		[id, name, input.description?.trim() || null, now, now, input.mediaType, Number(input.isRanked ?? false)],
+		[
+			id,
+			name,
+			input.description?.trim() || null,
+			now,
+			now,
+			input.mediaType,
+			Number(input.isRanked ?? false),
+		],
 	);
 	await logActivity({
 		eventType: 'collection_created',
@@ -184,7 +194,9 @@ export async function updateCollection(
 	}
 
 	const description =
-		patch.description === undefined ? (current.description ?? null) : patch.description.trim() || null;
+		patch.description === undefined
+			? (current.description ?? null)
+			: patch.description.trim() || null;
 	const isRanked = patch.isRanked ?? current.isRanked;
 	await getDb().run(
 		`UPDATE Collection SET name = ?, description = ?, mediaType = ?, isRanked = ?, updatedAt = ?
@@ -263,7 +275,8 @@ export async function addToCollection(collectionId: string, mediaId: string): Pr
 		'SELECT COALESCE(MAX(sortOrder), -1) AS maxOrder FROM CollectionItem WHERE collectionId = ?',
 		[collectionId],
 	);
-	const nextOrder = Number((max.values?.[0] as { maxOrder: number } | undefined)?.maxOrder ?? -1) + 1;
+	const nextOrder =
+		Number((max.values?.[0] as { maxOrder: number } | undefined)?.maxOrder ?? -1) + 1;
 	const result = await db.run(
 		`INSERT OR IGNORE INTO CollectionItem (id, collectionId, mediaId, sortOrder, addedAt)
 		 VALUES (?, ?, ?, ?, ?)`,
@@ -284,7 +297,10 @@ export async function addToCollection(collectionId: string, mediaId: string): Pr
 }
 
 /** Remove media from a collection. Returns false if it wasn't there. */
-export async function removeFromCollection(collectionId: string, mediaId: string): Promise<boolean> {
+export async function removeFromCollection(
+	collectionId: string,
+	mediaId: string,
+): Promise<boolean> {
 	const collection = await requireCollection(collectionId);
 	const result = await getDb().run(
 		'DELETE FROM CollectionItem WHERE collectionId = ? AND mediaId = ?',

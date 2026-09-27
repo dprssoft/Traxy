@@ -7,8 +7,16 @@ import { getDb } from '../index';
  */
 export async function exportDatabaseJson(): Promise<string> {
 	const db = getDb();
-	const tables = ['Media', 'TrackingStatus', 'WatchCycle', 'ActivityLog', 'Collection', 'CollectionItem', 'Goal'];
-	
+	const tables = [
+		'Media',
+		'TrackingStatus',
+		'WatchCycle',
+		'ActivityLog',
+		'Collection',
+		'CollectionItem',
+		'Goal',
+	];
+
 	const exportData: Record<string, unknown[]> = {};
 
 	for (const table of tables) {
@@ -16,11 +24,15 @@ export async function exportDatabaseJson(): Promise<string> {
 		exportData[table] = res.values || [];
 	}
 
-	return JSON.stringify({
-		version: 1,
-		timestamp: new Date().toISOString(),
-		data: exportData
-	}, null, 2);
+	return JSON.stringify(
+		{
+			version: 1,
+			timestamp: new Date().toISOString(),
+			data: exportData,
+		},
+		null,
+		2,
+	);
 }
 
 /**
@@ -37,7 +49,15 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 		const statements: capSQLiteSet[] = [];
 
 		// Foreign keys are off by default in capacitor-sqlite, so table order doesn't matter here.
-		const tables = ['Goal', 'ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'Collection', 'Media'];
+		const tables = [
+			'Goal',
+			'ActivityLog',
+			'WatchCycle',
+			'TrackingStatus',
+			'CollectionItem',
+			'Collection',
+			'Media',
+		];
 
 		for (const table of tables) {
 			statements.push({ statement: `DELETE FROM ${table}`, values: [] });
@@ -89,7 +109,17 @@ export async function clearMediaCache(): Promise<void> {
 /** Wipe everything, settings and cache included. Irreversible. */
 export async function resetAllUserData(): Promise<void> {
 	const db = getDb();
-	const tables = ['ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'Collection', 'Media', 'ApiCache', 'AppSettings', 'Goal'];
+	const tables = [
+		'ActivityLog',
+		'WatchCycle',
+		'TrackingStatus',
+		'CollectionItem',
+		'Collection',
+		'Media',
+		'ApiCache',
+		'AppSettings',
+		'Goal',
+	];
 	for (const table of tables) {
 		await db.run(`DELETE FROM ${table}`);
 	}
@@ -111,7 +141,9 @@ const ANIME_MERGE_LEFTOVER_KEYS = [
  */
 export async function restoreAnimeMergeBackupIfPresent(): Promise<boolean> {
 	const db = getDb();
-	const res = await db.query('SELECT value FROM AppSettings WHERE key = ?', [ANIME_MERGE_BACKUP_KEY]);
+	const res = await db.query('SELECT value FROM AppSettings WHERE key = ?', [
+		ANIME_MERGE_BACKUP_KEY,
+	]);
 	const row = res.values?.[0];
 	const raw = Array.isArray(row) ? row[0] : (row as { value?: string } | undefined)?.value;
 	if (!raw) return false;

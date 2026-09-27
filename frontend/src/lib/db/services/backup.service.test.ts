@@ -110,9 +110,7 @@ describe('backup.service', () => {
 			await importDatabaseJson(JSON.stringify(backup));
 
 			expect(
-				executedQueries.some(
-					(q) => q.type === 'run' && q.sql.startsWith('INSERT INTO Goal'),
-				),
+				executedQueries.some((q) => q.type === 'run' && q.sql.startsWith('INSERT INTO Goal')),
 			).toBe(true);
 		});
 
@@ -148,9 +146,7 @@ describe('backup.service', () => {
 	describe('clearMediaCache', () => {
 		it('deletes only from ApiCache', async () => {
 			await clearMediaCache();
-			expect(executedQueries).toEqual([
-				{ type: 'run', sql: 'DELETE FROM ApiCache', values: [] },
-			]);
+			expect(executedQueries).toEqual([{ type: 'run', sql: 'DELETE FROM ApiCache', values: [] }]);
 		});
 	});
 });
@@ -176,7 +172,10 @@ describe('restoreAnimeMergeBackupIfPresent', () => {
 
 		const runs = executedQueries.filter((q) => q.type === 'run');
 		expect(runs).toContainEqual(
-			expect.objectContaining({ sql: 'INSERT INTO Media VALUES (?, ?, ?)', values: ['m1', 'anilist', '142853'] }),
+			expect.objectContaining({
+				sql: 'INSERT INTO Media VALUES (?, ?, ?)',
+				values: ['m1', 'anilist', '142853'],
+			}),
 		);
 		const deletedKeys = runs
 			.filter((q) => q.sql.startsWith('DELETE FROM AppSettings'))

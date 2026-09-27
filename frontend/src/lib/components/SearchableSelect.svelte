@@ -21,9 +21,7 @@
 	let listEl: HTMLUListElement | undefined = $state();
 
 	const filtered = $derived(
-		query
-			? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
-			: options,
+		query ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase())) : options,
 	);
 
 	const selectedLabel = $derived(options.find((o) => o.value === value)?.label ?? placeholder);
@@ -110,7 +108,7 @@
 
 <!-- Hidden input for form submission -->
 {#if name}
-	<input type="hidden" {name} value={value} />
+	<input type="hidden" {name} {value} />
 {/if}
 
 <div class="relative" bind:this={containerEl}>
@@ -124,16 +122,24 @@
 		       transition-all text-left flex items-center justify-between gap-3"
 	>
 		<span class="truncate {value ? '' : 'text-gray-500'}">{selectedLabel}</span>
-		<svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform {open ? 'rotate-180' : ''}"
-			fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<svg
+			class="w-4 h-4 text-gray-400 shrink-0 transition-transform {open ? 'rotate-180' : ''}"
+			fill="none"
+			stroke="currentColor"
+			viewBox="0 0 24 24"
+		>
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 		</svg>
 	</button>
 
 	{#if open}
-		<div class="absolute z-50 mt-1 w-full bg-bkg-header border border-gray-700 rounded-lg shadow-2xl overflow-hidden">
+		<div
+			class="absolute z-50 mt-1 w-full bg-bkg-header border border-gray-700 rounded-lg shadow-2xl overflow-hidden"
+		>
 			{#if query}
-				<div class="px-3 py-2 text-xs text-text-muted border-b border-gray-700 flex items-center gap-1">
+				<div
+					class="px-3 py-2 text-xs text-text-muted border-b border-gray-700 flex items-center gap-1"
+				>
 					<span>Search:</span>
 					<span class="text-brand-accent font-medium">{query}</span>
 				</div>
@@ -158,7 +164,11 @@
 							type="button"
 							onclick={() => select(opt)}
 							class="w-full text-left px-4 py-2.5 text-sm transition-colors
-							       {i === highlightIndex ? 'bg-brand-accent/20 text-white/95' : active ? 'text-brand-accent' : 'text-white/90 hover:bg-white/5'}"
+							       {i === highlightIndex
+								? 'bg-brand-accent/20 text-white/95'
+								: active
+									? 'text-brand-accent'
+									: 'text-white/90 hover:bg-white/5'}"
 						>
 							{opt.label}
 						</button>

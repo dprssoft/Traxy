@@ -29,10 +29,7 @@ export async function getAppSettingBool(key: string, defaultValue = false): Prom
  */
 export async function setAppSetting(key: string, value: string): Promise<void> {
 	const db = getDb();
-	await db.run(
-		'INSERT OR REPLACE INTO AppSettings (key, value) VALUES (?, ?)',
-		[key, value],
-	);
+	await db.run('INSERT OR REPLACE INTO AppSettings (key, value) VALUES (?, ?)', [key, value]);
 }
 
 /**

@@ -397,4 +397,3 @@ export async function fetchIgdbTimeToBeatByTitle(
 		return null;
 	}
 }
-

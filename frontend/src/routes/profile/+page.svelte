@@ -13,7 +13,7 @@
 			username: usernameInput,
 			email: userStore.value?.email ?? 'local@traxy.app',
 			role: userStore.value?.role ?? 'USER',
-			memberSinceYear: userStore.value?.memberSinceYear ?? 2026
+			memberSinceYear: userStore.value?.memberSinceYear ?? 2026,
 		};
 		try {
 			await setUserProfile(profile);
@@ -38,9 +38,13 @@
 	/>
 
 	<!-- Profile Card (Wireframe Top section) -->
-	<div class="p-6 rounded-3xl bg-[#121422]/90 border border-white/[0.08] backdrop-blur-xl shadow-2xl space-y-6">
+	<div
+		class="p-6 rounded-3xl bg-[#121422]/90 border border-white/[0.08] backdrop-blur-xl shadow-2xl space-y-6"
+	>
 		<div class="flex items-center gap-4">
-			<div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/25 border border-white/[0.1]">
+			<div
+				class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/25 border border-white/[0.1]"
+			>
 				{usernameInput.charAt(0).toUpperCase()}
 			</div>
 			<div>
