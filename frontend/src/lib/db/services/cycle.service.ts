@@ -62,13 +62,25 @@ export async function createCycle(
 	return { id, mediaId, cycleNumber, startedAt: resolvedStart };
 }
 
-/** Close the currently open cycle (finishedAt IS NULL) for a media item. */
+/**
+ * Close the currently open cycle (finishedAt IS NULL) for a media item. Media that is marked
+ * completed without ever being in progress (imports, scoring an untracked title) has no cycle
+ * yet — it gets one finished cycle so the timeline and rewatch counts include it.
+ */
 export async function closeCycle(mediaId: string, finishedAt?: string): Promise<void> {
 	const db = getDb();
 	const resolved = finishedAt ?? new Date().toISOString().slice(0, 10);
-	await db.run(
+	const result = await db.run(
 		'UPDATE WatchCycle SET finishedAt = ? WHERE mediaId = ? AND finishedAt IS NULL',
 		[resolved, mediaId],
+	);
+	if ((result.changes?.changes ?? 0) > 0) return;
+
+	const existing = await db.query('SELECT 1 FROM WatchCycle WHERE mediaId = ? LIMIT 1', [mediaId]);
+	if (existing.values?.length) return;
+	await db.run(
+		'INSERT INTO WatchCycle (id, mediaId, cycleNumber, startedAt, finishedAt) VALUES (?, ?, 1, ?, ?)',
+		[uuidv4(), mediaId, resolved, resolved],
 	);
 }
 

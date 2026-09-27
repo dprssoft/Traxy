@@ -267,6 +267,8 @@ export async function upsertTracking(
 
 		if (newStatus === 'in_progress') {
 			await createCycle(data.mediaId);
+		} else if (newStatus === 'completed') {
+			await closeCycle(data.mediaId);
 		}
 
 		await logActivity({

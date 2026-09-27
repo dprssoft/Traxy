@@ -384,6 +384,13 @@ describe('tracking.service Scenarios', () => {
 			);
 		});
 
+		it('records a finished cycle when created directly as completed', async () => {
+			await upsertTracking({ mediaId: 'film-2', status: 'completed' });
+
+			expect(mockCreateCycle).not.toHaveBeenCalled();
+			expect(mockCloseCycle).toHaveBeenCalledWith('film-2');
+		});
+
 		it('starts watch cycle when created directly as in_progress', async () => {
 			const res = await upsertTracking({
 				mediaId: 'anime-1',
