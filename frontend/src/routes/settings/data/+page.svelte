@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { exportDatabaseJson, importDatabaseJson, clearMediaCache, resetAllUserData } from '$lib/db/services/backup.service';
+	import { downloadFile } from '$lib/utils/download';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -71,15 +72,11 @@
 			exporting = true;
 			backupStatus = '';
 			const json = await exportDatabaseJson();
-			const blob = new Blob([json], { type: 'application/json' });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `traxy-backup-${new Date().toISOString().split('T')[0]}.json`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			downloadFile(
+				`traxy-backup-${new Date().toISOString().split('T')[0]}.json`,
+				json,
+				'application/json',
+			);
 			backupStatus = 'success:Export successful!';
 			setTimeout(() => (backupStatus = ''), 4000);
 		} catch (err) {
