@@ -21,7 +21,7 @@ const REAL_TABLES = [
 ];
 const STALE_TABLE_NAMES = ['LocalMedia', 'CustomCollection'];
 
-let executedQueries: { type: 'query' | 'run'; sql: string; values?: any[] }[] = [];
+let executedQueries: { type: 'query' | 'run'; sql: string; values?: unknown[] }[] = [];
 // Rows returned for `PRAGMA table_info(...)` — one entry per column in the live table.
 let tableColumns: unknown[] = [];
 // Rows returned for AppSettings reads.
@@ -37,6 +37,13 @@ vi.mock('../index', () => ({
 		}),
 		run: vi.fn(async (sql: string, values: any[] = []) => {
 			executedQueries.push({ type: 'run', sql, values });
+			return { changes: 0 };
+		}),
+		// Restores run as one transactional set — record each statement like a `run`.
+		executeSet: vi.fn(async (set: { statement: string; values?: unknown[] }[]) => {
+			for (const { statement, values } of set) {
+				executedQueries.push({ type: 'run', sql: statement, values });
+			}
 			return { changes: 0 };
 		}),
 	}),

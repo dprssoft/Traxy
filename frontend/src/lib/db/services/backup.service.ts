@@ -1,3 +1,4 @@
+import type { capSQLiteSet } from '@capacitor-community/sqlite';
 import { getDb } from '../index';
 
 export async function exportDatabaseJson(): Promise<string> {
@@ -18,41 +19,61 @@ export async function exportDatabaseJson(): Promise<string> {
 	}, null, 2);
 }
 
+/**
+ * Replace every user table with the contents of a backup made by `exportDatabaseJson`.
+ * All deletes and inserts run as one transaction, so a bad backup leaves the library untouched.
+ */
 export async function importDatabaseJson(jsonString: string): Promise<void> {
 	try {
 		const parsed = JSON.parse(jsonString);
 		if (!parsed.data) throw new Error('Invalid backup format');
-		
+
 		const db = getDb();
 		const data = parsed.data;
+		const statements: capSQLiteSet[] = [];
 
-		// Clear existing data (in a real app we might want to drop and recreate, but we'll just DELETE FROM)
-		// SQLite foreign keys might complain, so we delete in reverse dependency order or just disable foreign keys
-		// Note: capacitor-sqlite disables PRAGMA foreign_keys by default unless explicitly turned on.
-		
+		// Foreign keys are off by default in capacitor-sqlite, so table order doesn't matter here.
 		const tables = ['Goal', 'ActivityLog', 'WatchCycle', 'TrackingStatus', 'CollectionItem', 'Collection', 'Media'];
-		
+
 		for (const table of tables) {
-			await db.run(`DELETE FROM ${table}`);
-			
-			const rows = data[table] || [];
+			statements.push({ statement: `DELETE FROM ${table}`, values: [] });
+
+			const rows: BackupRow[] = data[table] || [];
 			if (rows.length === 0) continue;
 
-			// Insert rows dynamically. This assumes rows are arrays of values in the correct column order.
-			// The export gives arrays of arrays for values. Backups made before a column was added have
-			// shorter rows — pad them with NULLs so the positional INSERT still matches the table.
-			const columnCount = (await db.query(`PRAGMA table_info(${table})`)).values?.length ?? 0;
-			for (const row of rows) {
-				while (row.length < columnCount) row.push(null);
-				const placeholders = row.map(() => '?').join(', ');
-				await db.run(`INSERT INTO ${table} VALUES (${placeholders})`, row);
-			}
+			const columns = ((await db.query(`PRAGMA table_info(${table})`)).values ?? []).map(
+				(c) => (c as { name?: string }).name,
+			);
+			for (const row of rows) statements.push(toInsert(table, row, columns));
 		}
 
+		await db.executeSet(statements, true);
 	} catch (err) {
 		console.error('Import failed', err);
 		throw err;
 	}
+}
+
+// Backups hold rows as the driver returned them: objects keyed by column (current), or
+// positional arrays (older exports).
+type BackupRow = Record<string, unknown> | unknown[];
+
+function toInsert(table: string, row: BackupRow, columns: (string | undefined)[]): capSQLiteSet {
+	if (Array.isArray(row)) {
+		// Backups made before a column was added have shorter rows — pad them with NULLs so the
+		// positional INSERT still matches the table.
+		const values = [...row];
+		while (values.length < columns.length) values.push(null);
+		const placeholders = values.map(() => '?').join(', ');
+		return { statement: `INSERT INTO ${table} VALUES (${placeholders})`, values };
+	}
+	// Named rows: keep only columns the table still has, so a backup from a newer schema loads.
+	const known = new Set(columns);
+	const keys = Object.keys(row).filter((k) => known.size === 0 || known.has(k));
+	return {
+		statement: `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`,
+		values: keys.map((k) => row[k]),
+	};
 }
 
 export async function clearMediaCache(): Promise<void> {

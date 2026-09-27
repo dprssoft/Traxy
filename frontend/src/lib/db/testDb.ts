@@ -31,6 +31,17 @@ export async function createTestDb(): Promise<SQLiteDBConnection> {
 			raw.run(sql, values);
 			return { changes: { changes: raw.getRowsModified() } };
 		},
+		async executeSet(set: { statement: string; values?: SqlValue[] }[]) {
+			raw.exec('BEGIN');
+			try {
+				for (const { statement, values } of set) raw.run(statement, values ?? []);
+				raw.exec('COMMIT');
+			} catch (err) {
+				raw.exec('ROLLBACK');
+				throw err;
+			}
+			return { changes: { changes: set.length } };
+		},
 	} as unknown as SQLiteDBConnection;
 
 	await applySchema(conn);
