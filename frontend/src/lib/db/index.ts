@@ -117,7 +117,8 @@ export const applySchema = async (db: SchemaConnection) => {
         timeToBeat TEXT,
         runtimeMinutes INTEGER,
         isAdult INTEGER,
-        wikiMeta TEXT
+        wikiMeta TEXT,
+        detailsPending INTEGER
     );
     CREATE TABLE IF NOT EXISTS TrackingStatus (
         id TEXT PRIMARY KEY,
@@ -211,6 +212,7 @@ export const applySchema = async (db: SchemaConnection) => {
 		'runtimeMinutes INTEGER',
 		'isAdult INTEGER',
 		'wikiMeta TEXT',
+		'detailsPending INTEGER',
 	];
 	for (const col of newColumns) {
 		try {

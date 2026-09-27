@@ -36,7 +36,27 @@ export const MEDIA_COLUMNS = [
 	'runtimeMinutes',
 	'isAdult',
 	'wikiMeta',
+	'detailsPending',
 ];
+
+/**
+ * Provider details that can be fetched again from `source` + `externalId`. Slim backups and
+ * "clear cache" drop these; the media page reloads them (see `detailsPending`).
+ */
+export const DETAIL_COLUMNS = [
+	'description',
+	'originalTitle',
+	'serializationYears',
+	'author',
+	'country',
+	'genres',
+	'releaseStatus',
+	'platforms',
+	'seasonData',
+	'timeToBeat',
+	'runtimeMinutes',
+	'wikiMeta',
+] as const satisfies readonly (keyof LocalMedia)[];
 
 /** Convert a `Media` row into a `LocalMedia`, parsing the JSON-encoded columns. */
 // A Media row as stored: JSON columns are text, booleans are 0/1.
@@ -66,6 +86,7 @@ interface MediaRow {
 	runtimeMinutes: number | null;
 	isAdult: number | null;
 	wikiMeta: string | null;
+	detailsPending: number | null;
 }
 
 export function rowToMedia(row: unknown[] | Record<string, unknown>): LocalMedia {
@@ -100,6 +121,7 @@ export function rowToMedia(row: unknown[] | Record<string, unknown>): LocalMedia
 		runtimeMinutes: r.runtimeMinutes ?? undefined,
 		isAdult: r.isAdult == null ? undefined : Boolean(r.isAdult),
 		wikiMeta: r.wikiMeta ? JSON.parse(r.wikiMeta) : undefined,
+		detailsPending: r.detailsPending ? true : undefined,
 	};
 }
 
@@ -272,6 +294,11 @@ export async function updateMediaMeta(id: string, patch: MediaMetaPatch): Promis
 		values.push(patch.wikiMeta ? JSON.stringify(patch.wikiMeta) : null);
 	}
 
+	if (patch.detailsPending !== undefined) {
+		updates.push('detailsPending = ?');
+		values.push(patch.detailsPending ? 1 : 0);
+	}
+
 	if (patch.genres !== undefined) {
 		updates.push('genres = ?');
 		values.push(patch.genres ? JSON.stringify(patch.genres) : null);
@@ -318,10 +345,33 @@ export async function ensureLocalMedia(item: SearchResult): Promise<LocalMedia> 
 }
 
 /**
- * Fill details that older rows or search results may lack — TV seasons, runtimes, and game
- * time-to-beat. Best effort: returns the (possibly updated) media, never throws.
+ * Reload the provider details of a row marked `detailsPending`, filling only fields that are
+ * empty. The mark stays when the provider can't be reached, so the next visit retries.
+ */
+async function loadPendingDetails(media: LocalMedia): Promise<LocalMedia> {
+	if (!media.detailsPending) return media;
+	try {
+		const details = (await fetchProviderDetails(media)) as Partial<LocalMedia> | null;
+		if (!details) return media;
+		const patch: Record<string, unknown> = { detailsPending: false };
+		for (const key of DETAIL_COLUMNS) {
+			if (media[key] === undefined && details[key] !== undefined) patch[key] = details[key];
+		}
+		await updateMediaMeta(media.id, patch as MediaMetaPatch);
+		return (await getMediaById(media.id)) ?? media;
+	} catch (e) {
+		console.error('[media] loading pending details failed:', e);
+		return media;
+	}
+}
+
+/**
+ * Fill details that older rows or search results may lack — details stripped by a slim backup
+ * or a cache clear, TV seasons, runtimes, and game time-to-beat. Best effort: returns the
+ * (possibly updated) media, never throws.
  */
 export async function fillMissingDetails(media: LocalMedia): Promise<LocalMedia> {
+	media = await loadPendingDetails(media);
 	const patch: MediaMetaPatch = {};
 	try {
 		if (

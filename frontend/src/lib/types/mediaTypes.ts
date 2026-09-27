@@ -35,6 +35,8 @@ export interface LocalMedia {
 	isAdult?: boolean;
 	/** Which fields Wikidata enrichment filled in, so a wrong match can be undone. */
 	wikiMeta?: WikiMeta;
+	/** Details were stripped (slim backup restore, cache clear) and load on the next page visit. */
+	detailsPending?: boolean;
 }
 
 /** Absent until the first Wikidata check; `wikidataId: null` means checked, no match. */
