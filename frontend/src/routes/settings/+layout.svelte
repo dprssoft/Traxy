@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import Tabs from '$lib/components/ui/Tabs.svelte';
 
 	let { children } = $props();
 
-	const tabs = [
+	const tabs: { id: string; label: string; icon: string; desc: string; href: Pathname }[] = [
 		{
 			id: 'api',
 			label: 'API Integrations',
@@ -93,7 +95,7 @@
 				orientation="vertical"
 				onchange={(id) => {
 					const tab = tabs.find((t) => t.id === id);
-					if (tab) goto(tab.href);
+					if (tab) goto(resolve(tab.href));
 				}}
 			/>
 		</div>

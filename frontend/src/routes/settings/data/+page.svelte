@@ -17,7 +17,6 @@
 	const isNative = Capacitor.isNativePlatform();
 
 	let fileInput = $state<HTMLInputElement | null>(null);
-	let autosaveInput = $state<HTMLInputElement | null>(null);
 	let backupStatus = $state('');
 	let exporting = $state(false);
 	let importing = $state(false);
