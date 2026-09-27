@@ -120,9 +120,24 @@ export async function handleProgressDecrement(
 	return { highestRemaining, highestRemainingOccurredAt };
 }
 
+/** The feed only ever shows this many events; older ones are deleted. */
+export const ACTIVITY_LOG_LIMIT = 100;
+
+/** Delete every event except the newest `ACTIVITY_LOG_LIMIT`, in feed order. */
+export async function pruneActivityLog(): Promise<void> {
+	const db = getDb();
+	await db.run(
+		`DELETE FROM ActivityLog WHERE rowid NOT IN (
+			SELECT rowid FROM ActivityLog ORDER BY occurredAt DESC, rowid DESC LIMIT ?
+		)`,
+		[ACTIVITY_LOG_LIMIT],
+	);
+}
+
 /**
  * Write a new event to the ActivityLog.
  * Called by tracking.service, cycle.service, and system events after every meaningful change.
+ * Only the newest `ACTIVITY_LOG_LIMIT` events are kept.
  * Pass `occurredAt` to backdate the log (e.g. when continuing a session after a correction).
  */
 export async function logActivity(
@@ -146,6 +161,7 @@ export async function logActivity(
 			entry.occurredAt ?? new Date().toISOString(),
 		],
 	);
+	await pruneActivityLog();
 }
 
 /** Return a paginated, newest-first list of activity items. */

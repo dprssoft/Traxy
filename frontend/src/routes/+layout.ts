@@ -7,6 +7,7 @@ import {
 	getUserProfile,
 } from '$lib/db/services/settings.service';
 import { restoreAnimeMergeBackupIfPresent } from '$lib/db/services/backup.service';
+import { pruneActivityLog } from '$lib/db/services/activity.service';
 
 // Client-side layout load — no auth, no cookies.
 // SSR is disabled (adapter-static, ssr: false), so this runs only in the browser.
@@ -39,6 +40,8 @@ export const load = async () => {
 		await restoreAnimeMergeBackupIfPresent().catch((err) =>
 			console.error('Restoring the pre-merge anime backup failed', err),
 		);
+		// Databases from before the feed cap can hold thousands of events.
+		await pruneActivityLog().catch((err) => console.error('Trimming the activity log failed', err));
 		return {
 			bottomNav: await getBottomNavPrefs().catch(() => null),
 			contentFilter: await getContentFilterPrefs().catch(() => null),
