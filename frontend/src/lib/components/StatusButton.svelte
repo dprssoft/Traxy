@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { LocalMedia } from '$lib/types/mediaTypes';
-	import type { LocalTrackingStatus } from '$lib/types/trackingTypes';
-	import { STATUS_LABELS_BY_GROUP, REWATCH_LABELS, getMediaTypeGroup } from '$lib/constants';
+	import type { LocalTrackingStatus, TrackingStatusType } from '$lib/types/trackingTypes';
+	import { STATUS_LABELS_BY_GROUP, REWATCH_LABELS, getMediaTypeGroup, getStatusOptions } from '$lib/constants';
 	import { upsertTracking, deleteTracking } from '$lib/db/services/tracking.service';
 	import { startRewatch } from '$lib/db/services/cycle.service';
 
@@ -47,16 +47,9 @@
 	const group = $derived(getMediaTypeGroup(media.type));
 	const statusLabels = $derived(STATUS_LABELS_BY_GROUP[group]);
 
-	const options = $derived([
-		{ value: 'planned', label: statusLabels['planned'] },
-		{ value: 'in_progress', label: statusLabels['in_progress'] },
-		{ value: 'completed', label: statusLabels['completed'] },
-		...(group === 'game' ? [{ value: 'watched_letsplay', label: statusLabels['watched_letsplay'] }] : []),
-		{ value: 'paused', label: statusLabels['paused'] },
-		{ value: 'dropped', label: statusLabels['dropped'] },
-	]);
+	const options = $derived(getStatusOptions(media.type));
 
-	async function updateStatus(newStatus: 'planned' | 'in_progress' | 'completed' | 'paused' | 'dropped' | 'watched_letsplay') {
+	async function updateStatus(newStatus: TrackingStatusType) {
 		isOpen = false;
 		if (tracking?.status === newStatus) return;
 
@@ -135,7 +128,7 @@
 			{#each options as opt (opt.value)}
 				<button
 					class="w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer {tracking?.status === opt.value ? 'bg-indigo-600/20 text-indigo-400 font-bold' : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'}"
-					onclick={() => updateStatus(opt.value as 'planned' | 'in_progress' | 'completed' | 'paused' | 'dropped' | 'watched_letsplay')}
+					onclick={() => updateStatus(opt.value)}
 				>
 					{opt.label}
 				</button>

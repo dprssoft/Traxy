@@ -1,5 +1,5 @@
 import type { MediaType } from '$lib/types/mediaTypes';
-import type { SystemCollectionKey } from '$lib/db/schema';
+import type { SystemCollectionKey, TrackingStatusType } from '$lib/db/schema';
 
 // ---------------------------------------------------------------------------
 // Tracking status labels — media-type-aware
@@ -37,6 +37,21 @@ export const STATUS_LABELS_BY_GROUP: Record<MediaTypeGroup, Record<string, strin
 		paused: 'Paused',
 	},
 };
+
+/** Status choices for a media type, in display order (Let's Play only for games). */
+export function getStatusOptions(type: MediaType): { value: TrackingStatusType; label: string }[] {
+	const group = getMediaTypeGroup(type);
+	const labels = STATUS_LABELS_BY_GROUP[group];
+	const values: TrackingStatusType[] = [
+		'planned',
+		'in_progress',
+		'completed',
+		...(group === 'game' ? (['watched_letsplay'] as const) : []),
+		'paused',
+		'dropped',
+	];
+	return values.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Returns the context-appropriate status label.
