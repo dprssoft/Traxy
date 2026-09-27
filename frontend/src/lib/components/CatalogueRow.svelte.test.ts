@@ -25,7 +25,7 @@ function makeItems(count: number): SearchResult[] {
 	}));
 }
 
-const posterCards = (container: HTMLElement) => container.querySelectorAll('button.group');
+const posterCards = (container: HTMLElement) => container.querySelectorAll('[data-poster-card]');
 
 describe('CatalogueRow batch reveal', () => {
 	beforeEach(() => {

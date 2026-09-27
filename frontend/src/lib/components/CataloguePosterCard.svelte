@@ -21,6 +21,7 @@
 
 <!-- Wrapper so the edit button can sit over the poster without nesting buttons -->
 <div
+	data-poster-card
 	class="group relative flex-shrink-0 {fluid
 		? 'w-full'
 		: 'w-[105px] xs:w-[120px] sm:w-[145px] md:w-[160px]'}"
