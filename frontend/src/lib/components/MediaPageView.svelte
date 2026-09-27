@@ -7,13 +7,11 @@
 	import StarRating from './StarRating.svelte';
 	import TrackModal from './TrackModal.svelte';
 	import AddToCollectionModal from './AddToCollectionModal.svelte';
+	import SystemCollectionButton from './SystemCollectionButton.svelte';
 	import { MEDIA_TYPE_LABELS, getStatusLabel } from '$lib/constants';
 	import { updateScore, updateNote, getTracking, upsertTracking } from '$lib/db/services/tracking.service';
 	import { getCycles } from '$lib/db/services/cycle.service';
 	import { recordVisitedMedia } from '$lib/db/services/catalogue.service';
-	import { getDb } from '$lib/db/index';
-	import { DEFAULT_COLLECTION_NAME } from '$lib/constants';
-	import { v4 as uuidv4 } from 'uuid';
 	import { MarqueeText, SensitiveContent } from '$lib/components/ui';
 
 	interface Props {
@@ -45,8 +43,6 @@
 	let descExpanded = $state(false);
 	let showTrackModal = $state(false);
 	let showCollectionModal = $state(false);
-	let isFavorite = $state(false);
-	let favoriteLoading = $state(false);
 	let shareCopied = $state(false);
 
 	// User note (item 14)
@@ -63,75 +59,6 @@
 			recordVisitedMedia(media);
 		}
 	});
-
-	// Load favorite state
-	$effect(() => {
-		checkIsFavorite(media.id);
-	});
-
-	// -------------------------------------------------------------------------
-	// Favorites (Item 15)
-	// -------------------------------------------------------------------------
-
-	async function getFavoritesCollectionId(): Promise<string> {
-		const db = getDb();
-		const result = await db.query('SELECT id FROM Collection WHERE name = ? LIMIT 1', [
-			DEFAULT_COLLECTION_NAME,
-		]);
-		if (result.values && result.values.length > 0) {
-			const row = result.values[0] as string[] | Record<string, string>;
-			return Array.isArray(row) ? row[0] : row['id'];
-		}
-		const id = uuidv4();
-		const now = new Date().toISOString();
-		await db.run(
-			'INSERT INTO Collection (id, name, description, createdAt) VALUES (?, ?, ?, ?)',
-			[id, DEFAULT_COLLECTION_NAME, 'My favorite media', now],
-		);
-		return id;
-	}
-
-	async function checkIsFavorite(mediaId: string) {
-		try {
-			const db = getDb();
-			const result = await db.query(
-				`SELECT ci.mediaId FROM CollectionItem ci
-				 JOIN Collection c ON c.id = ci.collectionId
-				 WHERE c.name = ? AND ci.mediaId = ? LIMIT 1`,
-				[DEFAULT_COLLECTION_NAME, mediaId],
-			);
-			isFavorite = !!(result.values && result.values.length > 0);
-		} catch {
-			isFavorite = false;
-		}
-	}
-
-	async function toggleFavorite() {
-		if (favoriteLoading) return;
-		favoriteLoading = true;
-		try {
-			const db = getDb();
-			const collId = await getFavoritesCollectionId();
-			if (isFavorite) {
-				await db.run(
-					'DELETE FROM CollectionItem WHERE collectionId = ? AND mediaId = ?',
-					[collId, media.id],
-				);
-				isFavorite = false;
-			} else {
-				const now = new Date().toISOString();
-				await db.run(
-					'INSERT OR IGNORE INTO CollectionItem (id, collectionId, mediaId, sortOrder, addedAt) VALUES (?, ?, ?, ?, ?)',
-					[uuidv4(), collId, media.id, 0, now],
-				);
-				isFavorite = true;
-			}
-		} catch (err) {
-			console.error('Failed to toggle favorite', err);
-		} finally {
-			favoriteLoading = false;
-		}
-	}
 
 	// -------------------------------------------------------------------------
 	// Share (Item 16)
@@ -378,26 +305,7 @@
 
 		<div class="flex items-center gap-2">
 			<!-- 15. Add to favorite -->
-			<button
-				type="button"
-				onclick={toggleFavorite}
-				disabled={favoriteLoading}
-				class="w-10 h-10 flex items-center justify-center rounded-xl border transition-all active:scale-95 cursor-pointer
-					{isFavorite
-						? 'bg-rose-500/20 border-rose-500/30 text-rose-400'
-						: 'bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-slate-400 hover:text-rose-400'}"
-				aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-			>
-				{#if isFavorite}
-					<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-						<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-					</svg>
-				{:else}
-					<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-					</svg>
-				{/if}
-			</button>
+			<SystemCollectionButton {media} kind="favorites" />
 
 			<!-- 16. Share (to be implemented) -->
 			<button

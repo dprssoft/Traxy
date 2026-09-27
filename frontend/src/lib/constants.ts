@@ -1,8 +1,6 @@
 import type { MediaType } from '$lib/types/mediaTypes';
 import type { SystemCollectionKey } from '$lib/db/schema';
 
-export const DEFAULT_COLLECTION_NAME = 'Favorites';
-
 // ---------------------------------------------------------------------------
 // Tracking status labels — media-type-aware
 // ---------------------------------------------------------------------------
