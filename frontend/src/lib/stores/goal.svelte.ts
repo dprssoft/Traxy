@@ -5,15 +5,17 @@ interface YearlyGoal {
 	readCount: number; // books, manga, comics
 }
 
+const currentYear = () => new Date().getFullYear();
+
 const DEFAULT_GOALS: YearlyGoal = {
-	year: new Date().getFullYear(),
+	year: currentYear(),
 	watchCount: 50,
 	gameCount: 12,
 	readCount: 20,
 };
 
 function loadGoals(): YearlyGoal {
-	const year = new Date().getFullYear();
+	const year = currentYear();
 	const stored = localStorage.getItem(`traxy:goals:${year}`);
 	if (stored) {
 		try {
@@ -36,7 +38,7 @@ if (typeof window !== 'undefined') {
 
 /** Merge `goals` into this year's targets and persist them. */
 export function saveGoals(goals: Partial<YearlyGoal>) {
-	const year = new Date().getFullYear();
+	const year = currentYear();
 	goalStore.current = { ...goalStore.current, ...goals, year };
 	localStorage.setItem(`traxy:goals:${year}`, JSON.stringify(goalStore.current));
 }

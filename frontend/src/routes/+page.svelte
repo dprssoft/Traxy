@@ -4,8 +4,7 @@
 	import FeedEntry from '$lib/components/FeedEntry.svelte';
 	import InfiniteScrollSentinel from '$lib/components/InfiniteScrollSentinel.svelte';
 	import { getActivityFeed } from '$lib/db/services/activity.service';
-	import type { ActivityItem, FeedItem, GroupedActivityItem } from '$lib/types/activityTypes';
-	import { isGrouped } from '$lib/types/activityTypes';
+	import type { ActivityItem } from '$lib/types/activityTypes';
 	import { onMount, untrack } from 'svelte';
 
 	let { data }: { data: PageData } = $props();

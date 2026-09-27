@@ -27,7 +27,7 @@ navigates to (and imports, if needed) the linked season's own media page.
 
 	let isUpdating = $state(false);
 
-	async function updateField(field: keyof LocalTrackingStatus, value: any) {
+	async function updateField(field: keyof LocalTrackingStatus, value: number) {
 		if (isUpdating || tracking[field] === value) return;
 		isUpdating = true;
 		try {
@@ -40,7 +40,7 @@ navigates to (and imports, if needed) the linked season's own media page.
 		}
 	}
 
-	async function updateTier(tier: any) {
+	async function updateTier(tier: NonNullable<LocalTrackingStatus['completionTier']>) {
 		if (isUpdating || tracking.completionTier === tier) return;
 		isUpdating = true;
 		try {

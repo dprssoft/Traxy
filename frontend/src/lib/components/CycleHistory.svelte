@@ -12,13 +12,6 @@
 
 	let { media, cycles, onComplete }: Props = $props();
 
-	function formatDate(dateString?: string) {
-		if (!dateString) return '—';
-		return new Date(dateString).toLocaleDateString('en-US', { 
-			day: 'numeric', month: 'short', year: 'numeric' 
-		});
-	}
-
 	function getTodayStr() {
 		const d = new Date();
 		return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');

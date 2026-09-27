@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { userStore } from '$lib/stores/user.svelte';
 	import { setUserProfile } from '$lib/db/services/settings.service';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 
 	interface Achievement {
 		id: string;

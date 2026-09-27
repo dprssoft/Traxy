@@ -38,13 +38,6 @@
 			default: return '#6b7280'; // gray-500
 		}
 	}
-
-	// SVG circle math
-	function getCoordinatesForPercent(percent: number) {
-		const x = Math.cos(2 * Math.PI * percent);
-		const y = Math.sin(2 * Math.PI * percent);
-		return [x, y];
-	}
 </script>
 
 <div class="bg-[#121422]/80 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 sm:p-8 flex flex-col items-center shadow-xl">

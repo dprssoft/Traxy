@@ -71,14 +71,18 @@
 				if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
 					navigator.vibrate([35, 30, 35]);
 				}
-			} catch {}
+			} catch {
+				// Haptics are best effort.
+			}
 
 			// Capture pointer only once dragging actually begins
 			const target = e.currentTarget as HTMLElement;
 			if (target?.setPointerCapture) {
 				try {
 					target.setPointerCapture(e.pointerId);
-				} catch {}
+				} catch {
+					// The pointer may already be released.
+				}
 			}
 		}, 400);
 	}
@@ -114,7 +118,7 @@
 		}
 	}
 
-	function handlePointerUp(e: PointerEvent) {
+	function handlePointerUp() {
 		if (holdTimer) {
 			clearTimeout(holdTimer);
 			holdTimer = null;
@@ -127,7 +131,9 @@
 					if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
 						navigator.vibrate(50);
 					}
-				} catch {}
+				} catch {
+					// Haptics are best effort.
+				}
 			}
 			isDragging = false;
 			isOverDropZone = false;
@@ -158,7 +164,7 @@
 		didDrag = false;
 	}
 
-	function handleClick(e: MouseEvent) {
+	function handleClick() {
 		// Only trigger menu toggle if this was a genuine tap/click, not a swipe or drag
 		if (didDrag || isDragging) return;
 

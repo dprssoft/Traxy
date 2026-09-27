@@ -10,7 +10,9 @@
 	onMount(async () => {
 		try {
 			showCountryFlags = await getAppSettingBool('ui_country_flags', false);
-		} catch {}
+		} catch {
+			// Keep the default when settings can't be read.
+		}
 	});
 
 	async function toggleFlags(enabled: boolean) {
