@@ -5,7 +5,7 @@
  */
 import type { capSQLiteSet } from '@capacitor-community/sqlite';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../index';
+import { getDb, onDbWrite } from '../index';
 import {
 	emptySyncDoc,
 	mergeSyncDocs,
@@ -361,4 +361,9 @@ export async function runSync(
 		await provider.connect();
 		return syncWith(provider);
 	}
+}
+
+/** Call `listener` whenever the local library changes; returns a function that stops listening. */
+export function onLocalChange(listener: () => void): () => void {
+	return onDbWrite(listener);
 }

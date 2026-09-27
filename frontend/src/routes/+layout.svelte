@@ -9,6 +9,7 @@
 	import MobileNavDrawer from '$lib/components/MobileNavDrawer.svelte';
 	import ContentFilterPrompt from '$lib/components/ContentFilterPrompt.svelte';
 	import MediaQuickSheet from '$lib/components/MediaQuickSheet.svelte';
+	import SyncAgent from '$lib/components/SyncAgent.svelte';
 	import { quickEdit } from '$lib/stores/quickEdit.svelte';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { previousPath } from '$lib/stores/breadcrumb';
@@ -90,6 +91,7 @@
 	{isMirrored ? 'flex-row-reverse' : 'flex-row'}"
 >
 	<!-- Desktop Sidebar (Moves together with top-left button) -->
+	<SyncAgent />
 	<Sidebar />
 
 	<!-- Main App Shell -->

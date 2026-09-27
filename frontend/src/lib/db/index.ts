@@ -66,26 +66,37 @@ export const initDb = async () => {
 
 	await db.open();
 
-	// On web, monkey-patch write methods so every db.run / db.executeSet schedules
-	// a debounced saveToStore. This ensures data survives F5 without requiring every
-	// service to remember to flush explicitly.
-	if (Capacitor.getPlatform() === 'web') {
-		const origRun = db.run.bind(db);
-		const origExecSet = db.executeSet.bind(db);
-		db.run = async (...args: Parameters<typeof db.run>) => {
-			const r = await origRun(...args);
-			scheduleSave();
-			return r;
-		};
-		db.executeSet = async (...args: Parameters<typeof db.executeSet>) => {
-			const r = await origExecSet(...args);
-			scheduleSave();
-			return r;
-		};
-	}
+	// Wrap the write methods so every db.run / db.executeSet notifies `onDbWrite` listeners
+	// (auto-sync) and, on web, schedules a debounced saveToStore — data survives F5 without
+	// every service having to remember to flush explicitly.
+	const isWeb = Capacitor.getPlatform() === 'web';
+	const afterWrite = () => {
+		if (isWeb) scheduleSave();
+		for (const listener of writeListeners) listener();
+	};
+	const origRun = db.run.bind(db);
+	const origExecSet = db.executeSet.bind(db);
+	db.run = async (...args: Parameters<typeof db.run>) => {
+		const r = await origRun(...args);
+		afterWrite();
+		return r;
+	};
+	db.executeSet = async (...args: Parameters<typeof db.executeSet>) => {
+		const r = await origExecSet(...args);
+		afterWrite();
+		return r;
+	};
 
 	await applySchema(db);
 };
+
+const writeListeners = new Set<() => void>();
+
+/** Call `listener` after every database write; returns a function that stops listening. */
+export function onDbWrite(listener: () => void): () => void {
+	writeListeners.add(listener);
+	return () => writeListeners.delete(listener);
+}
 
 type SchemaConnection = Pick<SQLiteDBConnection, 'execute' | 'query' | 'run'>;
 
