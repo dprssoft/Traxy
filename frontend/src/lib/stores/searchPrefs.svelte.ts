@@ -1,42 +1,25 @@
-import { getDb } from '$lib/db/index';
+import {
+	DEFAULT_SEARCH_PREFS,
+	getSearchPrefs,
+	setSearchPrefs,
+	type SearchPrefs,
+} from '$lib/db/services/settings.service';
 
-export interface SearchPrefs {
-	/** AniList wins over TMDB for anime/TV overlap (e.g. Jujutsu Kaisen won't show as TV) */
-	anilistWinsAnime: boolean;
-	/** AniList wins over OpenLibrary/ComicVine for manga/manhwa/manhua exact titles */
-	anilistWinsManga: boolean;
-	/** Suppress OpenLibrary volume entries (e.g. "Gantz Volume 1") when AniList has the series */
-	suppressMangaVolumes: boolean;
-	/** Include Flashpoint Archive in game searches */
-	flashpointEnabled: boolean;
-}
-
-const SETTINGS_KEY = 'search_prefs';
-
-const defaults: SearchPrefs = {
-	anilistWinsAnime: true,
-	anilistWinsManga: true,
-	suppressMangaVolumes: true,
-	flashpointEnabled: false,
-};
+export type { SearchPrefs };
 
 function createSearchPrefsStore() {
-	let prefs = $state<SearchPrefs>({ ...defaults });
+	let prefs = $state<SearchPrefs>({ ...DEFAULT_SEARCH_PREFS });
 	let loaded = false;
 
 	return {
-		get current() { return prefs; },
+		get current() {
+			return prefs;
+		},
 
 		async load() {
 			if (loaded) return;
 			try {
-				const db = getDb();
-				const result = await db.query('SELECT value FROM AppSettings WHERE key = ?', [SETTINGS_KEY]);
-				if (result.values && result.values.length > 0) {
-					const raw = result.values[0];
-					const val = typeof raw === 'string' ? raw : (Array.isArray(raw) ? raw[0] : raw?.value);
-					if (val) prefs = { ...defaults, ...JSON.parse(val) };
-				}
+				prefs = await getSearchPrefs();
 			} catch {
 				// DB not ready yet; use defaults
 			}
@@ -46,11 +29,7 @@ function createSearchPrefsStore() {
 		async save(next: SearchPrefs) {
 			prefs = next;
 			try {
-				const db = getDb();
-				await db.run(
-					'INSERT OR REPLACE INTO AppSettings (key, value) VALUES (?, ?)',
-					[SETTINGS_KEY, JSON.stringify(next)]
-				);
+				await setSearchPrefs(next);
 			} catch (e) {
 				console.error('Failed to save search prefs', e);
 			}

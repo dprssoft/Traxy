@@ -1,5 +1,5 @@
 import type { SearchResult } from '$lib/types/mediaTypes';
-import type { SearchPrefs } from '$lib/stores/searchPrefs.svelte';
+import type { SearchPrefs } from '$lib/db/services/settings.service';
 
 /** Media types that belong to the anime/manga family (AniList is authoritative). */
 const ANILIST_TYPES = new Set(['anime', 'manga', 'manhwa', 'manhua'] as const);

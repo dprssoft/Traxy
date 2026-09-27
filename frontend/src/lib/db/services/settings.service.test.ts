@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+	DEFAULT_SEARCH_PREFS,
 	getContentFilterPrefs,
+	getSearchPrefs,
+	setSearchPrefs,
 	setContentFilterEnabled,
 	setContentFilterMode,
 } from './settings.service';
@@ -45,5 +48,28 @@ describe('content filter prefs', () => {
 		await setContentFilterEnabled(true);
 		await setContentFilterMode('blur');
 		expect(await getContentFilterPrefs()).toEqual({ enabled: true, mode: 'blur', asked: true });
+	});
+});
+
+describe('search prefs', () => {
+	beforeEach(() => {
+		settings = {};
+	});
+
+	it('defaults when nothing is stored', async () => {
+		expect(await getSearchPrefs()).toEqual(DEFAULT_SEARCH_PREFS);
+	});
+
+	it('round-trips saved prefs and fills keys added later', async () => {
+		settings.search_prefs = JSON.stringify({ flashpointEnabled: true });
+		expect(await getSearchPrefs()).toEqual({ ...DEFAULT_SEARCH_PREFS, flashpointEnabled: true });
+
+		await setSearchPrefs({ ...DEFAULT_SEARCH_PREFS, anilistWinsAnime: false });
+		expect((await getSearchPrefs()).anilistWinsAnime).toBe(false);
+	});
+
+	it('falls back to defaults on unreadable JSON', async () => {
+		settings.search_prefs = '{oops';
+		expect(await getSearchPrefs()).toEqual(DEFAULT_SEARCH_PREFS);
 	});
 });

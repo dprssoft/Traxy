@@ -145,3 +145,37 @@ export async function getWikiEnrichmentEnabled(): Promise<boolean> {
 export async function setWikiEnrichmentEnabled(enabled: boolean): Promise<void> {
 	await setAppSettingBool(WIKI_ENRICHMENT_FLAG, enabled);
 }
+
+export interface SearchPrefs {
+	/** AniList wins over TMDB for anime/TV overlap (e.g. Jujutsu Kaisen won't show as TV) */
+	anilistWinsAnime: boolean;
+	/** AniList wins over OpenLibrary/ComicVine for manga/manhwa/manhua exact titles */
+	anilistWinsManga: boolean;
+	/** Suppress OpenLibrary volume entries (e.g. "Gantz Volume 1") when AniList has the series */
+	suppressMangaVolumes: boolean;
+	/** Include Flashpoint Archive in game searches */
+	flashpointEnabled: boolean;
+}
+
+export const DEFAULT_SEARCH_PREFS: SearchPrefs = {
+	anilistWinsAnime: true,
+	anilistWinsManga: true,
+	suppressMangaVolumes: true,
+	flashpointEnabled: false,
+};
+
+const SEARCH_PREFS_KEY = 'search_prefs';
+
+/** Search merge preferences; defaults fill any missing or unreadable value. */
+export async function getSearchPrefs(): Promise<SearchPrefs> {
+	try {
+		const raw = await getAppSetting(SEARCH_PREFS_KEY);
+		return raw ? { ...DEFAULT_SEARCH_PREFS, ...JSON.parse(raw) } : { ...DEFAULT_SEARCH_PREFS };
+	} catch {
+		return { ...DEFAULT_SEARCH_PREFS };
+	}
+}
+
+export async function setSearchPrefs(prefs: SearchPrefs): Promise<void> {
+	await setAppSetting(SEARCH_PREFS_KEY, JSON.stringify(prefs));
+}
