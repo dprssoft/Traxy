@@ -10,7 +10,6 @@
 	import { downloadFile } from '$lib/utils/download';
 	import { Capacitor } from '@capacitor/core';
 	import { Share } from '@capacitor/share';
-	import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -93,18 +92,10 @@
 			exporting = true;
 			backupStatus = '';
 			const json = await exportDatabaseJson();
-			if (isNative) {
-				await Filesystem.writeFile({
-					path: `Download/${filename}`,
-					data: json,
-					directory: Directory.ExternalStorage,
-					encoding: Encoding.UTF8,
-				});
-				backupStatus = `success:Saved to Downloads/${filename}`;
-			} else {
-				downloadFile(filename, json, 'application/json');
-				backupStatus = 'success:Export successful!';
-			}
+			await downloadFile(filename, json, 'application/json');
+			backupStatus = isNative
+				? `success:Saved to Downloads/${filename}`
+				: 'success:Export successful!';
 			setTimeout(() => (backupStatus = ''), 5000);
 		} catch (err) {
 			console.error(err);
@@ -133,7 +124,7 @@
 					await navigator.share({ files: [file], title: 'Traxy Backup' });
 					backupStatus = 'success:Backup shared!';
 				} else {
-					downloadFile(filename, json, 'application/json');
+					await downloadFile(filename, json, 'application/json');
 					backupStatus = 'success:Export successful!';
 				}
 			}

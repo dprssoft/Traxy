@@ -82,12 +82,16 @@
 		}
 	}
 
-	function exportJson() {
-		downloadFile(
-			collectionExportFilename(collection, 'json'),
-			formatCollectionJson(collection, sorted),
-			'application/json',
-		);
+	async function exportJson() {
+		try {
+			await downloadFile(
+				collectionExportFilename(collection, 'json'),
+				formatCollectionJson(collection, sorted),
+				'application/json',
+			);
+		} catch (err) {
+			console.error('Failed to export collection', err);
+		}
 	}
 
 	// ── Per-item note ────────────────────────────────────────────────────────
