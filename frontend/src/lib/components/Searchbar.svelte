@@ -14,22 +14,15 @@ imports it locally and opens its media page.
 		loadRecentSearches,
 		getTypeColor,
 	} from '$lib/stores/search.svelte';
-	import { searchTmdb } from '$lib/db/sources/tmdb';
-	import { searchIgdb } from '$lib/db/sources/igdb';
-	import { searchAnilist } from '$lib/db/sources/anilist';
-	import { searchComicVine } from '$lib/db/sources/comicvine';
-	import { searchOpenLibrary } from '$lib/db/sources/openlibrary';
-	import { searchFlashpoint } from '$lib/db/sources/flashpoint';
 	import { ensureLocalMedia } from '$lib/db/services/media.service';
 	import { quickEdit } from '$lib/stores/quickEdit.svelte';
 	import QuickEditButton from './QuickEditButton.svelte';
-	import { deduplicateResults } from '$lib/utils/search-dedup';
+	import { searchAll, SEARCH_TYPES, type SearchType } from '$lib/db/services/search.service';
 	import { searchPrefsStore } from '$lib/stores/searchPrefs.svelte';
 	import { contentFilterStore } from '$lib/stores/contentFilter.svelte';
 	import { applyContentFilter } from '$lib/utils/contentFilter';
 	import SensitiveContent from '$lib/components/ui/SensitiveContent.svelte';
 	import type { SearchResult } from '$lib/types/mediaTypes';
-	import type { MediaType } from '$lib/db/schema';
 	import { MEDIA_TYPE_LABELS } from '$lib/constants';
 
 	let query = $state('');
@@ -42,16 +35,6 @@ imports it locally and opens its media page.
 
 	let containerEl: HTMLElement | null = null;
 	let inputEl: HTMLInputElement | null = null;
-
-	const filterTypes: (MediaType | 'all')[] = [
-		'all',
-		'film',
-		'tv',
-		'game',
-		'anime',
-		'book',
-		'comic',
-	];
 
 	function openSearch() {
 		isFocused = true;
@@ -108,53 +91,11 @@ imports it locally and opens its media page.
 
 		isLoading = true;
 		results = [];
-		const t = searchState.selectedType;
 		const searchId = ++currentSearchId;
 
 		try {
-			const promises: Promise<SearchResult[]>[] = [];
-
-			// Always include AniList when the filter could include anime or manga,
-			// so the deduplicator has enough context to suppress TMDB/OL duplicates.
-			if (t === 'all' || t === 'film' || t === 'tv') promises.push(searchTmdb(q));
-			if (t === 'all' || t === 'game') promises.push(searchIgdb(q));
-			if ((t === 'all' || t === 'game') && searchPrefsStore.current.flashpointEnabled) {
-				promises.push(searchFlashpoint(q));
-			}
-			if (t === 'all' || t === 'anime' || t === 'tv') promises.push(searchAnilist(q, 'ANIME'));
-			if (t === 'all' || t === 'comic' || t === 'book') {
-				promises.push(searchAnilist(q, 'MANGA'));
-			}
-			if (t === 'all' || t === 'comic') promises.push(searchComicVine(q));
-			if (t === 'all' || t === 'book') promises.push(searchOpenLibrary(q));
-
-			// Collect all raw results first, then deduplicate once everything has settled.
-			const raw: SearchResult[] = [];
-			await Promise.all(
-				promises.map((p) =>
-					p
-						.then((res) => {
-							if (searchId !== currentSearchId) return;
-							raw.push(...res);
-						})
-						.catch((e) => console.error(e)),
-				),
-			);
-
-			if (searchId !== currentSearchId) return;
-
-			// Deduplicate first on the full raw set so AniList anime/manga entries are
-			// present to suppress TMDB/OL/CV duplicates — even when the active filter
-			// would later hide the AniList result itself (e.g. user filters by 'tv').
-			const deduped = deduplicateResults(raw, searchPrefsStore.current);
-
-			// Now apply the type filter on the already-clean set.
-			results =
-				t === 'all'
-					? deduped
-					: t === 'comic'
-						? deduped.filter((r) => ['manga', 'manhwa', 'manhua', 'comic'].includes(r.type))
-						: deduped.filter((r) => r.type === t);
+			const found = await searchAll(q, searchState.selectedType, searchPrefsStore.current);
+			if (searchId === currentSearchId) results = found;
 		} catch (err) {
 			console.error('Search failed', err);
 		} finally {
@@ -171,7 +112,7 @@ imports it locally and opens its media page.
 		}, 400);
 	}
 
-	function onTypeSelect(type: MediaType | 'all') {
+	function onTypeSelect(type: SearchType) {
 		searchState.selectedType = type;
 		performSearch(query);
 	}
@@ -276,7 +217,7 @@ imports it locally and opens its media page.
 			<div
 				class="flex overflow-x-auto gap-1.5 p-3 border-b border-white/[0.06] scrollbar-hide shrink-0 bg-[#0d0e18]/50"
 			>
-				{#each filterTypes as type (type)}
+				{#each SEARCH_TYPES as type (type)}
 					<button
 						onclick={() => onTypeSelect(type)}
 						class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer {searchState.selectedType ===
