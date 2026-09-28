@@ -1,4 +1,20 @@
 import type { MediaType } from '$lib/db/schema';
+import { MEDIA_TYPE_LABELS } from '$lib/constants';
+
+export const SEARCH_PAGE_PATH = '/search';
+
+/** Query string for the full results page (`?q=…&type=…`; 'all' is left out). */
+export function searchPageParams(query: string, type: MediaType | 'all'): `?${string}` {
+	const q = `?q=${encodeURIComponent(query)}` as const;
+	return type === 'all' ? q : `${q}&type=${type}`;
+}
+
+/** Label for a search type-filter chip; 'comic' also covers manga. */
+export function getSearchTypeLabel(type: MediaType | 'all'): string {
+	if (type === 'all') return 'All';
+	if (type === 'comic') return 'Comics / Manga';
+	return MEDIA_TYPE_LABELS[type] ?? type;
+}
 
 /** App-wide search bar state. Recent searches persist in localStorage. */
 export const searchState = $state({

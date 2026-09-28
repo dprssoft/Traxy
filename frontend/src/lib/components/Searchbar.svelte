@@ -1,18 +1,22 @@
 <!--
 @component
-Global search: queries every provider that matches the type filter in parallel, merges
-cross-provider duplicates (`search-dedup`) and applies the adult-content filter. Picking a result
-imports it locally and opens its media page.
+Global search: queries every provider that matches the type filter (`search.service`) and applies
+the adult-content filter. Picking a result imports it locally and opens its media page; submitting
+the query (Enter / the keyboard's search key) opens the full results page at `/search?q=`.
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import {
 		searchState,
 		addRecentSearch,
 		loadRecentSearches,
 		getTypeColor,
+		getSearchTypeLabel,
+		searchPageParams,
+		SEARCH_PAGE_PATH,
 	} from '$lib/stores/search.svelte';
 	import { ensureLocalMedia } from '$lib/db/services/media.service';
 	import { quickEdit } from '$lib/stores/quickEdit.svelte';
@@ -32,13 +36,29 @@ imports it locally and opens its media page.
 	const visibleResults = $derived(applyContentFilter(results, contentFilterStore.effectiveMode));
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	let currentSearchId = 0;
+	// Query and type the dropdown results belong to; the bar can be filled from the URL without them.
+	let searchedKey = '';
 
 	let containerEl: HTMLElement | null = null;
 	let inputEl: HTMLInputElement | null = null;
 
+	// Mirror the results page's query and type in the bar; clear the bar everywhere else.
+	$effect(() => {
+		if (page.url.pathname === resolve(SEARCH_PAGE_PATH)) {
+			query = page.url.searchParams.get('q') ?? '';
+			const type = page.url.searchParams.get('type') as SearchType | null;
+			if (type && SEARCH_TYPES.includes(type)) searchState.selectedType = type;
+		} else {
+			query = '';
+		}
+	});
+
 	function openSearch() {
 		isFocused = true;
 		searchState.isOpen = true;
+		if (query.trim() && searchedKey !== `${searchState.selectedType}:${query}`) {
+			performSearch(query);
+		}
 	}
 
 	function closeSearch() {
@@ -91,6 +111,7 @@ imports it locally and opens its media page.
 
 		isLoading = true;
 		results = [];
+		searchedKey = `${searchState.selectedType}:${q}`;
 		const searchId = ++currentSearchId;
 
 		try {
@@ -110,6 +131,21 @@ imports it locally and opens its media page.
 		searchTimeout = setTimeout(() => {
 			performSearch(query);
 		}, 400);
+	}
+
+	function onSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		const q = query.trim();
+		if (!q) return;
+		clearTimeout(searchTimeout);
+		addRecentSearch(q);
+		closeSearch();
+		// Refining a search replaces the results entry, so Back leaves the results page.
+		const onResults =
+			page.url.pathname === resolve(SEARCH_PAGE_PATH) && page.url.searchParams.has('q');
+		goto(resolve(`${SEARCH_PAGE_PATH}${searchPageParams(q, searchState.selectedType)}`), {
+			replaceState: onResults,
+		});
 	}
 
 	function onTypeSelect(type: SearchType) {
@@ -158,21 +194,25 @@ imports it locally and opens its media page.
 		</svg>
 	</button>
 
-	<input
-		bind:this={inputEl}
-		bind:value={query}
-		oninput={onInput}
-		onclick={() => {
-			if (searchState.isOpen && query.trim().length === 0) {
-				closeSearch();
-			} else {
-				openSearch();
-			}
-		}}
-		onfocus={openSearch}
-		placeholder="Search movies, anime, games..."
-		class="relative z-20 w-full min-w-0 bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 text-xs sm:text-sm text-white placeholder:text-slate-500 placeholder:truncate focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
-	/>
+	<form role="search" class="contents" onsubmit={onSubmit}>
+		<input
+			bind:this={inputEl}
+			enterkeyhint="search"
+			aria-label="Search"
+			bind:value={query}
+			oninput={onInput}
+			onclick={() => {
+				if (searchState.isOpen && query.trim().length === 0) {
+					closeSearch();
+				} else {
+					openSearch();
+				}
+			}}
+			onfocus={openSearch}
+			placeholder="Search movies, anime, games..."
+			class="relative z-20 w-full min-w-0 bg-[#121422]/90 hover:bg-[#16192b] border border-white/[0.08] rounded-full pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 text-xs sm:text-sm text-white placeholder:text-slate-500 placeholder:truncate focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
+		/>
+	</form>
 
 	<!-- Close / Clear (X) button -->
 	{#if searchState.isOpen || query.length > 0}
@@ -225,11 +265,7 @@ imports it locally and opens its media page.
 							? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
 							: 'bg-[#181b2e] text-slate-400 hover:text-white hover:bg-[#20243d]'}"
 					>
-						{type === 'all'
-							? 'All'
-							: type === 'comic'
-								? 'Comics / Manga'
-								: (MEDIA_TYPE_LABELS[type] ?? type)}
+						{getSearchTypeLabel(type)}
 					</button>
 				{/each}
 			</div>
