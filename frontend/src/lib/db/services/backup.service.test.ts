@@ -74,7 +74,7 @@ describe('backup.service', () => {
 
 		it('returns a JSON payload keyed by table name', async () => {
 			const json = JSON.parse(await exportDatabaseJson());
-			expect(json.version).toBe(1);
+			expect(json.version).toBe(2);
 			for (const table of REAL_TABLES) {
 				expect(json.data).toHaveProperty(table);
 			}

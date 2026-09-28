@@ -209,9 +209,7 @@
 				</p>
 			</div>
 			<div class="flex gap-2">
-				<Button onclick={handleExport} loading={exporting} class="flex-1">
-					📥 Export
-				</Button>
+				<Button onclick={handleExport} loading={exporting} class="flex-1">📥 Export</Button>
 				<Button onclick={handleShare} loading={sharing} variant="secondary" class="flex-1">
 					↗ Share
 				</Button>

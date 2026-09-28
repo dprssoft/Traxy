@@ -1,18 +1,24 @@
 import type { capSQLiteSet } from '@capacitor-community/sqlite';
 import { getDb } from '../index';
 
-// Keys written by the reverted anime season merge — excluded from exports and cleaned up on boot.
-const ANIME_MERGE_BACKUP_KEY = 'anime_merge_backup';
-const ANIME_MERGE_LEFTOVER_KEYS = [
-	ANIME_MERGE_BACKUP_KEY,
-	'anime_merge_pending',
-	'anime_series_ids',
-	'feat_merge_anime_seasons',
-];
+// Settings kept in localStorage by the stores (goals per year, shell layout). API keys
+// (`traxy:apiKeys`) are deliberately left out: backups land in the public Download folder.
+const LOCAL_SETTING_PREFIXES = ['traxy:goals:'];
+const LOCAL_SETTING_KEYS = ['traxy_topbar_mirrored', 'traxy_sidebar_collapsed'];
+
+function isLocalSettingKey(key: string): boolean {
+	return LOCAL_SETTING_KEYS.includes(key) || LOCAL_SETTING_PREFIXES.some((p) => key.startsWith(p));
+}
+
+interface BackupSettings {
+	appSettings: Record<string, string>;
+	localStorage: Record<string, string>;
+}
 
 /**
- * Serialise the user's library as JSON (`{ version, timestamp, data: { <table>: rows } }`).
- * ApiCache is excluded (it's a cache). AppSettings is included as of v2.
+ * Serialise the user's library and settings as JSON
+ * (`{ version, timestamp, data: { <table>: rows }, settings }`).
+ * ApiCache and API keys are not included.
  */
 export async function exportDatabaseJson(): Promise<string> {
 	const db = getDb();
@@ -33,29 +39,44 @@ export async function exportDatabaseJson(): Promise<string> {
 		exportData[table] = res.values || [];
 	}
 
-	// Export AppSettings, filtering out transient migration keys
-	const transientKeys = new Set(ANIME_MERGE_LEFTOVER_KEYS);
-	const settingsRes = await db.query('SELECT * FROM AppSettings');
-	exportData['AppSettings'] = (settingsRes.values || []).filter((row) => {
-		const key = Array.isArray(row) ? (row[0] as string) : (row as Record<string, string>).key;
-		return !transientKeys.has(key);
-	});
-
 	return JSON.stringify(
 		{
 			version: 2,
 			timestamp: new Date().toISOString(),
 			data: exportData,
+			settings: await exportSettings(),
 		},
 		null,
 		2,
 	);
 }
 
+async function exportSettings(): Promise<BackupSettings> {
+	const res = await getDb().query('SELECT key, value FROM AppSettings');
+	const appSettings: Record<string, string> = {};
+	for (const row of res.values ?? []) {
+		const [key, value] = Array.isArray(row)
+			? row
+			: [(row as { key: string }).key, (row as { value: string }).value];
+		if (!ANIME_MERGE_LEFTOVER_KEYS.includes(key)) appSettings[key] = value;
+	}
+
+	const local: Record<string, string> = {};
+	if (typeof localStorage !== 'undefined') {
+		for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (key && isLocalSettingKey(key)) local[key] = localStorage.getItem(key) ?? '';
+		}
+	}
+
+	return { appSettings, localStorage: local };
+}
+
 /**
  * Replace every user table with the contents of a backup made by `exportDatabaseJson`.
  * All deletes and inserts run as one transaction, so a bad backup leaves the library untouched.
- * AppSettings is only restored from v2+ backups; v1 backups leave current settings intact.
+ * Settings are replaced only when the backup has them (version 2+); older backups keep the
+ * current settings.
  */
 export async function importDatabaseJson(jsonString: string): Promise<void> {
 	try {
@@ -89,20 +110,44 @@ export async function importDatabaseJson(jsonString: string): Promise<void> {
 			for (const row of rows) statements.push(toInsert(table, row, columns));
 		}
 
-		// v2+ backups include AppSettings — restore them so preferences survive reinstalls
-		if ((parsed.version ?? 1) >= 2 && Array.isArray(data['AppSettings'])) {
+		const settings: BackupSettings | undefined = parsed.settings;
+		// Backups from the short-lived `data.AppSettings` format carry settings as table rows.
+		const settingRows: BackupRow[] | undefined = settings ? undefined : data.AppSettings;
+		if (settings) {
 			statements.push({ statement: 'DELETE FROM AppSettings', values: [] });
-			const cols = ((await db.query('PRAGMA table_info(AppSettings)')).values ?? []).map(
+			for (const [key, value] of Object.entries(settings.appSettings ?? {})) {
+				statements.push({
+					statement: 'INSERT INTO AppSettings (key, value) VALUES (?, ?)',
+					values: [key, value],
+				});
+			}
+		} else if (Array.isArray(settingRows)) {
+			statements.push({ statement: 'DELETE FROM AppSettings', values: [] });
+			const columns = ((await db.query('PRAGMA table_info(AppSettings)')).values ?? []).map(
 				(c) => (c as { name?: string }).name,
 			);
-			for (const row of (data['AppSettings'] as BackupRow[]))
-				statements.push(toInsert('AppSettings', row, cols));
+			for (const row of settingRows) statements.push(toInsert('AppSettings', row, columns));
 		}
 
 		await db.executeSet(statements, true);
+
+		if (settings) restoreLocalSettings(settings.localStorage ?? {});
 	} catch (err) {
 		console.error('Import failed', err);
 		throw err;
+	}
+}
+
+function restoreLocalSettings(local: Record<string, string>): void {
+	if (typeof localStorage === 'undefined') return;
+	const stale: string[] = [];
+	for (let i = 0; i < localStorage.length; i++) {
+		const key = localStorage.key(i);
+		if (key && isLocalSettingKey(key)) stale.push(key);
+	}
+	for (const key of stale) localStorage.removeItem(key);
+	for (const [key, value] of Object.entries(local)) {
+		if (isLocalSettingKey(key)) localStorage.setItem(key, value);
 	}
 }
 
@@ -152,6 +197,15 @@ export async function resetAllUserData(): Promise<void> {
 		await db.run(`DELETE FROM ${table}`);
 	}
 }
+
+// Left behind by the reverted anime season merge (bba2783): a pre-merge backup of the library.
+const ANIME_MERGE_BACKUP_KEY = 'anime_merge_backup';
+const ANIME_MERGE_LEFTOVER_KEYS = [
+	ANIME_MERGE_BACKUP_KEY,
+	'anime_merge_pending',
+	'anime_series_ids',
+	'feat_merge_anime_seasons',
+];
 
 /**
  * One-time cleanup after the anime season merge was reverted: if the merge ran on this
